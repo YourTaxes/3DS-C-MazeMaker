@@ -7,3 +7,4 @@ build/*
 *.3dsx
 *.elf
 *.smdh
+.vscode/c_cpp_properties.json
