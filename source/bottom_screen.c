@@ -22,6 +22,5 @@ void Bottom_Tick(){
     C2D_SceneBegin(bottom);
 
     C2D_DrawText(&testing_text_bottom, C2D_WithColor, 100, 120, 1.0f, 1.0f, 1.0f, Colors[CLR_BLACK]);
-
-    C3D_FrameEnd(0);
+    //frame is ended once in main, after all screens have drawn
 }

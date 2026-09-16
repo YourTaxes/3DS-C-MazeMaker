@@ -21,6 +21,8 @@ int main(int argc, char **argv)
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();
 
+	romfsInit();
+	MakeFont();
 
 	#ifdef TOP
 		Init_Top();
@@ -32,8 +34,7 @@ int main(int argc, char **argv)
 
 	MakeColors();
 
-	romfsInit();
-	MakeFont();
+	
 
 	//u32 kDownOld = 0, kHeldOld = 0, kUpOld = 0; //In these variables there will be information about keys detected in the previous frame
 
@@ -94,10 +95,8 @@ int main(int argc, char **argv)
 			Bottom_Tick();
 		#endif
 
-
-
-
-		
+		//End the frame once, after every screen has been drawn
+		C3D_FrameEnd(0);
 
 		printConsole(10, 1, "CPU:     %6.2f%%\x1b[K", C3D_GetProcessingTime()*6.0f);
 		printConsole(11, 1, "GPU:     %6.2f%%\x1b[K", C3D_GetDrawingTime()*6.0f);
@@ -108,7 +107,7 @@ int main(int argc, char **argv)
 	}
 
 	// Exit services
-	C2D_FontFree(font);
+	if (font) C2D_FontFree(font);
 	C2D_Fini();
 	C3D_Fini();
 	gfxExit();
