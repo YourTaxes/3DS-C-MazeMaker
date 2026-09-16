@@ -1,10 +1,10 @@
 ### Todo list
 
-## setup for both screens
-* create 2 main files in different folders, one with only the top screen, with:
-    * a top display and bottom terminal
-    * a bottom screen and top terminal
-    * both screens and no terminals (later down the line)
+## setup for both screens - DONE
+* create 2 main files in different folders, one with only the top screen, with: - DONE
+    * a top display and bottom terminal - DONE
+    * a bottom screen and top terminal - DONE
+    * both screens and no terminals (later down the line) - DONE
 
 ## Top screen todos
 * Port over the basic movement for the player - make them controlled by the circle pad and d pad
@@ -21,7 +21,7 @@
 LATER
 * make there a 1 - 200 chance that when you go through a screen transition, you are sent to the egg room. (before this save the location the player would be sent to)
 * import the tree and music
-* make it so that there is an invisible block that disapears like a key beind the tree, so that when you walk behind the tree, the bottom screen says, "you recieved given an egg" on the bottom screen, and the corresponding sound plays.
+* make it so that there is an invisible block that disapears like a key beind the tree, so that when you walk behind the tree, the bottom screen says, "you recieved an egg" on the bottom screen, and the corresponding sound plays.
 and when you walk out of the room, you are transported to the saved location you would be sent to.
 
 
