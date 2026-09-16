@@ -3,6 +3,12 @@
 #include <citro2d.h>
 #include <3ds.h>
 
+enum Game_State{
+    STATE_MAIN_MENU,
+    STATE_MAZE_GAME,
+    STATE_MAZE_MAKER,
+    STATE_SAVE_SELECT
+};
 
 enum Color_Names{
     CLR_RED,
@@ -33,6 +39,12 @@ void MakeFont();
 void printConsole(int line, int col, const char* fmt, ...);
 
 /*
+* prints the current state of the used inputs
+*/
+void printInputs(circlePosition* circle_pad, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld);
+
+
+/*
 * Writes the 32-bit binary representation of value into buff (MSB first).
 * buff must be at least 33 bytes. Returns buff so it can be used inline.
 */
@@ -54,3 +66,4 @@ void MakeText(char* str, C2D_Font *font, C2D_Text* result);
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type);
 
 
+void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);

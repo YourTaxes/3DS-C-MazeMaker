@@ -1,4 +1,7 @@
 #include "util.h"
+#include "top_screen.h"
+
+
 
 
 static C3D_RenderTarget* top;
@@ -28,6 +31,6 @@ void Top_Tick(){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    C2D_DrawText(&testing_text_top, C2D_WithColor, 100, 120, 1.0f, 1.0f, 1.0f, Colors[CLR_BLACK]);
+    DrawTextCentered(&testing_text_top, TOP_SCREEN_WIDTH/2, TOP_SCREEN_HIGHT/2, 1.0f, 1.0f, Colors[CLR_BLACK]);
     //frame is ended once in main, after all screens have drawn
 }

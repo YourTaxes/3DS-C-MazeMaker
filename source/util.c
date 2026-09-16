@@ -22,6 +22,27 @@ void printConsole(int line, int col, const char* fmt, ...)
         vprintf(full, args);
         va_end(args);
     #endif
+    #ifdef BOTH
+        // no on-screen console in the both-screen build; stderr is routed to
+        // the debugger by consoleDebugInit(debugDevice_SVC). line/col ignored.
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+        fputc('\n', stderr); // flush the buffer
+    #endif
+}
+
+void printInputs(circlePosition* circle_pad, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
+    printConsole(3, 1, "Circle pad position: %04d %04d", circle_pad->dx, circle_pad->dy);
+		//print all of the button info
+		char binBuff[33];
+		printConsole(4, 1, "down is 	%s", ToBinary(kDown, binBuff));
+		printConsole(5, 1, "held is 	%s", ToBinary(kHeld, binBuff));
+		printConsole(6, 1, "up is 		%s", ToBinary(kUp, binBuff));
+		printConsole(7, 1, "old down is %s", ToBinary(kDownOld, binBuff));
+		printConsole(8, 1, "old held is %s", ToBinary(kHeldOld, binBuff));
+		printConsole(9, 1, "old up is 	%s", ToBinary(kUpOld, binBuff));
 }
 
 /*
@@ -119,4 +140,14 @@ void MakeFont(){
 	if (!font) {
 		printConsole(26, 1, "Font is NULL");
 	}
+}
+
+void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color){
+    float width, height;
+    C2D_TextGetDimensions(text, scaleX, scaleY, &width, &height);
+
+    float drawX = centerX - (width / 2.0f);
+    float drawY = centerY - (height / 2.0f);
+
+    C2D_DrawText(text, C2D_WithColor, drawX, drawY, 1.0f, scaleX, scaleY, color);
 }

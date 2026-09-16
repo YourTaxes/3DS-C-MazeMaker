@@ -1,4 +1,5 @@
 #include "util.h"
+#include "bottom_screen.h"
 
 
 static C3D_RenderTarget* bottom;
@@ -21,6 +22,6 @@ void Bottom_Tick(){
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
 
-    C2D_DrawText(&testing_text_bottom, C2D_WithColor, 100, 120, 1.0f, 1.0f, 1.0f, Colors[CLR_BLACK]);
+    DrawTextCentered(&testing_text_bottom, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_WIDTH/2, 1.0f, 1.0f, Colors[CLR_BLACK]);
     //frame is ended once in main, after all screens have drawn
 }
