@@ -79,7 +79,7 @@ void MakeText(char* str, C2D_Font *font, C2D_Text* result)
 */
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type) 
 {
-    printConsole(25, 1, "Keyboard Starting");
+    printConsole(24, 1, "Keyboard Starting");
 
 	//init keyboard values
 	static SwkbdState swkbd;

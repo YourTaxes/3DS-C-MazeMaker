@@ -8,7 +8,7 @@ void Init_Bottom()
 {
     #ifndef BOTH
 	//Initialize console on top screen. Using NULL as the second argument tells the console library to use the internal console structure as current one
-	    consoleInit(GFX_BOTTOM, NULL);
+	    consoleInit(GFX_TOP, NULL);
     #endif
 
 	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
@@ -21,7 +21,7 @@ void Bottom_Tick(){
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
 
-    C2D_DrawText(&testing_text_bottom, C2D_WithColor, 200, 120, 1.0f, 1.0f, 1.0f, Colors[CLR_BLACK]);
+    C2D_DrawText(&testing_text_bottom, C2D_WithColor, 100, 120, 1.0f, 1.0f, 1.0f, Colors[CLR_BLACK]);
 
     C3D_FrameEnd(0);
 }

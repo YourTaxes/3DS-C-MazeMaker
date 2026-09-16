@@ -31,8 +31,30 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
-BUILD		:=	build
+#---------------------------------------------------------------------------------
+# VARIANT selects which screen(s) the build targets: top, bottom, or both.
+#   top    -> defines TOP,                  outputs $(BASENAME)-Top.*
+#   bottom -> defines BOTTOM,               outputs $(BASENAME)-Bottom.*
+#   both   -> defines TOP, BOTTOM and BOTH, outputs $(BASENAME).*
+# Use `make top`, `make bottom` or `make both`; plain `make` builds both.
+#---------------------------------------------------------------------------------
+VARIANT		?=	both
+export VARIANT
+
+BASENAME	:=	$(notdir $(CURDIR))
+
+ifeq ($(VARIANT),top)
+TARGET		:=	$(BASENAME)-Top
+SCREEN_DEFS	:=	-DTOP
+else ifeq ($(VARIANT),bottom)
+TARGET		:=	$(BASENAME)-Bottom
+SCREEN_DEFS	:=	-DBOTTOM
+else
+TARGET		:=	$(BASENAME)
+SCREEN_DEFS	:=	-DTOP -DBOTTOM -DBOTH
+endif
+
+BUILD		:=	build/$(VARIANT)
 SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
@@ -54,7 +76,7 @@ CFLAGS	:=	-g -Wall -O2 -mword-relocations \
 			-ffunction-sections \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -D__3DS__
+CFLAGS	+=	$(INCLUDE) -D__3DS__ $(SCREEN_DEFS)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -74,7 +96,7 @@ LIBDIRS	:= $(CTRULIB)
 # no real need to edit anything past this point unless you need to add additional
 # rules for different file extensions
 #---------------------------------------------------------------------------------
-ifneq ($(BUILD),$(notdir $(CURDIR)))
+ifneq ($(notdir $(BUILD)),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
@@ -162,11 +184,23 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean
+.PHONY: all clean top bottom both
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+#---------------------------------------------------------------------------------
+# screen variants
+#---------------------------------------------------------------------------------
+top:
+	@$(MAKE) --no-print-directory VARIANT=top all
+
+bottom:
+	@$(MAKE) --no-print-directory VARIANT=bottom all
+
+both:
+	@$(MAKE) --no-print-directory VARIANT=both all
 
 $(BUILD):
 	@mkdir -p $@
@@ -184,7 +218,7 @@ endif
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(GFXBUILD)
+	@rm -fr build $(foreach t,$(BASENAME) $(BASENAME)-Top $(BASENAME)-Bottom,$(t).3dsx $(t).elf $(t).smdh)
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
