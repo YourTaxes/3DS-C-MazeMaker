@@ -34,7 +34,7 @@ and when you walk out of the room, you are transported to the saved location you
 * make the grid of tiles you can click.
 * make a pallet with 6 buttons with text along the bottom of the maker screen, with 2 arrow buttons and a page number in between. for ease of use, the button_rect objects should be stored in a list of arrays, with each array being 6 long and holding the buttons. this should be hardcoded, and easily be able to be added to. 
 
-Backend
+## Backend
 * make it so that when you compile a level, it coaleses blocks in it's row, or makes the actual count of wall tiles as small as possible. 
 
 
@@ -42,3 +42,4 @@ Notes -
 Planned NEW features
 * corner tiles - this tile is a thin wall across 2 adjacent sides of the wall. 
 * hallway tiles - same as above but with the walls across from each other
+* make the grid bigger, so that the player has more possibilities
