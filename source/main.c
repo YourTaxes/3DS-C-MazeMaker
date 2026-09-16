@@ -65,8 +65,9 @@ int main(int argc, char **argv)
 		//Print the CirclePad position
 		printConsole(3, 1, "%04d %04d", circle_pad.dx, circle_pad.dy);
 
-		printConsole(4, 1, "down is %lu", kDown);
-		printConsole(5, 1, "held is %lu", kHeld);
+		char binBuff[33];
+		printConsole(4, 1, "down is %s", ToBinary(kDown, binBuff));
+		printConsole(5, 1, "held is %s", ToBinary(kHeld, binBuff));
 		
 		
 		//check if player wants to change com speed

@@ -33,6 +33,12 @@ void MakeFont();
 void printConsole(int line, int col, const char* fmt, ...);
 
 /*
+* Writes the 32-bit binary representation of value into buff (MSB first).
+* buff must be at least 33 bytes. Returns buff so it can be used inline.
+*/
+char* ToBinary(u32 value, char* buff);
+
+/*
 * Creates a C2D Text object and puts it in the buffer provided.
 * The string is the source of the text
 * The font is the font used in this text string

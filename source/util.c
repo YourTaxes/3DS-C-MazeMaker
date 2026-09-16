@@ -24,9 +24,21 @@ void printConsole(int line, int col, const char* fmt, ...)
     #endif
 }
 
+/*
+* Writes the 32-bit binary representation of value into buff (MSB first).
+* buff must be at least 33 bytes. Returns buff so it can be used inline.
+*/
+char* ToBinary(u32 value, char* buff)
+{
+    for (int i = 0; i < 32; i++)
+        buff[i] = (value & (1u << (31 - i))) ? '1' : '0';
+    buff[32] = '\0';
+    return buff;
+}
+
 
 /*
-* creates the colors for the color array 
+* creates the colors for the color array
 */
 void MakeColors(){
     Colors[CLR_RED] = C2D_Color32(255, 0, 0, 255);
