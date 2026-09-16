@@ -41,9 +41,9 @@ GFXBUILD	:=	$(BUILD)
 ROMFS		:=	romfs
 #GFXBUILD	:=	$(ROMFS)/gfx
 
-APP_TITLE	:= "Maze Maker"
-APP_AUTHOR	:= "Finnegan McDevitt"
-APP_DESCRIPTION	:= "Full game engine with player and editor for simple"
+APP_TITLE	:= Maze Maker
+APP_AUTHOR	:= Finnegan McDevitt
+APP_DESCRIPTION	:= Full game engine with player and editor for simple
 
 #---------------------------------------------------------------------------------
 # options for code generation
