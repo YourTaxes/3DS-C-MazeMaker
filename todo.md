@@ -6,6 +6,19 @@
     * a bottom screen and top terminal - DONE
     * both screens and no terminals (later down the line) - DONE
 
+
+## logical setup
+* for each scene state, allocate the buffers for each text object when you enter the scene, and free/delete them when you leave them.
+* on inital boot, initalize and coalesce the level 0, as that is the default. 
+
+## level select
+* accessable from main menu, and the selected level is the one that is used in the mazemaker and the player.
+* add a button to save the current level that saves the current RAW level layout to the selected slot.
+* add seperate option to copy data between slots, and to clear them.
+* when a level is selected that is not the current, the previously selected level is entirely freed, and then the new one is loaded completely. 
+
+
+
 ## Top screen todos
 * Port over the basic movement for the player - make them controlled by the circle pad and d pad
 * make player colision with "colide obj" struct, which should hold all of the information needed for each of the rectangles.
@@ -27,6 +40,7 @@ and when you walk out of the room, you are transported to the saved location you
 
 
 ## Bottom screen todos
+* DOWNLOAD ASPRITE TO CREATE UI
 * make a struct called "button_rect", that stores a rectangle, and is added to a hash set, and every frame this set is looped through, and each one is checked to see if it is being touched.
 * make an enum called "Screen State" which stores the current state of the bottom screen, either "MAIN_MENU", "MAKER", "SELECT_MAP", and "PLAYING"
 * make a map select screen, which only allows you to choose beteween 4 slots, which are stored in your save data

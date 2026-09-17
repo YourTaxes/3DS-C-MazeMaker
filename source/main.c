@@ -7,6 +7,7 @@
 
 
 //global variables
+Game_State state = STATE_DEBUG;
 
 //player positions
 
@@ -72,10 +73,13 @@ int main(int argc, char **argv)
 		//Read the CirclePad position
 		hidCircleRead(&circle_pad);
 
+		float normX = 0.0f;
+		float normY = 0.0f;
+		normalizeCirclePad(&circle_pad, &normX, &normY);
+
 		if (kDown & KEY_X){
-			printInputs(&circle_pad, kDown, kHeld, kUp, kDownOld, kHeldOld, kUpOld);
+			printInputs(normX, normY, kDown, kHeld, kUp, kDownOld, kHeldOld, kUpOld);
 		}
-		//Print the CirclePad position
 		
 
 		
@@ -87,24 +91,26 @@ int main(int argc, char **argv)
 			
 			if (GetKeyboard(buff, 20, "Testing Keyboard", SWKBD_TYPE_NORMAL)){
 				printConsole(25, 1, "%s", buff);
-			} else {
-				#ifndef BOTH
-					printConsole(25, 1, "                    ");
-				#endif
-			}
+			} 
 		}
+
+		handleStateSwitch(&kDown);
+
+		
 		
 		
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 		
 		#ifdef TOP
-			Top_Tick();
+			Top_Tick(&state);
 		#endif
 
 		#ifdef BOTTOM
-			Bottom_Tick();
+			Bottom_Tick(&state);
 		#endif
+
+		
 
 		//End the frame once, after every screen has been drawn
 		C3D_FrameEnd(0);
@@ -125,4 +131,29 @@ int main(int argc, char **argv)
 	C3D_Fini();
 	gfxExit();
 	return 0;
+}
+
+//unclear if all state switching should be done by the screens or by centeral logic
+void handleStateSwitch(u32* kDown){
+	//State switching logic
+	switch (state){
+		case STATE_DEBUG:
+			if (*kDown & KEY_A){
+				printConsole(1, 1, "A pressed on debug state");
+				state = STATE_MAZE_GAME;
+			}
+		case STATE_MAIN_MENU:
+			//from the main menu, if the player presses A or , they go to the mazemaker game
+		case STATE_MAZE_GAME:
+			//if the player hits the button to stop,
+			//then they will stop playing and go to the menu
+		case STATE_MAZE_MAKER:
+			//maze maker stuff
+		case STATE_SAVE_SELECT:
+			//save select
+		case STATE_OOB:
+			//press A to go back to main menu
+		case STATE_you_recieved_the_egg:
+			//him
+	};
 }

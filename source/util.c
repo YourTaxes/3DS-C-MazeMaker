@@ -33,8 +33,33 @@ void printConsole(int line, int col, const char* fmt, ...)
     #endif
 }
 
-void printInputs(circlePosition* circle_pad, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
-    printConsole(3, 1, "Circle pad position: %04d %04d", circle_pad->dx, circle_pad->dy);
+void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
+    //compute magnatude
+    float rawX = (float)cpad->dx;
+    float rawY = (float)cpad->dy;
+    float magnatude = sqrtf(rawX * rawX + rawY * rawY);
+
+    //apply deadzone
+    if (magnatude > CPAD_DEADZONE) {
+        float dirX = rawX / magnatude;
+        float dirY = rawY / magnatude;
+
+        //clamp the magnatude to the radius and scale to 1.0 to 0.0
+        if (magnatude > CPAD_MAX_RADIUS) {
+            magnatude = CPAD_MAX_RADIUS;
+        }
+
+        float normalizedMagnatude = (magnatude - CPAD_DEADZONE) / (CPAD_MAX_RADIUS - CPAD_DEADZONE);
+
+        //set the actual values 
+        *normX = dirX * normalizedMagnatude;
+        *normY = dirY * normalizedMagnatude;
+    }
+}
+
+
+void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
+    printConsole(3, 1, "Circle pad position: %.2f %.2f", normX, normY);
 		//print all of the button info
 		char binBuff[33];
 		printConsole(4, 1, "down is 	%s", ToBinary(kDown, binBuff));

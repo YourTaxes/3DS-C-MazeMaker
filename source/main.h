@@ -14,3 +14,6 @@
 
 
 
+int main(int argc, char **argv);
+
+void handleStateSwitch(u32* kDown);

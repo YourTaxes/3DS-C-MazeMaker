@@ -3,14 +3,26 @@
 #include <citro2d.h>
 #include <3ds.h>
 
-enum Game_State{
+#define CPAD_MAX_RADIUS 150.0f
+#define CPAD_DEADZONE 15.0f
+
+typedef enum{
     STATE_MAIN_MENU,
     STATE_MAZE_GAME,
     STATE_MAZE_MAKER,
-    STATE_SAVE_SELECT
-};
+    STATE_SAVE_SELECT,
+    STATE_OOB, //out of bounds
+    //STATE_there_is_a_man_here,
+    //STATE_he_is_behind_the_tree,
+    //STATE_he_offers_you_something,
+    //STATE_you_reach_out_your_hand,
+    STATE_you_recieved_the_egg,
+    //STATE_the_man_smiles,
+    //STATE_there_is_no_longer_a_man_behind_the_tree,
+    STATE_DEBUG
+} Game_State;
 
-enum Color_Names{
+typedef enum{
     CLR_RED,
     CLR_ORANGE, 
     CLR_YELLOW,
@@ -22,7 +34,7 @@ enum Color_Names{
     CLR_DK_GRAY,
     CLR_BLACK,
     CLR_WHITE
-};
+} Color_Names;
 
 extern u32 Colors[11];
 
@@ -39,9 +51,15 @@ void MakeFont();
 void printConsole(int line, int col, const char* fmt, ...);
 
 /*
+* normalies the circle pad's inputs for use with the player controller
+* outputs through normX and normY
+*/
+void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY);
+
+/*
 * prints the current state of the used inputs
 */
-void printInputs(circlePosition* circle_pad, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld);
+void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld);
 
 
 /*
