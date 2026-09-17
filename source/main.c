@@ -17,11 +17,9 @@ int main(int argc, char **argv)
 	// Initialize services
 	gfxInitDefault();
 
-	#ifdef BOTH
-		// no on-screen console in the both-screen build, so route stderr
-		// to the attached debugger (GDB / Azahar log) via svcOutputDebugString
-		consoleDebugInit(debugDevice_SVC);
-	#endif
+	// no on-screen console (both screens are used for rendering), so route
+	// stderr to the attached debugger (GDB / Azahar log) via svcOutputDebugString
+	consoleDebugInit(debugDevice_SVC);
 
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
@@ -30,13 +28,8 @@ int main(int argc, char **argv)
 	romfsInit();
 	MakeFont();
 
-	#ifdef TOP
-		Init_Top();
-	#endif
-
-	#ifdef BOTTOM
-		Init_Bottom();
-	#endif
+	Init_Top();
+	Init_Bottom();
 
 	MakeColors();
 
@@ -102,15 +95,9 @@ int main(int argc, char **argv)
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 		
-		#ifdef TOP
-			Top_Tick(&state);
-		#endif
+		Top_Tick(&state);
+		Bottom_Tick(&state);
 
-		#ifdef BOTTOM
-			Bottom_Tick(&state);
-		#endif
-
-		
 
 		//End the frame once, after every screen has been drawn
 		C3D_FrameEnd(0);

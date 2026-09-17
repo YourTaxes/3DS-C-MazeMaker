@@ -2,8 +2,8 @@
 # Start arm-none-eabi-gdb on the game's .elf and connect it to Azahar's GDB
 # stub (start Azahar first with ./runAzahar.sh gdb).
 #
-# Usage: ./runGdb.sh [top|bottom|both|<file.elf>]
-#   top/bottom/both  which build's symbols to load (default: both)
+# Usage: ./runGdb.sh [<file.elf>]
+#   <file.elf>  which .elf's symbols to load (default: the project's build)
 #
 # Env overrides: GDB_PORT (default 24689, matches the Azahar config)
 
@@ -15,19 +15,17 @@ GDB_PORT="${GDB_PORT:-24689}"
 
 ELF="$DIR/$BASENAME.elf"
 
-case "${1:-both}" in
-	top)    ELF="$DIR/$BASENAME-Top.elf" ;;
-	bottom) ELF="$DIR/$BASENAME-Bottom.elf" ;;
-	both)   ELF="$DIR/$BASENAME.elf" ;;
+case "${1:-}" in
+	"")     ;;
 	*.elf)  ELF="$1" ;;
 	*)
-		echo "Usage: $0 [top|bottom|both|<file.elf>]" >&2
+		echo "Usage: $0 [<file.elf>]" >&2
 		exit 1
 		;;
 esac
 
 if [ ! -f "$ELF" ]; then
-	echo "error: $ELF not found (run ./allMake.sh first)" >&2
+	echo "error: $ELF not found (run make first)" >&2
 	exit 1
 fi
 

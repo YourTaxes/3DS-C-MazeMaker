@@ -6,11 +6,11 @@
 # emulation etc.), which detaches it from this terminal, so the log is
 # followed from azahar_log.txt instead. Ctrl-C stops following and quits Azahar.
 #
-# Usage: ./runAzahar.sh [top|bottom|both|<file.3dsx>] [gdb]
-#   top/bottom/both  which build to run (default: both)
-#   gdb              launch with -g <port> so Azahar starts its GDB stub and
-#                    pauses the game at boot until ./runGdb.sh connects.
-#                    Without it the stub is off.
+# Usage: ./runAzahar.sh [<file.3dsx>] [gdb]
+#   <file.3dsx>  which .3dsx to run (default: the project's build)
+#   gdb          launch with -g <port> so Azahar starts its GDB stub and
+#                pauses the game at boot until ./runGdb.sh connects.
+#                Without it the stub is off.
 #
 # Env overrides: AZAHAR_APP (path to Azahar.app), AZAHAR_CONFIG (qt-config.ini),
 #                AZAHAR_LOG (azahar_log.txt), GDB_PORT (default 24689)
@@ -23,20 +23,17 @@ GDB=false
 
 for arg in "$@"; do
 	case "$arg" in
-		top)    ROM="$DIR/$BASENAME-Top.3dsx" ;;
-		bottom) ROM="$DIR/$BASENAME-Bottom.3dsx" ;;
-		both)   ROM="$DIR/$BASENAME.3dsx" ;;
 		*.3dsx) ROM="$arg" ;;
 		gdb)    GDB=true ;;
 		*)
-			echo "Usage: $0 [top|bottom|both|<file.3dsx>] [gdb]" >&2
+			echo "Usage: $0 [<file.3dsx>] [gdb]" >&2
 			exit 1
 			;;
 	esac
 done
 
 if [ ! -f "$ROM" ]; then
-	echo "error: $ROM not found (run ./allMake.sh first)" >&2
+	echo "error: $ROM not found (run make first)" >&2
 	exit 1
 fi
 

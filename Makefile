@@ -31,30 +31,8 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------
-# VARIANT selects which screen(s) the build targets: top, bottom, or both.
-#   top    -> defines TOP,                  outputs $(BASENAME)-Top.*
-#   bottom -> defines BOTTOM,               outputs $(BASENAME)-Bottom.*
-#   both   -> defines TOP, BOTTOM and BOTH, outputs $(BASENAME).*
-# Use `make top`, `make bottom` or `make both`; plain `make` builds both.
-#---------------------------------------------------------------------------------
-VARIANT		?=	both
-export VARIANT
-
-BASENAME	:=	$(notdir $(CURDIR))
-
-ifeq ($(VARIANT),top)
-TARGET		:=	$(BASENAME)-Top
-SCREEN_DEFS	:=	-DTOP
-else ifeq ($(VARIANT),bottom)
-TARGET		:=	$(BASENAME)-Bottom
-SCREEN_DEFS	:=	-DBOTTOM
-else
-TARGET		:=	$(BASENAME)
-SCREEN_DEFS	:=	-DTOP -DBOTTOM -DBOTH
-endif
-
-BUILD		:=	build/$(VARIANT)
+TARGET		:=	$(notdir $(CURDIR))
+BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
@@ -76,7 +54,7 @@ CFLAGS	:=	-g -Wall -O2 -mword-relocations \
 			-ffunction-sections \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -D__3DS__ $(SCREEN_DEFS)
+CFLAGS	+=	$(INCLUDE) -D__3DS__
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -184,23 +162,11 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean top bottom both
+.PHONY: all clean
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-
-#---------------------------------------------------------------------------------
-# screen variants
-#---------------------------------------------------------------------------------
-top:
-	@$(MAKE) --no-print-directory VARIANT=top all
-
-bottom:
-	@$(MAKE) --no-print-directory VARIANT=bottom all
-
-both:
-	@$(MAKE) --no-print-directory VARIANT=both all
 
 $(BUILD):
 	@mkdir -p $@
@@ -218,7 +184,7 @@ endif
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr build $(foreach t,$(BASENAME) $(BASENAME)-Top $(BASENAME)-Bottom,$(t).3dsx $(t).elf $(t).smdh)
+	@rm -fr $(BUILD) $(TARGET).3dsx $(TARGET).elf $(TARGET).smdh
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s

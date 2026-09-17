@@ -6,31 +6,18 @@ u32 Colors[11];
 C2D_Font font;
 
 /*
-* printf to the console at a given line and column (1-based).
-* Everything after col is passed straight to printf.
-* The cursor-position prefix and the caller's format are joined into
-* one string so the whole thing goes out in a single printf call.
+* printf a debug line. Everything after col is passed straight to printf.
+* There is no on-screen console; stderr is routed to the debugger
+* (GDB / Azahar log) by consoleDebugInit(debugDevice_SVC), so line/col
+* are ignored.
 */
 void printConsole(int line, int col, const char* fmt, ...)
 {
-    #ifndef BOTH
-        char full[256];
-        snprintf(full, sizeof(full), "\x1b[%d;%dH%s", line, col, fmt);
-
-        va_list args;
-        va_start(args, fmt);
-        vprintf(full, args);
-        va_end(args);
-    #endif
-    #ifdef BOTH
-        // no on-screen console in the both-screen build; stderr is routed to
-        // the debugger by consoleDebugInit(debugDevice_SVC). line/col ignored.
-        va_list args;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-        fputc('\n', stderr); // flush the buffer
-    #endif
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fputc('\n', stderr); // flush the buffer
 }
 
 void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {

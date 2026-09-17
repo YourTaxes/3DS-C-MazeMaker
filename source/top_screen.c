@@ -9,11 +9,6 @@ static C2D_Text testing_text_top;
 
 void Init_Top()
 {
-    #ifndef BOTH
-	//Initialize console on top screen. Using NULL as the second argument tells the console library to use the internal console structure as current one
-	    consoleInit(GFX_BOTTOM, NULL);
-    #endif
-
 	//TODO - make second render target that is the right eye, 
 	//and shift all of the sprites in the left screen right slightly, 
 	//and the right screen left slightly.
