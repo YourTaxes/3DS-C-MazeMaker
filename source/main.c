@@ -147,6 +147,7 @@ void handleStateSwitch(u32* kDown){
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
 			//then they will stop playing and go to the menu
+			//this state includes 2 substates which are the win and lose screens.
 		case STATE_MAZE_MAKER:
 			//maze maker stuff
 		case STATE_SAVE_SELECT:
