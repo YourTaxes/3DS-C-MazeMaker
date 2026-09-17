@@ -36,6 +36,14 @@ typedef enum{
     CLR_WHITE
 } Color_Names;
 
+typedef struct{
+    u32 Color;
+    float x;
+    float y;
+    float width;
+    float height;
+} Rect;
+
 extern u32 Colors[11];
 
 void MakeColors();
