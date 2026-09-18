@@ -40,6 +40,7 @@ typedef struct{
     u32 Color;
     float x;
     float y;
+    float z;
     float width;
     float height;
 } Rect;
@@ -93,3 +94,5 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type);
 
 
 void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
+
+void DrawRect(Rect* rect);

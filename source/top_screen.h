@@ -14,4 +14,4 @@
 
 void Init_Top();
 
-void Top_Tick(Game_State* state); 
+void Top_Tick(Game_State* state, C3D_RenderTarget* top);

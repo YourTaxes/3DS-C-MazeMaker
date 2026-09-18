@@ -36,12 +36,12 @@ typedef struct{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
     double bestTime;
-} Raw_level;
+} Raw_Level;
 
 //The structure for the save file.
 //this is the the struct that is written to the save file
 typedef struct {
-    Raw_level Levels[LEVEL_SLOT_CNT];
+    Raw_Level Levels[LEVEL_SLOT_CNT];
 } Save_File;
 
 

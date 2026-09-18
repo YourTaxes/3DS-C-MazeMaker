@@ -6,9 +6,9 @@
 #include "level_file.h"
 #include "top_screen.h"
 #include "bottom_screen.h"
+#include "MainMenu.h"
 
 
 
 int main(int argc, char **argv);
 
-void handleStateSwitch(u32* kDown);

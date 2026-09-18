@@ -6,4 +6,4 @@
 
 void Init_Bottom();
 
-void Bottom_Tick(Game_State* state);
+void Bottom_Tick(Game_State* state, C3D_RenderTarget* bottom);

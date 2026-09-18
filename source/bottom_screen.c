@@ -7,12 +7,12 @@ static C2D_Text testing_text_bottom;
 
 void Init_Bottom()
 {
-	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+	
 
     MakeText("This is the bottom screen", &font, &testing_text_bottom);
 }
 
-void Bottom_Tick(Game_State* state){
+void Bottom_Tick(Game_State* state, C3D_RenderTarget* bottom){
     //begin the frame
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);

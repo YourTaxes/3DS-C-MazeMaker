@@ -163,3 +163,7 @@ void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX
 
     C2D_DrawText(text, C2D_WithColor, drawX, drawY, 1.0f, scaleX, scaleY, color);
 }
+
+void DrawRect(Rect* rect){
+    C2D_DrawRectSolid(rect->x, rect->y, rect->z, rect->width, rect->height, rect->Color);
+}

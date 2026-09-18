@@ -4,7 +4,6 @@
 
 
 
-static C3D_RenderTarget* top;
 static C2D_Text testing_text_top;
 
 void Init_Top()
@@ -13,14 +12,14 @@ void Init_Top()
 	//and shift all of the sprites in the left screen right slightly, 
 	//and the right screen left slightly.
 	//USE THE THINGS IN gfx.h 
-	top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+	
 
 
 
     MakeText("This is the top screen", &font, &testing_text_top);
 }
 
-void Top_Tick(Game_State* state){
+void Top_Tick(Game_State* state, C3D_RenderTarget* top){
     //begin the frame
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);

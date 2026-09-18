@@ -54,7 +54,6 @@ This file will hold only the main loop for the game. It will do this
 these files all should follow a similar layout, with these steps and functions
 * STATIC global variables for each file, so that the values are shared between the functions without having to go through the main loop. 
     * INCREDIBLY IMPORTANT: ALL OF THESE STATIC VARIABLES (with the exception of datatypes smaller than 8 bytes) MUST BE POINTERS, AND IN state_init THEY ARE ALL SET TO MALLOCED REGIONS OF THE RIGHT SIZE. this ensures that when the state is not active, the memory usage is minimal.
-    * global static bool "State_Switches" for if the actions this frame cause a state switch, initalized to false at start
     * global static GameState "Next_State" for what state the game will be set to next, initalized to -1 at start, and only set to a value when the variable above is set to true
     * need to make a rectangle struct (holds only float x, float y, float width, float height, u32 Color), and each rectangle (or set of rectangles) will be a static global variables.
     * static C2D_Text* and C2D_TextBuf* for each line of text on screen
@@ -64,10 +63,11 @@ these files all should follow a similar layout, with these steps and functions
         const char* indicator = C2D_TextFontParse(result, *font, buff, str);
         C2D_TextOptimize(result);
 
-* bool state_logic() - this is called in the main loop right after checking inputs. this function will determine what needs to be done and calculate the values, doing things such as moving the player and checking colision, or determining what tiles were clicked on and determining what should be done with that.
-    * returns the State Switches Boolean, so the main loop knows weather or not to do the state switching code. 
+* void state_logic(bool* stateSwitch) - this is called in the main loop right after checking inputs. this function will determine what needs to be done and calculate the values, doing things such as moving the player and checking colision, or determining what tiles were clicked on and determining what should be done with that.
+    * If the actions of this frame cause the state to switch, then set stateswitch to true. 
+    * right after calling init, set stateswitch to false
 
-* state_init() - this is called inside of the state_logic function, but only on the frame where switched_state is true, this should be the first thing that is done in the frame logic code.
+* state_init(bool* stateSwitch) - this is called inside of the state_logic function, but only on the frame where switched_state is true, this should be the first thing that is done in the frame logic code.
     * this initalizes all of the variables
     * IMPORTANT - THIS INITALIZES ALL OF THE GLOBAL VALUES FOR THE FILE BY MALLOCING THEM. DON'T SCREW THIS UP. Also will copy neccicary data into those malloced instances. 
     * this loads the neccicary data into the correct places
@@ -90,21 +90,20 @@ this file will load the currently selected save slot, and allow for switching to
 
     
 
-* bool MainMenu_logic(u32 kDown, bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLvl):
-    * calls MainMenu_Init(Rebuild_Level, rawLvl, builtLvl)
+* void MainMenu_logic(bool* stateSwitch, u32 kDown, bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLvl):
+    * if stateswitch is true, calls MainMenu_Init(Rebuild_Level, rawLvl, builtLvl), then sets stateswitch to false
     * checks if the player pressed or touched the a button to start the maze game, if they did, set "StateSwitch" to true, and set "NextState" to STATE_MAZE_GAME.
     * check if the player pressed or touched the button to go to the maze maker, if they did, set "StateSwitch" to true, and set "NextState" to STATE_MAZE_MAKER.
     *check if the player pressed or touched the button to go to the level select, if they did, set "StateSwitch" to true and set "NextState" to STATE_SAVE_SELECT.
     * return StateSwitch
 
 * MainMenu_Init(bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLevel):
-    * initalizes stateswitch to false
     * sets nextState to malloc(sizeof(Game_State))
     * create all of the text buffs as explained above
     * if Rebuild_Level is true, then rebuld the Built_Level from the Raw_Level. 
         * have not determined the logic for this yet, but it should be done here.
 
-* MainMenu_Draw(): Probably the first thing to implement. draws everything for the main menu.
+* MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom): Probably the first thing to implement. draws everything for the main menu.
     * Use a custom Rectangle struct to hold the values for the buttons.
     * top screen is Game title, and my name below it. 
     * bottom screen is split into 4 horizontal spaces, with the top 3 being buttons to switch states and the last being a message to press start to exit.
