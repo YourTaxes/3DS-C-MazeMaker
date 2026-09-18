@@ -11,6 +11,7 @@ C2D_Font font;
 * (GDB / Azahar log) by consoleDebugInit(debugDevice_SVC), so line/col
 * are ignored.
 */
+/*
 void printConsole(int line, int col, const char* fmt, ...)
 {
     va_list args;
@@ -19,6 +20,7 @@ void printConsole(int line, int col, const char* fmt, ...)
     va_end(args);
     fputc('\n', stderr); // flush the buffer
 }
+*/
 
 void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
     //compute magnatude
@@ -46,15 +48,15 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
 
 
 void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
-    printConsole(3, 1, "Circle pad position: %.2f %.2f", normX, normY);
+    printf("Circle pad position: %.2f %.2f", normX, normY);
 		//print all of the button info
 		char binBuff[33];
-		printConsole(4, 1, "down is 	%s", ToBinary(kDown, binBuff));
-		printConsole(5, 1, "held is 	%s", ToBinary(kHeld, binBuff));
-		printConsole(6, 1, "up is 		%s", ToBinary(kUp, binBuff));
-		printConsole(7, 1, "old down is %s", ToBinary(kDownOld, binBuff));
-		printConsole(8, 1, "old held is %s", ToBinary(kHeldOld, binBuff));
-		printConsole(9, 1, "old up is 	%s", ToBinary(kUpOld, binBuff));
+		printf("down is 	%s", ToBinary(kDown, binBuff));
+		printf("held is 	%s", ToBinary(kHeld, binBuff));
+		printf("up is 		%s", ToBinary(kUp, binBuff));
+		printf("old down is %s", ToBinary(kDownOld, binBuff));
+		printf("old held is %s", ToBinary(kHeldOld, binBuff));
+		printf("old up is 	%s", ToBinary(kUpOld, binBuff));
 }
 
 /*
@@ -100,17 +102,17 @@ void MakeText(char* str, C2D_Font *font, C2D_Text* result)
 	
 	if(!*font)
 	{
-        printConsole(14, 1, "No Font");
+        printf("No Font");
 	} else {
-        printConsole(14, 1, "Font");
+        printf("Font");
 	}
-    printConsole(14, 9, "Char Array = %s", str);
+    printf("Char Array = %s", str);
     if (indicator == NULL) {
-        printConsole(15, 1, "Indicator is Null");
+        printf("Indicator is Null");
     } else if (*indicator == '\0') {
-        printConsole(15, 1, "Indicator is null character");
+        printf("Indicator is null character");
     } else {
-        printConsole(15, 1, "Indicator is %c", *indicator);
+        printf("Indicator is %c", *indicator);
     }
 	return;
 	
@@ -124,7 +126,7 @@ void MakeText(char* str, C2D_Font *font, C2D_Text* result)
 */
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type) 
 {
-    printConsole(24, 1, "Keyboard Starting");
+    printf("Keyboard Starting");
 
 	//init keyboard values
 	static SwkbdState swkbd;
@@ -150,7 +152,7 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type)
 void MakeFont(){
     font = C2D_FontLoad("romfs:/cbf_std.bcfnt");
 	if (!font) {
-		printConsole(26, 1, "Font is NULL");
+		printf("Font is NULL");
 	}
 }
 

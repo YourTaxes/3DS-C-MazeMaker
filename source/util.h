@@ -57,7 +57,7 @@ void MakeFont();
 * printf to the console at a given line and column (1-based).
 * Everything after col is passed straight to printf.
 */
-void printConsole(int line, int col, const char* fmt, ...);
+//void printConsole(int line, int col, const char* fmt, ...);
 
 /*
 * normalies the circle pad's inputs for use with the player controller

@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 
 	u32 kDown = 0, kHeld = 0, kUp = 0, kDownOld = 0, kHeldOld = 0, kUpOld = 0; //In these variables there will be information about keys detected in the previous frame
 
-	printConsole(27, 1, "By Finnegan McDevitt");
+	printf("By Finnegan McDevitt");
 
 
 
@@ -96,19 +96,19 @@ int main(int argc, char **argv)
 			char buff[20];
 			
 			if (GetKeyboard(buff, 20, "Testing Keyboard", SWKBD_TYPE_NORMAL)){
-				printConsole(25, 1, "%s", buff);
+				printf("%s", buff);
 			} 
 		}
 
 		//TEMP TESTING
 		if (kDown & KEY_A){
-			printConsole(1, 1, "A pressed on debug state");
+			printf("A pressed on debug state");
 			State = STATE_MAZE_GAME;
 			StateSwitch = true;
 		}
 
 		if (StateSwitch == true){
-			printConsole(26, 1, "state switch is true");
+			printf("state switch is true");
 		}
 
 
@@ -189,9 +189,9 @@ int main(int argc, char **argv)
 		};
 
 		if (kDown & KEY_Y){
-			printConsole(10, 1, "CPU:     %6.2f%%\x1b[K", C3D_GetProcessingTime()*6.0f);
-			printConsole(11, 1, "GPU:     %6.2f%%\x1b[K", C3D_GetDrawingTime()*6.0f);
-			printConsole(12, 1, "CmdBuf:  %6.2f%%\x1b[K", C3D_GetCmdBufUsage()*100.0f);
+			printf("CPU:     %6.2f%%\x1b[K", C3D_GetProcessingTime()*6.0f);
+			printf("GPU:     %6.2f%%\x1b[K", C3D_GetDrawingTime()*6.0f);
+			printf("CmdBuf:  %6.2f%%\x1b[K", C3D_GetCmdBufUsage()*100.0f);
 		}
 
 		//Wait for VBlank
