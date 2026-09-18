@@ -7,6 +7,7 @@
 #include "top_screen.h"
 #include "bottom_screen.h"
 #include "MainMenu.h"
+#include "Debug_state.h"
 
 
 

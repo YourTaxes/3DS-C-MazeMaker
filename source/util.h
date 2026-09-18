@@ -6,6 +6,15 @@
 #define CPAD_MAX_RADIUS 150.0f
 #define CPAD_DEADZONE 15.0f
 
+#define TOP_SCREEN_WIDTH 400
+#define TOP_SCREEN_HIGHT 240
+
+#define TILE_SIZE 16
+#define TILES_PER_SCREEN 375
+
+#define BOTTOM_SCREEN_WIDTH 320
+#define BOTTOM_SCREEN_HIGHT 240
+
 typedef enum{
     STATE_MAIN_MENU,
     STATE_MAZE_GAME,
@@ -83,7 +92,7 @@ char* ToBinary(u32 value, char* buff);
 * The font is the font used in this text string
 * the 
 */
-void MakeText(char* str, C2D_Font *font, C2D_Text* result);
+void MakeText(char* str, C2D_Text* result);
 
 /*
 * returns true if the user ended the session with the OK button

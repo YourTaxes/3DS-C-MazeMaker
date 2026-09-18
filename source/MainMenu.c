@@ -11,6 +11,7 @@ static Rect* lvlSelectButton;
 static Rect* quitButton;
 
 void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool rebuildLvl){
+    printf("init Main Menu");
     nextState = malloc(sizeof(nextState));
     
     startMazeButton = malloc(sizeof(Rect));

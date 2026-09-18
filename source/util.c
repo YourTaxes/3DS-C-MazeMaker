@@ -93,14 +93,14 @@ void MakeColors(){
 
 
 //needs complete reworking due to memory leakage
-void MakeText(char* str, C2D_Font *font, C2D_Text* result)
+void MakeText(char* str, C2D_Text* result)
 {
     C2D_TextBuf buff = C2D_TextBufNew(strlen(str));
 	C2D_TextBufClear(buff);
-	const char* indicator = C2D_TextFontParse(result, *font, buff, str);
+	const char* indicator = C2D_TextFontParse(result, font, buff, str);
 	C2D_TextOptimize(result);
 	
-	if(!*font)
+	if(!font)
 	{
         printf("No Font");
 	} else {
