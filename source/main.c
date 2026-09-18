@@ -7,7 +7,7 @@
 
 
 //global variables
-Game_State State = STATE_MAIN_MENU;
+Game_State State = STATE_DEBUG;
 bool StateSwitch = true;
 bool RebuildLevel = true;
 Raw_level rawLvl;
