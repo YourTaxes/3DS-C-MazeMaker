@@ -7,7 +7,13 @@
 
 
 //global variables
-Game_State state = STATE_DEBUG;
+Game_State State = STATE_MAIN_MENU;
+bool StateSwitch = true;
+bool RebuildLevel = true;
+Raw_level rawLvl;
+Built_Level builtLvl;
+
+
 
 //player positions
 
@@ -95,8 +101,8 @@ int main(int argc, char **argv)
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 		
-		Top_Tick(&state);
-		Bottom_Tick(&state);
+		Top_Tick(&State);
+		Bottom_Tick(&State);
 
 
 		//End the frame once, after every screen has been drawn
@@ -123,11 +129,11 @@ int main(int argc, char **argv)
 //unclear if all state switching should be done by the screens or by centeral logic
 void handleStateSwitch(u32* kDown){
 	//State switching logic
-	switch (state){
+	switch (State){
 		case STATE_DEBUG:
 			if (*kDown & KEY_A){
 				printConsole(1, 1, "A pressed on debug state");
-				state = STATE_MAZE_GAME;
+				State = STATE_MAZE_GAME;
 			}
 		case STATE_MAIN_MENU:
 			//from the main menu, if the player presses A or , they go to the mazemaker game

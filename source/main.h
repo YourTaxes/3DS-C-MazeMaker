@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "util.h"
+#include "level_file.h"
 #include "top_screen.h"
 #include "bottom_screen.h"
 
