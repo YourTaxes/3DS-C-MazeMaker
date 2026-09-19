@@ -63,10 +63,10 @@ extern C2D_Font font;
 void MakeFont();
 
 /*
-* printf to the console at a given line and column (1-based).
-* Everything after col is passed straight to printf.
+* printf a debug line to the debugger (stderr). Everything is passed
+* straight to printf; a newline is appended.
 */
-//void printConsole(int line, int col, const char* fmt, ...);
+void printConsole(const char* fmt, ...);
 
 /*
 * normalies the circle pad's inputs for use with the player controller

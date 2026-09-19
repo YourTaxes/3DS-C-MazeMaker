@@ -6,13 +6,11 @@ u32 Colors[11];
 C2D_Font font;
 
 /*
-* printf a debug line. Everything after col is passed straight to printf.
+* printf a debug line. Everything is passed straight to printf.
 * There is no on-screen console; stderr is routed to the debugger
-* (GDB / Azahar log) by consoleDebugInit(debugDevice_SVC), so line/col
-* are ignored.
+* (GDB / Azahar log) by consoleDebugInit(debugDevice_SVC).
 */
-/*
-void printConsole(int line, int col, const char* fmt, ...)
+void printConsole(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -20,7 +18,6 @@ void printConsole(int line, int col, const char* fmt, ...)
     va_end(args);
     fputc('\n', stderr); // flush the buffer
 }
-*/
 
 void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
     //compute magnatude
@@ -48,15 +45,15 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
 
 
 void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
-    printf("Circle pad position: %.2f %.2f", normX, normY);
+    printConsole("Circle pad position: %.2f %.2f", normX, normY);
 		//print all of the button info
 		char binBuff[33];
-		printf("down is 	%s", ToBinary(kDown, binBuff));
-		printf("held is 	%s", ToBinary(kHeld, binBuff));
-		printf("up is 		%s", ToBinary(kUp, binBuff));
-		printf("old down is %s", ToBinary(kDownOld, binBuff));
-		printf("old held is %s", ToBinary(kHeldOld, binBuff));
-		printf("old up is 	%s", ToBinary(kUpOld, binBuff));
+		printConsole("down is 	%s", ToBinary(kDown, binBuff));
+		printConsole("held is 	%s", ToBinary(kHeld, binBuff));
+		printConsole("up is 		%s", ToBinary(kUp, binBuff));
+		printConsole("old down is %s", ToBinary(kDownOld, binBuff));
+		printConsole("old held is %s", ToBinary(kHeldOld, binBuff));
+		printConsole("old up is 	%s", ToBinary(kUpOld, binBuff));
 }
 
 /*
@@ -92,7 +89,6 @@ void MakeColors(){
 
 
 
-//needs complete reworking due to memory leakage
 void MakeText(char* str, C2D_Text* result)
 {
     C2D_TextBuf buff = C2D_TextBufNew(strlen(str));
@@ -102,17 +98,13 @@ void MakeText(char* str, C2D_Text* result)
 	
 	if(!font)
 	{
-        printf("No Font");
-	} else {
-        printf("Font");
+        printConsole("No Font");
 	}
-    printf("Char Array = %s", str);
+    //printConsole("Char Array = %s", str);
     if (indicator == NULL) {
-        printf("Indicator is Null");
-    } else if (*indicator == '\0') {
-        printf("Indicator is null character");
-    } else {
-        printf("Indicator is %c", *indicator);
+        printConsole("Indicator is Null");
+    } else if (*indicator != '\0') {
+        printConsole("Indicator is %c", *indicator);
     }
 	return;
 	
@@ -126,7 +118,7 @@ void MakeText(char* str, C2D_Text* result)
 */
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type) 
 {
-    printf("Keyboard Starting");
+    printConsole("Keyboard Starting");
 
 	//init keyboard values
 	static SwkbdState swkbd;
@@ -152,7 +144,7 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type)
 void MakeFont(){
     font = C2D_FontLoad("romfs:/cbf_std.bcfnt");
 	if (!font) {
-		printf("Font is NULL");
+		printConsole("Font is NULL");
 	}
 }
 

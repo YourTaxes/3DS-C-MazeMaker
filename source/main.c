@@ -1,4 +1,5 @@
 #include "main.h"
+#include <malloc.h> // mallinfo, for the heap stats on KEY_Y
 
 
 
@@ -20,6 +21,42 @@ C3D_RenderTarget* bottom;
 
 
 //player positions
+
+
+/*
+* runs the _End of whichever state is current so it frees everything it malloc'd.
+* used both for the normal state switch and to tear down the live state on exit.
+*/
+static void EndCurrentState(void)
+{
+	switch (State){
+	case STATE_DEBUG:
+		Debug_end(&State);
+		//end debug state
+		break;
+	case STATE_MAIN_MENU:
+		//from the main menu, if the player presses A or , they go to the mazemaker game
+		MainMenu_End(&State);
+		break;
+	case STATE_MAZE_GAME:
+		//if the player hits the button to stop,
+		//then they will stop playing and go to the menu
+		//this state includes 2 substates which are the win and lose screens.
+		break;
+	case STATE_MAZE_MAKER:
+		//maze maker stuff
+		break;
+	case STATE_SAVE_SELECT:
+		//save select
+		break;
+	case STATE_OOB:
+		//press A to go back to main menu
+		break;
+	case STATE_you_recieved_the_egg:
+		//him
+		break;
+	};
+}
 
 
 int main(int argc, char **argv)
@@ -50,7 +87,7 @@ int main(int argc, char **argv)
 
 	u32 kDown = 0, kHeld = 0, kUp = 0, kDownOld = 0, kHeldOld = 0, kUpOld = 0; //In these variables there will be information about keys detected in the previous frame
 
-	printf("By Finnegan McDevitt");
+	printConsole("By Finnegan McDevitt");
 
 
 
@@ -96,16 +133,11 @@ int main(int argc, char **argv)
 			char buff[20];
 			
 			if (GetKeyboard(buff, 20, "Testing Keyboard", SWKBD_TYPE_NORMAL)){
-				printf("%s", buff);
+				printConsole("%s", buff);
 			} 
 		}
 
-		//TEMP TESTING
 		
-
-		if (StateSwitch == true){
-			printf("state switch is true");
-		}
 
 
 		//do frame logic
@@ -180,50 +212,37 @@ int main(int argc, char **argv)
 
 		if (StateSwitch){
 			//handle state switching
-			switch (State){
-			case STATE_DEBUG:
-				Debug_end(&State);
-				//end debug state
-				break;
-			case STATE_MAIN_MENU:
-				//from the main menu, if the player presses A or , they go to the mazemaker game
-				MainMenu_End(&State);
-				break;
-			case STATE_MAZE_GAME:
-				//if the player hits the button to stop,
-				//then they will stop playing and go to the menu
-				//this state includes 2 substates which are the win and lose screens.
-				break;
-			case STATE_MAZE_MAKER:
-				//maze maker stuff
-				break;
-			case STATE_SAVE_SELECT:
-				//save select
-				break;
-			case STATE_OOB:
-				//press A to go back to main menu
-				break;
-			case STATE_you_recieved_the_egg:
-				//him
-				break;
-			};
+			EndCurrentState();
 		}
-		
+
 
 		if (kDown & KEY_Y){
-			printf("CPU:     %6.2f%%\x1b[K", C3D_GetProcessingTime()*6.0f);
-			printf("GPU:     %6.2f%%\x1b[K", C3D_GetDrawingTime()*6.0f);
-			printf("CmdBuf:  %6.2f%%\x1b[K", C3D_GetCmdBufUsage()*100.0f);
+			printConsole("CPU:     %6.2f%%", C3D_GetProcessingTime()*6.0f);
+			printConsole("GPU:     %6.2f%%", C3D_GetDrawingTime()*6.0f);
+			printConsole("CmdBuf:  %6.2f%%", C3D_GetCmdBufUsage()*100.0f);
+			//guest-side memory: bytes currently malloc'd, and free linear (GPU) memory.
+			//if these stay flat across state switches, the game itself is not leaking.
+			printConsole("heap used:   %d", mallinfo().uordblks);
+			printConsole("linear free: %lu", (unsigned long)linearSpaceFree());
 		}
 
 		//Wait for VBlank
 		gspWaitForVBlank();
 	}
 
+	//the loop can exit (START / HOME) between a state's _Init and _End,
+	//so tear down the live state here. StateSwitch == false means a state is live.
+	if (!StateSwitch){
+		EndCurrentState();
+	}
+
 	// Exit services
 	if (font) C2D_FontFree(font);
+	C3D_RenderTargetDelete(top);
+	C3D_RenderTargetDelete(bottom);
 	C2D_Fini();
 	C3D_Fini();
+	romfsExit();
 	gfxExit();
 	return 0;
 }
