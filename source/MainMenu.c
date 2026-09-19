@@ -87,7 +87,7 @@ void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
 }
 
 
-void MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl){
+bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl){
     if (*stateSwitch) {
         MainMenu_Init(rawLvl, builtLvl, rebuildLvl);
         *stateSwitch = false;
@@ -109,7 +109,11 @@ void MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Le
     }
     if (touchingRect(quitButton, touch)){
         printConsole("player touched quit button");
+        *stateSwitch = true;
+        *nextState = STATE_MAIN_MENU;
+        return 1;
     }
+    return 0;
 }
 
 
@@ -166,4 +170,5 @@ void MainMenu_End(Game_State* state){
 
     nextState = NULL;
     startMazeButton = startMakerButton = lvlSelectButton = quitButton = NULL;
+    titleText = nameText = mazeText = makerText = lvlSelectText = quitText = NULL;
 }

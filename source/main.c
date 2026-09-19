@@ -88,6 +88,8 @@ int main(int argc, char **argv)
 
 	printConsole("By Finnegan McDevitt");
 
+	bool quitGame = false;
+
 
 
 
@@ -129,7 +131,7 @@ int main(int argc, char **argv)
 
 		
 		
-		//check if player wants to change com speed
+		//keyboard test demo
 		if(kDown & KEY_B)
 		{
 			char buff[20];
@@ -139,7 +141,8 @@ int main(int argc, char **argv)
 			} 
 		}
 
-		
+
+
 
 
 		//do frame logic
@@ -149,7 +152,7 @@ int main(int argc, char **argv)
 			break;
 		case STATE_MAIN_MENU:
 			//from the main menu, if the player presses A or , they go to the mazemaker game
-			MainMenu_Logic(kDown, &touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
+			quitGame = MainMenu_Logic(kDown, &touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
 			break;
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
@@ -169,6 +172,8 @@ int main(int argc, char **argv)
 			//him
 			break;
 		};
+
+		
 		
 		
 		
@@ -216,6 +221,8 @@ int main(int argc, char **argv)
 			//handle state switching
 			EndCurrentState();
 		}
+
+		if (quitGame) break;
 
 
 		if (kDown & KEY_Y){
