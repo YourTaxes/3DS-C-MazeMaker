@@ -11,6 +11,8 @@
 * for each scene state, allocate the buffers for each text object when you enter the scene, and free/delete them when you leave them.
 * on inital boot, initalize and coalesce the level 0, as that is the default. 
 
+* need to make system for selecting from a menu with d pad.
+
 ## level select
 * accessable from main menu, and the selected level is the one that is used in the mazemaker and the player.
 * add a button to save the current level that saves the current RAW level layout to the selected slot.

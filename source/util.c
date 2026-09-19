@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 u32 Colors[11];
-C2D_Font font;
 
 /*
 * printf a debug line. Everything is passed straight to printf.
@@ -93,13 +92,9 @@ void MakeText(char* str, C2D_Text* result)
 {
     C2D_TextBuf buff = C2D_TextBufNew(strlen(str));
 	C2D_TextBufClear(buff);
-	const char* indicator = C2D_TextFontParse(result, font, buff, str);
+	const char* indicator = C2D_TextParse(result, buff, str);
 	C2D_TextOptimize(result);
-	
-	if(!font)
-	{
-        printConsole("No Font");
-	}
+
     //printConsole("Char Array = %s", str);
     if (indicator == NULL) {
         printConsole("Indicator is Null");
@@ -141,13 +136,6 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type)
 	return false;
 }
 
-void MakeFont(){
-    font = C2D_FontLoad("romfs:/cbf_std.bcfnt");
-	if (!font) {
-		printConsole("Font is NULL");
-	}
-}
-
 void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color){
     float width, height;
     C2D_TextGetDimensions(text, scaleX, scaleY, &width, &height);
@@ -160,4 +148,19 @@ void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX
 
 void DrawRect(Rect* rect){
     C2D_DrawRectSolid(rect->x, rect->y, rect->z, rect->width, rect->height, rect->Color);
+}
+
+bool touchingRect(Rect* rect, touchPosition* touch){
+    float tx = (float)touch->px;
+    float ty = (float)touch->py;
+
+    //hidTouchRead gives 0,0 when the screen is not being touched
+    bool inside = (touch->px != 0 || touch->py != 0)
+        && tx >= rect->x && tx < rect->x + rect->width
+        && ty >= rect->y && ty < rect->y + rect->height;
+
+    //only true on the frame we go from outside to inside
+    bool entered = inside && !rect->wasTouched;
+    rect->wasTouched = inside;
+    return entered;
 }

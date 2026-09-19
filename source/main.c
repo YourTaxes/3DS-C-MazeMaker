@@ -73,7 +73,6 @@ int main(int argc, char **argv)
 	C2D_Prepare();
 
 	romfsInit();
-	MakeFont();
 
 	top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
@@ -120,6 +119,9 @@ int main(int argc, char **argv)
 		float normY = 0.0f;
 		normalizeCirclePad(&circle_pad, &normX, &normY);
 
+		touchPosition touch;
+		hidTouchRead(&touch);
+
 		if (kDown & KEY_X){
 			printInputs(normX, normY, kDown, kHeld, kUp, kDownOld, kHeldOld, kUpOld);
 		}
@@ -147,7 +149,7 @@ int main(int argc, char **argv)
 			break;
 		case STATE_MAIN_MENU:
 			//from the main menu, if the player presses A or , they go to the mazemaker game
-			MainMenu_Logic(kDown, &rawLvl, &builtLvl, &StateSwitch, RebuildLevel);
+			MainMenu_Logic(kDown, &touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
 			break;
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
@@ -237,7 +239,6 @@ int main(int argc, char **argv)
 	}
 
 	// Exit services
-	if (font) C2D_FontFree(font);
 	C3D_RenderTargetDelete(top);
 	C3D_RenderTargetDelete(bottom);
 	C2D_Fini();

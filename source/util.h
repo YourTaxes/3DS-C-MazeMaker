@@ -52,15 +52,12 @@ typedef struct{
     float z;
     float width;
     float height;
+    bool wasTouched; //was the stylus inside this rect last frame (used by touchingRect)
 } Rect;
 
 extern u32 Colors[11];
 
 void MakeColors();
-
-extern C2D_Font font;
-
-void MakeFont();
 
 /*
 * printf a debug line to the debugger (stderr). Everything is passed
@@ -89,8 +86,7 @@ char* ToBinary(u32 value, char* buff);
 /*
 * Creates a C2D Text object and puts it in the buffer provided.
 * The string is the source of the text
-* The font is the font used in this text string
-* the 
+* Text is rendered with the shared system font (same for JPN/USA/EUR/AUS consoles)
 */
 void MakeText(char* str, C2D_Text* result);
 
@@ -105,3 +101,11 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type);
 void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
 
 void DrawRect(Rect* rect);
+
+/*
+* returns true only on the frame the stylus enters the rectangle (like kDown).
+* dragging onto the rect counts as entering, dragging off and back on counts again.
+* must be called every frame for the rect so rect->wasTouched stays current.
+* rect must be zero initialised (calloc) so wasTouched starts false.
+*/
+bool touchingRect(Rect* rect, touchPosition* touch);
