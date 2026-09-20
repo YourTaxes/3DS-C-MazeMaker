@@ -45,18 +45,11 @@ typedef enum{
     CLR_WHITE
 } Color_Names;
 
-typedef struct{
-    u32 Color;
-    float x;
-    float y;
-    float z;
-    float width;
-    float height;
-    bool wasTouched; //was the stylus inside this rect last frame (used by touchingRect)
-} Rect;
-
 extern u32 Colors[11];
 
+/*
+* populates the colors array
+*/
 void MakeColors();
 
 /*
@@ -83,12 +76,7 @@ void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kD
 */
 char* ToBinary(u32 value, char* buff);
 
-/*
-* Creates a C2D Text object and puts it in the buffer provided.
-* The string is the source of the text
-* Text is rendered with the shared system font (same for JPN/USA/EUR/AUS consoles)
-*/
-void MakeText(char* str, C2D_Text* result);
+
 
 /*
 * returns true if the user ended the session with the OK button
@@ -98,14 +86,7 @@ void MakeText(char* str, C2D_Text* result);
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type);
 
 
-void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
 
-void DrawRect(Rect* rect);
 
-/*
-* returns true only on the frame the stylus enters the rectangle (like kDown).
-* dragging onto the rect counts as entering, dragging off and back on counts again.
-* must be called every frame for the rect so rect->wasTouched stays current.
-* rect must be zero initialised (calloc) so wasTouched starts false.
-*/
-bool touchingRect(Rect* rect, touchPosition* touch);
+
+

@@ -22,6 +22,71 @@ C3D_RenderTarget* bottom;
 
 //player positions
 
+/*
+* Does the framelogic function for the current selected state
+*/
+static void StateFrameLogic(touchPosition* touch, u32 kDown, bool* quitGame){
+	switch (State){
+		case STATE_DEBUG:
+			Debug_logic(kDown, &StateSwitch);
+			break;
+		case STATE_MAIN_MENU:
+			//from the main menu, if the player presses A or , they go to the mazemaker game
+			*quitGame = MainMenu_Logic(kDown, touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
+			break;
+		case STATE_MAZE_GAME:
+			//if the player hits the button to stop,
+			//then they will stop playing and go to the menu
+			//this state includes 2 substates which are the win and lose screens.
+			break;
+		case STATE_MAZE_MAKER:
+			//maze maker stuff
+			break;
+		case STATE_SAVE_SELECT:
+			//save select
+			break;
+		case STATE_OOB:
+			//press A to go back to main menu
+			break;
+		case STATE_you_recieved_the_egg:
+			//him
+			break;
+	};
+}
+
+/*
+* Draws the screen for the current selected state
+*/
+static void DrawState(){
+	switch (State){
+		case STATE_DEBUG:
+			Debug_Draw(top, bottom);
+			break;
+			//Top_Tick(&State, top);
+			//Bottom_Tick(&State, bottom);
+		case STATE_MAIN_MENU:
+			//from the main menu, if the player presses A or , they go to the mazemaker game
+			MainMenu_Draw(top, bottom);
+			break;
+		case STATE_MAZE_GAME:
+			//if the player hits the button to stop,
+			//then they will stop playing and go to the menu
+			//this state includes 2 substates which are the win and lose screens.
+			break;
+		case STATE_MAZE_MAKER:
+			//maze maker stuff
+			break;
+		case STATE_SAVE_SELECT:
+			//save select
+			break;
+		case STATE_OOB:
+			//press A to go back to main menu
+			break;
+		case STATE_you_recieved_the_egg:
+			//him
+			break;
+		};
+}
 
 /*
 * runs the _End of whichever state is current so it frees everything it malloc'd.
@@ -146,34 +211,9 @@ int main(int argc, char **argv)
 
 
 		//do frame logic
-		switch (State){
-		case STATE_DEBUG:
-			Debug_logic(kDown, &StateSwitch);
-			break;
-		case STATE_MAIN_MENU:
-			//from the main menu, if the player presses A or , they go to the mazemaker game
-			quitGame = MainMenu_Logic(kDown, &touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
-			break;
-		case STATE_MAZE_GAME:
-			//if the player hits the button to stop,
-			//then they will stop playing and go to the menu
-			//this state includes 2 substates which are the win and lose screens.
-			break;
-		case STATE_MAZE_MAKER:
-			//maze maker stuff
-			break;
-		case STATE_SAVE_SELECT:
-			//save select
-			break;
-		case STATE_OOB:
-			//press A to go back to main menu
-			break;
-		case STATE_you_recieved_the_egg:
-			//him
-			break;
-		};
-
 		
+
+		StateFrameLogic(&touch, kDown, &quitGame);
 		
 		
 		
@@ -181,36 +221,9 @@ int main(int argc, char **argv)
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
 		//handle drawing
-		switch (State){
-		case STATE_DEBUG:
-			Debug_Draw(top, bottom);
-			break;
-			//Top_Tick(&State, top);
-			//Bottom_Tick(&State, bottom);
-		case STATE_MAIN_MENU:
-			//from the main menu, if the player presses A or , they go to the mazemaker game
-			MainMenu_Draw(top, bottom);
-			break;
-		case STATE_MAZE_GAME:
-			//if the player hits the button to stop,
-			//then they will stop playing and go to the menu
-			//this state includes 2 substates which are the win and lose screens.
-			break;
-		case STATE_MAZE_MAKER:
-			//maze maker stuff
-			break;
-		case STATE_SAVE_SELECT:
-			//save select
-			break;
-		case STATE_OOB:
-			//press A to go back to main menu
-			break;
-		case STATE_you_recieved_the_egg:
-			//him
-			break;
-		};
 		
 		
+		DrawState();
 		
 
 

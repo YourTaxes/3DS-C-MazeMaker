@@ -15,9 +15,9 @@ void Debug_logic(u32 kDown, bool* stateSwitch){
         Debug_Init(stateSwitch);
         *stateSwitch = false;
     }
-    if (kDown & KEY_A)
+    if (kDown & KEY_L)
     {
-        printConsole("A pressed on debug state");
+        printConsole("L pressed on debug state");
         *stateSwitch = true;
         *nextState = STATE_MAIN_MENU;
     }

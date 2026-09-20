@@ -92,9 +92,12 @@ this file will load the currently selected save slot, and allow for switching to
 
 * void MainMenu_logic(bool* stateSwitch, u32 kDown, bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLvl):
     * if stateswitch is true, calls MainMenu_Init(Rebuild_Level, rawLvl, builtLvl), then sets stateswitch to false
+
+    * have system for a highlight for each each button so that you can select them based on the d pad. have the only button for moving between scenes on this screen be A.
+
     * checks if the player pressed or touched the a button to start the maze game, if they did, set "StateSwitch" to true, and set "NextState" to STATE_MAZE_GAME.
     * check if the player pressed or touched the button to go to the maze maker, if they did, set "StateSwitch" to true, and set "NextState" to STATE_MAZE_MAKER.
-    *check if the player pressed or touched the button to go to the level select, if they did, set "StateSwitch" to true and set "NextState" to STATE_SAVE_SELECT.
+    * check if the player pressed or touched the button to go to the level select, if they did, set "StateSwitch" to true and set "NextState" to STATE_SAVE_SELECT.
     * return StateSwitch
 
 * MainMenu_Init(bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLevel):

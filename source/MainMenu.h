@@ -1,6 +1,13 @@
 #include <stdlib.h>
-#include "util.h"
+#include "state_utils.h"
 #include "level_file.h"
+
+typedef enum {
+    Highlight_Maze,
+    Highlight_Maker,
+    Highlight_Lvl,
+    Highlight_Quit
+} HighlightPositions;
 
 bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl);
 
