@@ -116,3 +116,11 @@ this file will load the currently selected save slot, and allow for switching to
 * temporarily set main menu to go to the game screen always, not just on A press.
 * set the game logic to be to always switch to the game screen
 * leave running and see if memory usage increases.
+
+
+## Maze Game
+* IMPORTANT IDEA FROM KELIN - ONLY CHECK COLISION WITH TILES WITHIN 1 TILE UNIT OF THE PLAYER.
+    * if player is in [1, 1], check colision with [0,0], [1,0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 1]. 
+    * keep track of what cordanate grid space the player is in by dividing their cordinates by the length of a tile. 
+    * using this strategy, it may not be needed to compile the levels in the way specified before, as all of the blocks could then be drawn regularly, as the 3ds can handle a lot of blocks. 
+    * the compilation would still need to define some specific things though, such as the start location, and the locations of the portals. 
