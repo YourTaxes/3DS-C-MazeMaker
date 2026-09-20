@@ -42,7 +42,7 @@ void Debug_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
 
-    DrawTextCentered(bottom_text, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_WIDTH/2, 1.0f, 1.0f, Colors[CLR_BLACK]);
+    DrawTextCentered(bottom_text, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_HIGHT/2, 1.0f, 1.0f, Colors[CLR_BLACK]);
 }
 
 
