@@ -13,23 +13,19 @@ void init_Rect(Rect** rect, float x, float y, float z, float width, float height
     (*rect)->Color = color;
 }
 
-void DrawRect(Rect* rect){
+void DrawRect(const Rect* rect){
     C2D_DrawRectSolid(rect->x, rect->y, rect->z, rect->width, rect->height, rect->Color);
 }
 
-bool touchingRect(Rect* rect, const touchPosition* touch){
-    float tx = (float)touch->px;
-    float ty = (float)touch->py;
+bool Rect_Contains(const Rect* rect, int px, int py){
+    return px >= rect->x && px < rect->x + rect->width
+        && py >= rect->y && py < rect->y + rect->height;
+}
 
-    //hidTouchRead gives 0,0 when the screen is not being touched
-    bool inside = (touch->px != 0 || touch->py != 0)
-        && tx >= rect->x && tx < rect->x + rect->width
-        && ty >= rect->y && ty < rect->y + rect->height;
-
-    //only true on the frame we go from outside to inside
-    bool entered = inside && !rect->wasTouched;
-    rect->wasTouched = inside;
-    return entered;
+bool Rect_Tapped(const Rect* rect, const FrameInput* in){
+    //libctru sets KEY_TOUCH in the key bitmask while the screen is touched,
+    //so kDown & KEY_TOUCH is "the touch began this frame"
+    return (in->kDown & KEY_TOUCH) && Rect_Contains(rect, in->touch.px, in->touch.py);
 }
 
 

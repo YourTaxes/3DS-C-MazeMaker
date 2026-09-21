@@ -16,6 +16,21 @@ typedef struct {
     bool rebuildLevel;     //rawLvl changed, so builtLvl is stale and must be recompiled
 } GameContext;
 
+/*
+* the four functions every state file provides. main keeps one of these per
+* Game_State and calls through it, so it never needs to know which state it is on.
+*   init  - allocate everything the state needs. runs once, right before its first logic call
+*   logic - one frame of input handling. returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
+*   draw  - render both screens
+*   end   - free everything init allocated. runs once, after the state's last draw
+*/
+typedef struct {
+    void (*init)(GameContext* ctx);
+    Game_State (*logic)(const FrameInput* in, GameContext* ctx);
+    void (*draw)(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
+    void (*end)(void);
+} StateFns;
+
 
 typedef struct{
     u32 Color;
@@ -24,20 +39,21 @@ typedef struct{
     float z;
     float width;
     float height;
-    bool wasTouched; //was the stylus inside this rect last frame (used by touchingRect)
 } Rect;
 
 void init_Rect(Rect** rect, float x, float y, float z, float width, float height, u32 color);
 
-void DrawRect(Rect* rect);
+void DrawRect(const Rect* rect);
 
 /*
-* returns true only on the frame the stylus enters the rectangle (like kDown).
-* dragging onto the rect counts as entering, dragging off and back on counts again.
-* must be called every frame for the rect so rect->wasTouched stays current.
-* rect must be zero initialised (calloc) so wasTouched starts false.
+* is the point inside the rectangle
 */
-bool touchingRect(Rect* rect, const touchPosition* touch);
+bool Rect_Contains(const Rect* rect, int px, int py);
+
+/*
+* returns true only on the frame the stylus first lands inside the rectangle.
+*/
+bool Rect_Tapped(const Rect* rect, const FrameInput* in);
 
 /*
 * Creates a C2D Text object and puts it in the buffer provided.

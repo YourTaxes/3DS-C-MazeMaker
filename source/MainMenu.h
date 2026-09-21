@@ -1,8 +1,6 @@
 #pragma once
 
-#include <stdlib.h>
 #include "state_utils.h"
-#include "level_file.h"
 
 typedef enum {
     Highlight_Maze,

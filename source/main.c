@@ -1,15 +1,15 @@
-#include "main.h"
 #include <malloc.h> // mallinfo, for the heap stats on KEY_Y
-
-
-
-
-
-//display defines
+#include <3ds.h>
+#include <citro2d.h>
+#include "util.h"
+#include "state_utils.h"
+#include "level_file.h"
+#include "MainMenu.h"
+#include "Debug_state.h"
 
 
 //global variables
-Game_State State = STATE_DEBUG;
+Game_State State = STATE_MAIN_MENU;
 Raw_Level rawLvl;
 Built_Level builtLvl;
 //the level starts out needing a build, since nothing has been compiled yet
@@ -18,127 +18,20 @@ GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = tr
 C3D_RenderTarget* top;
 C3D_RenderTarget* bottom;
 
-
-
 /*
-* runs the _Init of the current state so it allocates everything it needs.
-* called once before the main loop, and again right after each state switch.
+* one entry per Game_State. to add a state, write its four functions and add a line here.
+* states not listed yet are all-NULL, and the main loop refuses to switch to them.
+*
+* STATE_MAZE_GAME   - play the level. includes the win and lose screens as substates.
+* STATE_MAZE_MAKER  - edit the raw level on the bottom screen.
+* STATE_SAVE_SELECT - pick which of the save slots is the current level.
+* STATE_OOB         - out of bounds screen, A returns to the main menu.
+* STATE_you_recieved_the_egg - him.
 */
-static void InitCurrentState(void)
-{
-	switch (State){
-	case STATE_DEBUG:
-		Debug_Init(&ctx);
-		break;
-	case STATE_MAIN_MENU:
-		MainMenu_Init(&ctx);
-		break;
-	default:
-		break;
-	};
-}
-
-/*
-* Does the framelogic function for the current selected state.
-* returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
-*/
-static Game_State StateFrameLogic(const FrameInput* in){
-	switch (State){
-		case STATE_DEBUG:
-			return Debug_logic(in, &ctx);
-		case STATE_MAIN_MENU:
-			return MainMenu_Logic(in, &ctx);
-		case STATE_MAZE_GAME:
-			//if the player hits the button to stop,
-			//then they will stop playing and go to the menu
-			//this state includes 2 substates which are the win and lose screens.
-			break;
-		case STATE_MAZE_MAKER:
-			//maze maker stuff
-			break;
-		case STATE_SAVE_SELECT:
-			//save select
-			break;
-		case STATE_OOB:
-			//press A to go back to main menu
-			break;
-		case STATE_you_recieved_the_egg:
-			//him
-			break;
-		default:
-			break;
-	};
-	return STATE_NONE;
-}
-
-/*
-* Draws the screen for the current selected state
-*/
-static void DrawState(){
-	switch (State){
-		case STATE_DEBUG:
-			Debug_Draw(top, bottom);
-			break;
-		case STATE_MAIN_MENU:
-			//from the main menu, if the player presses A or , they go to the mazemaker game
-			MainMenu_Draw(top, bottom);
-			break;
-		case STATE_MAZE_GAME:
-			//if the player hits the button to stop,
-			//then they will stop playing and go to the menu
-			//this state includes 2 substates which are the win and lose screens.
-			break;
-		case STATE_MAZE_MAKER:
-			//maze maker stuff
-			break;
-		case STATE_SAVE_SELECT:
-			//save select
-			break;
-		case STATE_OOB:
-			//press A to go back to main menu
-			break;
-		case STATE_you_recieved_the_egg:
-			//him
-			break;
-		default:
-			break;
-		};
-}
-
-/*
-* runs the _End of whichever state is current so it frees everything it malloc'd.
-* used both for the normal state switch and to tear down the live state on exit.
-*/
-static void EndCurrentState(void)
-{
-	switch (State){
-	case STATE_DEBUG:
-		Debug_end();
-		break;
-	case STATE_MAIN_MENU:
-		MainMenu_End();
-		break;
-	case STATE_MAZE_GAME:
-		//if the player hits the button to stop,
-		//then they will stop playing and go to the menu
-		//this state includes 2 substates which are the win and lose screens.
-		break;
-	case STATE_MAZE_MAKER:
-		//maze maker stuff
-		break;
-	case STATE_SAVE_SELECT:
-		//save select
-		break;
-	case STATE_OOB:
-		//press A to go back to main menu
-		break;
-	case STATE_you_recieved_the_egg:
-		//him
-		break;
-	default:
-		break;
-	};
-}
+static const StateFns STATES[STATE_COUNT] = {
+	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_Draw, MainMenu_End },
+	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_Draw,    Debug_end    },
+};
 
 
 int main(int argc, char **argv)
@@ -165,8 +58,10 @@ int main(int argc, char **argv)
 
 	printConsole("By Finnegan McDevitt");
 
+	hidScanInput();
+
 	//from here until the loop exits there is always exactly one live state
-	InitCurrentState();
+	STATES[State].init(&ctx);
 
 	// Main loop
 	FrameInput in;
@@ -191,13 +86,13 @@ int main(int argc, char **argv)
 		}
 
 		//do frame logic
-		Game_State next = StateFrameLogic(&in);
+		Game_State next = STATES[State].logic(&in, &ctx);
 		if (in.kDown & KEY_START) next = STATE_QUIT; // START always quits, from any state
 
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-		DrawState();
-		//End the frame once, after every screen has been drawn
+		STATES[State].draw(top, bottom);
+		//End the frame after every screen has been drawn
 		C3D_FrameEnd(0);
 
 		//handle state switching. the old state is drawn one last time above,
@@ -205,9 +100,13 @@ int main(int argc, char **argv)
 		if (next == STATE_QUIT){
 			running = false; //the live state is torn down after the loop
 		} else if (next != STATE_NONE){
-			EndCurrentState();
-			State = next;
-			InitCurrentState();
+			if (STATES[next].logic == NULL){
+				printConsole("state %d is not implemented yet, staying in state %d", next, State);
+			} else {
+				STATES[State].end();
+				State = next;
+				STATES[State].init(&ctx);
+			}
 		}
 
 
@@ -230,7 +129,7 @@ int main(int argc, char **argv)
 	}
 
 	//whether we left via STATE_QUIT or HOME (aptMainLoop), one state is still live
-	EndCurrentState();
+	STATES[State].end();
 
 	// Exit services
 	C3D_RenderTargetDelete(top);

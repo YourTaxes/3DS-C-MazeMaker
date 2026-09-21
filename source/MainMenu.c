@@ -106,17 +106,17 @@ void MainMenu_Init(GameContext* ctx){
 
 static Game_State MazeButtonPressed(void){
     printConsole("Maze button pressed");
-    return STATE_NONE;
+    return STATE_MAZE_GAME;
 }
 
 static Game_State MakerButtonPressed(void){
     printConsole("Maker button pressed");
-    return STATE_NONE;
+    return STATE_MAZE_MAKER;
 }
 
 static Game_State LvlButtonPressed(void){
     printConsole("Lvl button pressed");
-    return STATE_NONE;
+    return STATE_SAVE_SELECT;
 }
 
 void SetHightlightPos(){
@@ -182,19 +182,19 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
     }
 
     // detecting player touches a button, takes priority over clicking A
-    if (touchingRect(startMazeButton, &in->touch)){
+    if (Rect_Tapped(startMazeButton, in)){
         printConsole("player touched start maze button");
         next = MazeButtonPressed();
     }
-    if (touchingRect(startMakerButton, &in->touch)){
+    if (Rect_Tapped(startMakerButton, in)){
         printConsole("player touched start maker button");
         next = MakerButtonPressed();
     }
-    if (touchingRect(lvlSelectButton, &in->touch)){
+    if (Rect_Tapped(lvlSelectButton, in)){
         printConsole("player touched level select button");
         next = LvlButtonPressed();
     }
-    if (touchingRect(quitButton, &in->touch)){
+    if (Rect_Tapped(quitButton, in)){
         printConsole("player touched quit button");
         return STATE_QUIT;
     }
