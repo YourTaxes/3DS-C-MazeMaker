@@ -158,21 +158,13 @@ bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Le
     if (kDown & KEY_UP || kDown & KEY_CPAD_UP)
     {
         printConsole("player pressed up or cpad up");
-        if (*curHighlightPos > 0){
-            *curHighlightPos -= 1;
-        } else {
-            *curHighlightPos = Highlight_Quit;
-        }
+        *curHighlightPos = (*curHighlightPos + Highlight_COUNT - 1) % Highlight_COUNT;
         SetHightlightPos();
     }
     if (kDown & KEY_DOWN || kDown & KEY_CPAD_DOWN)
     {
         printConsole("player pressed down or cpad down");
-        if (*curHighlightPos < 3){
-            *curHighlightPos += 1;
-        } else {
-            *curHighlightPos = Highlight_Maze;
-        }
+        *curHighlightPos = (*curHighlightPos + 1) % Highlight_COUNT;
         SetHightlightPos();
     }
 
