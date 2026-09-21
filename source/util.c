@@ -47,7 +47,8 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
 
 
 void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
-    printConsole("Circle pad position: %.2f %.2f", normX, normY);
+    //integers, not %f: see the KEY_Y heap stats in main.c for why
+    printConsole("Circle pad position (x100): %d %d", (int)(normX * 100.0f), (int)(normY * 100.0f));
 		//print all of the button info
 		char binBuff[33];
 		printConsole("down is 	%s", ToBinary(kDown, binBuff));

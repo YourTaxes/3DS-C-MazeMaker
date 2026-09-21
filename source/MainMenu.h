@@ -16,7 +16,7 @@ typedef enum {
 /*
 * returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
 */
-Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl);
+Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl);
 
 void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl);
 

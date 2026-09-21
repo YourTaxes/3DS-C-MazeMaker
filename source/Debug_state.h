@@ -8,9 +8,9 @@
 /*
 * returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
 */
-Game_State Debug_logic(u32 kDown, bool* stateSwitch);
+Game_State Debug_logic(u32 kDown);
 
-void Debug_Init(bool* stateSwitch);
+void Debug_Init(void);
 
 void Debug_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
 

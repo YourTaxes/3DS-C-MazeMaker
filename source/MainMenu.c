@@ -140,12 +140,8 @@ void SetHightlightPos(){
 
 
 
-Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl){
+Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
 
-    if (*stateSwitch) {
-        MainMenu_Init(rawLvl, builtLvl, rebuildLvl);
-        *stateSwitch = false;
-    }
     if (kDown & KEY_L)
     {
         printConsole("L pressed on Main Menu state");
@@ -236,7 +232,6 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
 
 
 void MainMenu_End(void){
-    //safe to call even if MainMenu_Init never ran, and safe to call twice
     free(startMazeButton);
     free(startMakerButton);
     free(lvlSelectButton);
@@ -244,15 +239,14 @@ void MainMenu_End(void){
     free(selectHighlight);
     free(curHighlightPos);
 
+    C2D_TextBufDelete(titleText->buf);
+    C2D_TextBufDelete(nameText->buf);
 
-    if (titleText) C2D_TextBufDelete(titleText->buf);
-    if (nameText) C2D_TextBufDelete(nameText->buf);
+    C2D_TextBufDelete(mazeText->buf);
+    C2D_TextBufDelete(makerText->buf);
+    C2D_TextBufDelete(lvlSelectText->buf);
+    C2D_TextBufDelete(quitText->buf);
 
-    if (mazeText) C2D_TextBufDelete(mazeText->buf);
-    if (makerText) C2D_TextBufDelete(makerText->buf);
-    if (lvlSelectText) C2D_TextBufDelete(lvlSelectText->buf);
-    if (quitText) C2D_TextBufDelete(quitText->buf);
-    
     free(titleText);
     free(nameText);
     free(mazeText);

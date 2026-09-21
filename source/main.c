@@ -10,7 +10,6 @@
 
 //global variables
 Game_State State = STATE_DEBUG;
-bool StateSwitch = true;
 bool RebuildLevel = true;
 Raw_Level rawLvl;
 Built_Level builtLvl;
@@ -20,7 +19,23 @@ C3D_RenderTarget* bottom;
 
 
 
-//player positions
+/*
+* runs the _Init of the current state so it allocates everything it needs.
+* called once before the main loop, and again right after each state switch.
+*/
+static void InitCurrentState(void)
+{
+	switch (State){
+	case STATE_DEBUG:
+		Debug_Init();
+		break;
+	case STATE_MAIN_MENU:
+		MainMenu_Init(&rawLvl, &builtLvl, &RebuildLevel);
+		break;
+	default:
+		break;
+	};
+}
 
 /*
 * Does the framelogic function for the current selected state.
@@ -29,9 +44,9 @@ C3D_RenderTarget* bottom;
 static Game_State StateFrameLogic(touchPosition* touch, u32 kDown){
 	switch (State){
 		case STATE_DEBUG:
-			return Debug_logic(kDown, &StateSwitch);
+			return Debug_logic(kDown);
 		case STATE_MAIN_MENU:
-			return MainMenu_Logic(kDown, touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
+			return MainMenu_Logic(kDown, touch, &rawLvl, &builtLvl, &RebuildLevel);
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
 			//then they will stop playing and go to the menu
@@ -151,9 +166,12 @@ int main(int argc, char **argv)
 
 	printConsole("By Finnegan McDevitt");
 
+	//from here until the loop exits there is always exactly one live state
+	InitCurrentState();
 
 	// Main loop
-	while (aptMainLoop())
+	bool running = true;
+	while (running && aptMainLoop())
 	{
 		//Scan all the inputs. This should be done once for each frame
 		hidScanInput();
@@ -168,8 +186,6 @@ int main(int argc, char **argv)
 		kHeld = hidKeysHeld();
 		//hidKeysUp returns information about which buttons are released on a frame.
 		kUp = hidKeysUp();
-
-		if (kDown & KEY_START) break; // break in order to return to hbmenu
 
 		circlePosition circle_pad;
 
@@ -206,6 +222,7 @@ int main(int argc, char **argv)
 
 		//do frame logic
 		Game_State next = StateFrameLogic(&touch, kDown);
+		if (kDown & KEY_START) next = STATE_QUIT; // START always quits, from any state
 
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -214,19 +231,26 @@ int main(int argc, char **argv)
 		C3D_FrameEnd(0);
 
 		//handle state switching. the old state is drawn one last time above,
-		//then torn down; the new one inits itself on its first _Logic call.
-		if (next != STATE_NONE){
-			StateSwitch = true;
+		//then torn down, and the new one is set up before the next frame.
+		if (next == STATE_QUIT){
+			running = false; //the live state is torn down after the loop
+		} else if (next != STATE_NONE){
 			EndCurrentState();
-			if (next == STATE_QUIT) break;
 			State = next;
+			InitCurrentState();
 		}
 
 
 		if (kDown & KEY_Y){
-			printConsole("CPU:     %6.2f%%", C3D_GetProcessingTime()*6.0f);
-			printConsole("GPU:     %6.2f%%", C3D_GetDrawingTime()*6.0f);
-			printConsole("CmdBuf:  %6.2f%%", C3D_GetCmdBufUsage()*100.0f);
+			//percentages are printed as integers on purpose: newlib's printf mallocs
+			//scratch buffers the first time it formats a float and never frees them,
+			//which would shift the very heap number we're trying to read.
+			int cpu = (int)(C3D_GetProcessingTime()*600.0f); //hundredths of a percent
+			int gpu = (int)(C3D_GetDrawingTime()*600.0f);
+			int cmd = (int)(C3D_GetCmdBufUsage()*10000.0f);
+			printConsole("CPU:     %3d.%02d%%", cpu/100, cpu%100);
+			printConsole("GPU:     %3d.%02d%%", gpu/100, gpu%100);
+			printConsole("CmdBuf:  %3d.%02d%%", cmd/100, cmd%100);
 			//guest-side memory: bytes currently malloc'd, and free linear (GPU) memory.
 			//if these stay flat across state switches, the game itself is not leaking.
 			printConsole("heap used:   %d", mallinfo().uordblks);
@@ -235,11 +259,8 @@ int main(int argc, char **argv)
 
 	}
 
-	//the loop can exit (START / HOME) between a state's _Init and _End,
-	//so tear down the live state here. StateSwitch == false means a state is live.
-	if (!StateSwitch){
-		EndCurrentState();
-	}
+	//whether we left via STATE_QUIT or HOME (aptMainLoop), one state is still live
+	EndCurrentState();
 
 	// Exit services
 	C3D_RenderTargetDelete(top);
