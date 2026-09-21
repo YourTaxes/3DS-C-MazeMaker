@@ -140,9 +140,9 @@ void SetHightlightPos(){
 
 
 
-Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
+Game_State MainMenu_Logic(const FrameInput* in, Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
 
-    if (kDown & KEY_L)
+    if (in->kDown & KEY_L)
     {
         printConsole("L pressed on Main Menu state");
         return STATE_DEBUG; //THIS IS DEBUG AND WILL BE CHANGED LATER
@@ -151,20 +151,20 @@ Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Bu
     Game_State next = STATE_NONE;
 
     //clicking A on button logic, is overrided if player taps on button in same frame
-    if (kDown & KEY_UP || kDown & KEY_CPAD_UP)
+    if (in->kDown & (KEY_UP | KEY_CPAD_UP))
     {
         printConsole("player pressed up or cpad up");
         *curHighlightPos = (*curHighlightPos + Highlight_COUNT - 1) % Highlight_COUNT;
         SetHightlightPos();
     }
-    if (kDown & KEY_DOWN || kDown & KEY_CPAD_DOWN)
+    if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
     {
         printConsole("player pressed down or cpad down");
         *curHighlightPos = (*curHighlightPos + 1) % Highlight_COUNT;
         SetHightlightPos();
     }
 
-    if (kDown & KEY_A) {
+    if (in->kDown & KEY_A) {
         switch (*curHighlightPos){
             case Highlight_Maze:
                 next = MazeButtonPressed();
@@ -182,19 +182,19 @@ Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Bu
     }
 
     // detecting player touches a button, takes priority over clicking A
-    if (touchingRect(startMazeButton, touch)){
+    if (touchingRect(startMazeButton, &in->touch)){
         printConsole("player touched start maze button");
         next = MazeButtonPressed();
     }
-    if (touchingRect(startMakerButton, touch)){
+    if (touchingRect(startMakerButton, &in->touch)){
         printConsole("player touched start maker button");
         next = MakerButtonPressed();
     }
-    if (touchingRect(lvlSelectButton, touch)){
+    if (touchingRect(lvlSelectButton, &in->touch)){
         printConsole("player touched level select button");
         next = LvlButtonPressed();
     }
-    if (touchingRect(quitButton, touch)){
+    if (touchingRect(quitButton, &in->touch)){
         printConsole("player touched quit button");
         return STATE_QUIT;
     }

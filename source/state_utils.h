@@ -26,7 +26,7 @@ void DrawRect(Rect* rect);
 * must be called every frame for the rect so rect->wasTouched stays current.
 * rect must be zero initialised (calloc) so wasTouched starts false.
 */
-bool touchingRect(Rect* rect, touchPosition* touch);
+bool touchingRect(Rect* rect, const touchPosition* touch);
 
 /*
 * Creates a C2D Text object and puts it in the buffer provided.

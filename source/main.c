@@ -41,12 +41,12 @@ static void InitCurrentState(void)
 * Does the framelogic function for the current selected state.
 * returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
 */
-static Game_State StateFrameLogic(touchPosition* touch, u32 kDown){
+static Game_State StateFrameLogic(const FrameInput* in){
 	switch (State){
 		case STATE_DEBUG:
-			return Debug_logic(kDown);
+			return Debug_logic(in);
 		case STATE_MAIN_MENU:
-			return MainMenu_Logic(kDown, touch, &rawLvl, &builtLvl, &RebuildLevel);
+			return MainMenu_Logic(in, &rawLvl, &builtLvl, &RebuildLevel);
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
 			//then they will stop playing and go to the menu
@@ -162,67 +162,36 @@ int main(int argc, char **argv)
 
 	
 
-	u32 kDown = 0, kHeld = 0, kUp = 0, kDownOld = 0, kHeldOld = 0, kUpOld = 0; //In these variables there will be information about keys detected in the previous frame
-
 	printConsole("By Finnegan McDevitt");
 
 	//from here until the loop exits there is always exactly one live state
 	InitCurrentState();
 
 	// Main loop
+	FrameInput in;
 	bool running = true;
 	while (running && aptMainLoop())
 	{
 		//Scan all the inputs. This should be done once for each frame
-		hidScanInput();
+		Input_Read(&in);
 
-		kDownOld = kDown;
-		kHeldOld = kHeld;
-		kUpOld = kUp;
-
-		//hidKeysDown returns information about which buttons have been just pressed (and they weren't in the previous frame)
-		kDown = hidKeysDown();
-		//hidKeysHeld returns information about which buttons have are held down in this frame
-		kHeld = hidKeysHeld();
-		//hidKeysUp returns information about which buttons are released on a frame.
-		kUp = hidKeysUp();
-
-		circlePosition circle_pad;
-
-		//Read the CirclePad position
-		hidCircleRead(&circle_pad);
-
-		float normX = 0.0f;
-		float normY = 0.0f;
-		normalizeCirclePad(&circle_pad, &normX, &normY);
-
-		touchPosition touch;
-		hidTouchRead(&touch);
-
-		if (kDown & KEY_X){
-			printInputs(normX, normY, kDown, kHeld, kUp, kDownOld, kHeldOld, kUpOld);
+		if (in.kDown & KEY_X){
+			printInputs(&in);
 		}
-		
 
-		
-		
 		//keyboard test demo
-		if(kDown & KEY_B)
+		if(in.kDown & KEY_B)
 		{
 			char buff[20];
-			
+
 			if (GetKeyboard(buff, 20, "Testing Keyboard", SWKBD_TYPE_NORMAL)){
 				printConsole("%s", buff);
-			} 
+			}
 		}
 
-
-
-
-
 		//do frame logic
-		Game_State next = StateFrameLogic(&touch, kDown);
-		if (kDown & KEY_START) next = STATE_QUIT; // START always quits, from any state
+		Game_State next = StateFrameLogic(&in);
+		if (in.kDown & KEY_START) next = STATE_QUIT; // START always quits, from any state
 
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -241,7 +210,7 @@ int main(int argc, char **argv)
 		}
 
 
-		if (kDown & KEY_Y){
+		if (in.kDown & KEY_Y){
 			//percentages are printed as integers on purpose: newlib's printf mallocs
 			//scratch buffers the first time it formats a float and never frees them,
 			//which would shift the very heap number we're trying to read.

@@ -17,7 +17,7 @@ void DrawRect(Rect* rect){
     C2D_DrawRectSolid(rect->x, rect->y, rect->z, rect->width, rect->height, rect->Color);
 }
 
-bool touchingRect(Rect* rect, touchPosition* touch){
+bool touchingRect(Rect* rect, const touchPosition* touch){
     float tx = (float)touch->px;
     float ty = (float)touch->py;
 

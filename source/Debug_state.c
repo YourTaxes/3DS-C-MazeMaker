@@ -8,8 +8,8 @@ static C2D_Text* bottom_text;
 
 
 
-Game_State Debug_logic(u32 kDown){
-    if (kDown & KEY_L)
+Game_State Debug_logic(const FrameInput* in){
+    if (in->kDown & KEY_L)
     {
         printConsole("L pressed on debug state");
         return STATE_MAIN_MENU;

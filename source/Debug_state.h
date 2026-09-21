@@ -8,7 +8,7 @@
 /*
 * returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
 */
-Game_State Debug_logic(u32 kDown);
+Game_State Debug_logic(const FrameInput* in);
 
 void Debug_Init(void);
 

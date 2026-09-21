@@ -18,6 +18,20 @@ void printConsole(const char* fmt, ...)
     fputc('\n', stderr); // flush the buffer
 }
 
+void Input_Read(FrameInput* in) {
+    hidScanInput();
+
+    in->kDown = hidKeysDown();
+    in->kHeld = hidKeysHeld();
+    in->kUp = hidKeysUp();
+
+    hidTouchRead(&in->touch);
+
+    circlePosition cpad;
+    hidCircleRead(&cpad);
+    normalizeCirclePad(&cpad, &in->cpadX, &in->cpadY);
+}
+
 void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
     //compute magnatude
     float rawX = (float)cpad->dx;
@@ -46,17 +60,15 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
 }
 
 
-void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld){
+void printInputs(const FrameInput* in){
     //integers, not %f: see the KEY_Y heap stats in main.c for why
-    printConsole("Circle pad position (x100): %d %d", (int)(normX * 100.0f), (int)(normY * 100.0f));
-		//print all of the button info
-		char binBuff[33];
-		printConsole("down is 	%s", ToBinary(kDown, binBuff));
-		printConsole("held is 	%s", ToBinary(kHeld, binBuff));
-		printConsole("up is 		%s", ToBinary(kUp, binBuff));
-		printConsole("old down is %s", ToBinary(kDownOld, binBuff));
-		printConsole("old held is %s", ToBinary(kHeldOld, binBuff));
-		printConsole("old up is 	%s", ToBinary(kUpOld, binBuff));
+    printConsole("Circle pad position (x100): %d %d", (int)(in->cpadX * 100.0f), (int)(in->cpadY * 100.0f));
+    printConsole("Touch: %d %d", in->touch.px, in->touch.py);
+    //print all of the button info
+    char binBuff[33];
+    printConsole("down is %s", ToBinary(in->kDown, binBuff));
+    printConsole("held is %s", ToBinary(in->kHeld, binBuff));
+    printConsole("up is   %s", ToBinary(in->kUp, binBuff));
 }
 
 /*

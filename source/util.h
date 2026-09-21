@@ -64,6 +64,24 @@ void MakeColors();
 void printConsole(const char* fmt, ...);
 
 /*
+* everything the player did this frame. filled once per frame by Input_Read
+* in main and passed to the current state's _Logic.
+*/
+typedef struct {
+    u32 kDown; //buttons pressed this frame
+    u32 kHeld; //buttons currently down
+    u32 kUp;   //buttons released this frame
+    touchPosition touch; //px, py are 0,0 when the screen is not touched
+    float cpadX; //circle pad, -1.0 to 1.0, 0 inside the deadzone
+    float cpadY;
+} FrameInput;
+
+/*
+* scans the hardware and fills in every field of the struct
+*/
+void Input_Read(FrameInput* in);
+
+/*
 * normalies the circle pad's inputs for use with the player controller
 * outputs through normX and normY, each in -1.0 to 1.0; both are 0 inside the deadzone
 */
@@ -72,7 +90,7 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY);
 /*
 * prints the current state of the used inputs
 */
-void printInputs(float normX, float normY, u32 kDown, u32 kHeld, u32 kUp, u32 kDownOld, u32 kHeldOld, u32 kUpOld);
+void printInputs(const FrameInput* in);
 
 
 /*
