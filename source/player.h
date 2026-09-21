@@ -1,5 +1,6 @@
+#pragma once
 
-
+#include <3ds.h>
 
 typedef struct {
     double currentTime;
