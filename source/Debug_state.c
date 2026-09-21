@@ -26,6 +26,7 @@ void Debug_logic(u32 kDown, bool* stateSwitch){
 void Debug_Init(bool* stateSwitch){
     printConsole("init debug state");
     nextState = malloc(sizeof(Game_State));
+    *nextState = (Game_State)-1; 
 
     top_text = malloc (sizeof(C2D_Text));
     bottom_text = malloc(sizeof(C2D_Text));

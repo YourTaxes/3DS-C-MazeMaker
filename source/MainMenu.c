@@ -35,6 +35,7 @@ static C2D_Text* quitText;
 void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
     printConsole("init Main Menu");
     nextState = malloc(sizeof(Game_State));
+    *nextState = (Game_State)-1; 
 
     curHighlightPos = malloc(sizeof(HighlightPositions));
     *curHighlightPos = Highlight_Maze;
