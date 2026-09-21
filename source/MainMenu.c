@@ -8,90 +8,63 @@
 #define HIGHLIGHT_POS_LEVEL 130
 #define HIGHLIGHT_POS_QUIT 190
 
-//global vars
+#define MAIN_MENU_MAX_GLYPHS 128 //room for every string this state parses
 
-//rects
-static Rect* startMazeButton;
-static Rect* startMakerButton;
-static Rect* lvlSelectButton;
-static Rect* quitButton;
-static Rect* selectHighlight;
+/*
+* everything this state owns while it is active. one allocation in _Init,
+* one free in _End, and a single 4 byte pointer while the state is inactive.
+*/
+typedef struct {
+    C2D_TextBuf textBuf; //handle to the glyph storage, its own heap block
 
-static HighlightPositions* curHighlightPos;
+    //rects
+    Rect startMazeButton;
+    Rect startMakerButton;
+    Rect lvlSelectButton;
+    Rect quitButton;
+    Rect selectHighlight;
 
-//text objects
-//top Screen
-static C2D_Text* titleText;
-static C2D_Text* nameText;
+    HighlightPositions curHighlightPos;
 
-static C2D_Text* mazeText;
-static C2D_Text* makerText;
-static C2D_Text* lvlSelectText;
-static C2D_Text* quitText;
+    //text objects
+    //top screen
+    C2D_Text titleText;
+    C2D_Text nameText;
+    //bottom screen
+    C2D_Text mazeText;
+    C2D_Text makerText;
+    C2D_Text lvlSelectText;
+    C2D_Text quitText;
+} MainMenuState;
+
+static MainMenuState* s; //NULL whenever the state is not active
 
 
 void MainMenu_Init(GameContext* ctx){
-    printConsole("init Main Menu");
+    printConsole("init Main Menu, %u bytes", (unsigned)sizeof(MainMenuState));
+    s = calloc(1, sizeof(MainMenuState));
 
-    curHighlightPos = malloc(sizeof(HighlightPositions));
-    *curHighlightPos = Highlight_Maze;
-    
-    init_Rect(&selectHighlight, BUTTON_X - 5, HIGHLIGHT_POS_MAZE, 0, 250, 40, Colors[CLR_YELLOW]);
+    s->curHighlightPos = Highlight_Maze;
 
-    init_Rect(&startMazeButton, BUTTON_X, 15, 0, 240, 30, Colors[CLR_DK_GRAY]);
-    // startMazeButton = calloc(1, sizeof(Rect)); //calloc zeros wasTouched
-    // startMazeButton->x = 40;
-    // startMazeButton->y = 15;
-    // startMazeButton->z = 0;
-    // startMazeButton->width = 240;
-    // startMazeButton->height = 30;
-    // startMazeButton->Color = Colors[CLR_DK_GRAY];
+    s->selectHighlight  = (Rect){ .x = BUTTON_X - 5, .y = HIGHLIGHT_POS_MAZE, .width = 250, .height = 40, .Color = Colors[CLR_YELLOW] };
 
-    init_Rect(&startMakerButton, BUTTON_X, 75, 0, 240, 30, Colors[CLR_DK_GRAY]);
-    // startMakerButton = calloc(1, sizeof(Rect));
-    // startMakerButton->x = 40;
-    // startMakerButton->y = 75;
-    // startMakerButton->z = 0;
-    // startMakerButton->height = 30;
-    // startMakerButton->width = 240;
-    // startMakerButton->Color = Colors[CLR_DK_GRAY];
-    
-    init_Rect(&lvlSelectButton, BUTTON_X, 135, 0, 240, 30, Colors[CLR_DK_GRAY]);
-    // lvlSelectButton = calloc(1, sizeof(Rect));
-    // lvlSelectButton->x = 40;
-    // lvlSelectButton->y = 135;
-    // lvlSelectButton->z = 0;
-    // lvlSelectButton->height = 30;
-    // lvlSelectButton->width = 240;
-    // lvlSelectButton->Color = Colors[CLR_DK_GRAY];
-
-    init_Rect(&quitButton, BUTTON_X, 195, 0, 240, 30, Colors[CLR_DK_GRAY]);
-    // quitButton = calloc(1, sizeof(Rect));
-    // quitButton->x = 40;
-    // quitButton->y = 195;
-    // quitButton->z = 0;
-    // quitButton->height = 30;
-    // quitButton->width = 240;
-    // quitButton->Color = Colors[CLR_DK_GRAY];
+    s->startMazeButton  = (Rect){ .x = BUTTON_X, .y = 15,  .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
+    s->startMakerButton = (Rect){ .x = BUTTON_X, .y = 75,  .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
+    s->lvlSelectButton  = (Rect){ .x = BUTTON_X, .y = 135, .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
+    s->quitButton       = (Rect){ .x = BUTTON_X, .y = 195, .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
 
     //init text
+    s->textBuf = C2D_TextBufNew(MAIN_MENU_MAX_GLYPHS);
+
     //top screen
-    titleText = malloc(sizeof(C2D_Text));
-    nameText = malloc(sizeof(C2D_Text));
+    MakeText("Maze Maker", &s->titleText, s->textBuf);
+    MakeText("By Finnegan McDevitt", &s->nameText, s->textBuf);
 
     //bottom screen
-    mazeText = malloc(sizeof(C2D_Text));
-    makerText = malloc(sizeof(C2D_Text));
-    lvlSelectText = malloc(sizeof(C2D_Text));
-    quitText = malloc(sizeof(C2D_Text));
-
-    MakeText("Maze Maker", titleText);
-    MakeText("By Finnegan McDevitt", nameText);
-
-    MakeText("Start Maze", mazeText);
-    MakeText("Start Maker", makerText);
-    MakeText("Level Select", lvlSelectText);
-    MakeText("Quit Game", quitText);
+    MakeText("Start Maze", &s->mazeText, s->textBuf);
+    MakeText("Start Maker", &s->makerText, s->textBuf);
+    MakeText("Level Select", &s->lvlSelectText, s->textBuf);
+    MakeText("Quit Game", &s->quitText, s->textBuf);
 
     if (ctx->rebuildLevel) {
         printConsole("Coalesce the level here");
@@ -100,7 +73,6 @@ void MainMenu_Init(GameContext* ctx){
 
         ctx->rebuildLevel = false;
     }
-
 }
 
 
@@ -119,25 +91,22 @@ static Game_State LvlButtonPressed(void){
     return STATE_SAVE_SELECT;
 }
 
-void SetHightlightPos(){
-    switch(*curHighlightPos){
+static void SetHightlightPos(void){
+    switch(s->curHighlightPos){
         case Highlight_Maze:
-            selectHighlight->y = HIGHLIGHT_POS_MAZE;
+            s->selectHighlight.y = HIGHLIGHT_POS_MAZE;
             break;
         case Highlight_Maker:
-            selectHighlight->y = HIGHLIGHT_POS_MAKER;
+            s->selectHighlight.y = HIGHLIGHT_POS_MAKER;
             break;
         case Highlight_Lvl:
-            selectHighlight->y = HIGHLIGHT_POS_LEVEL;
+            s->selectHighlight.y = HIGHLIGHT_POS_LEVEL;
             break;
         case Highlight_Quit:
-            selectHighlight->y = HIGHLIGHT_POS_QUIT;
+            s->selectHighlight.y = HIGHLIGHT_POS_QUIT;
             break;
     }
 }
-
-
-
 
 
 Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
@@ -154,18 +123,18 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
     if (in->kDown & (KEY_UP | KEY_CPAD_UP))
     {
         printConsole("player pressed up or cpad up");
-        *curHighlightPos = (*curHighlightPos + Highlight_COUNT - 1) % Highlight_COUNT;
+        s->curHighlightPos = (s->curHighlightPos + Highlight_COUNT - 1) % Highlight_COUNT;
         SetHightlightPos();
     }
     if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
     {
         printConsole("player pressed down or cpad down");
-        *curHighlightPos = (*curHighlightPos + 1) % Highlight_COUNT;
+        s->curHighlightPos = (s->curHighlightPos + 1) % Highlight_COUNT;
         SetHightlightPos();
     }
 
     if (in->kDown & KEY_A) {
-        switch (*curHighlightPos){
+        switch (s->curHighlightPos){
             case Highlight_Maze:
                 next = MazeButtonPressed();
                 break;
@@ -182,19 +151,19 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
     }
 
     // detecting player touches a button, takes priority over clicking A
-    if (Rect_Tapped(startMazeButton, in)){
+    if (Rect_Tapped(&s->startMazeButton, in)){
         printConsole("player touched start maze button");
         next = MazeButtonPressed();
     }
-    if (Rect_Tapped(startMakerButton, in)){
+    if (Rect_Tapped(&s->startMakerButton, in)){
         printConsole("player touched start maker button");
         next = MakerButtonPressed();
     }
-    if (Rect_Tapped(lvlSelectButton, in)){
+    if (Rect_Tapped(&s->lvlSelectButton, in)){
         printConsole("player touched level select button");
         next = LvlButtonPressed();
     }
-    if (Rect_Tapped(quitButton, in)){
+    if (Rect_Tapped(&s->quitButton, in)){
         printConsole("player touched quit button");
         return STATE_QUIT;
     }
@@ -207,53 +176,29 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    DrawTextCentered(titleText, 200, 60, 2, 2, Colors[CLR_BLACK]);
-    DrawTextCentered(nameText, 200, 180, 1, 1, Colors[CLR_BLACK]);
+    DrawTextCentered(&s->titleText, 200, 60, 2, 2, Colors[CLR_BLACK]);
+    DrawTextCentered(&s->nameText, 200, 180, 1, 1, Colors[CLR_BLACK]);
 
     //draw the bottom screen
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
 
-    DrawRect(selectHighlight);
+    DrawRect(&s->selectHighlight);
 
-    DrawRect(startMazeButton);
-    DrawRect(startMakerButton);
-    DrawRect(lvlSelectButton);
-    DrawRect(quitButton);
+    DrawRect(&s->startMazeButton);
+    DrawRect(&s->startMakerButton);
+    DrawRect(&s->lvlSelectButton);
+    DrawRect(&s->quitButton);
 
-    DrawTextCentered(mazeText, 160, 30, .6, .6, Colors[CLR_WHITE]);
-    DrawTextCentered(makerText, 160, 90, .6, .6, Colors[CLR_WHITE]);
-    DrawTextCentered(lvlSelectText, 160, 150, .6, .6, Colors[CLR_WHITE]);
-    DrawTextCentered(quitText, 160, 210, .6, .6, Colors[CLR_WHITE]);
-
-    
-
+    DrawTextCentered(&s->mazeText, 160, 30, .6, .6, Colors[CLR_WHITE]);
+    DrawTextCentered(&s->makerText, 160, 90, .6, .6, Colors[CLR_WHITE]);
+    DrawTextCentered(&s->lvlSelectText, 160, 150, .6, .6, Colors[CLR_WHITE]);
+    DrawTextCentered(&s->quitText, 160, 210, .6, .6, Colors[CLR_WHITE]);
 }
 
 
 void MainMenu_End(void){
-    free(startMazeButton);
-    free(startMakerButton);
-    free(lvlSelectButton);
-    free(quitButton);
-    free(selectHighlight);
-    free(curHighlightPos);
-
-    C2D_TextBufDelete(titleText->buf);
-    C2D_TextBufDelete(nameText->buf);
-
-    C2D_TextBufDelete(mazeText->buf);
-    C2D_TextBufDelete(makerText->buf);
-    C2D_TextBufDelete(lvlSelectText->buf);
-    C2D_TextBufDelete(quitText->buf);
-
-    free(titleText);
-    free(nameText);
-    free(mazeText);
-    free(makerText);
-    free(lvlSelectText);
-    free(quitText);
-
-    startMazeButton = startMakerButton = lvlSelectButton = quitButton = selectHighlight = NULL;
-    titleText = nameText = mazeText = makerText = lvlSelectText = quitText = NULL;
+    C2D_TextBufDelete(s->textBuf);
+    free(s);
+    s = NULL;
 }

@@ -41,8 +41,6 @@ typedef struct{
     float height;
 } Rect;
 
-void init_Rect(Rect** rect, float x, float y, float z, float width, float height, u32 color);
-
 void DrawRect(const Rect* rect);
 
 /*
@@ -56,11 +54,11 @@ bool Rect_Contains(const Rect* rect, int px, int py);
 bool Rect_Tapped(const Rect* rect, const FrameInput* in);
 
 /*
-* Creates a C2D Text object and puts it in the buffer provided.
-* The string is the source of the text
+* Parses str into result, storing its glyphs in buf. A state owns one buf
+* (C2D_TextBufNew in _Init, C2D_TextBufDelete in _End) shared by all its text.
 * Text is rendered with the shared system font (same for JPN/USA/EUR/AUS consoles)
 */
-void MakeText(const char* str, C2D_Text* result);
+void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf);
 
 /*
 * Draws Text to the screen with it's center at the point given. 

@@ -3,16 +3,6 @@
 
 
 
-void init_Rect(Rect** rect, float x, float y, float z, float width, float height, u32 color){
-    *rect = calloc(1, sizeof(Rect));
-    (*rect)->x = x;
-    (*rect)->y = y;
-    (*rect)->z = z;
-    (*rect)->width = width;
-    (*rect)->height = height;
-    (*rect)->Color = color;
-}
-
 void DrawRect(const Rect* rect){
     C2D_DrawRectSolid(rect->x, rect->y, rect->z, rect->width, rect->height, rect->Color);
 }
@@ -31,20 +21,14 @@ bool Rect_Tapped(const Rect* rect, const FrameInput* in){
 
 
 
-void MakeText(const char* str, C2D_Text* result)
+void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf)
 {
-    C2D_TextBuf buff = C2D_TextBufNew(strlen(str));
-    if (buff == NULL) {
-        printConsole("MakeText: C2D_TextBufNew failed for \"%s\"", str);
-        *result = (C2D_Text){0}; //draws nothing, safe to pass to C2D_TextBufDelete
-        return;
-    }
-	C2D_TextBufClear(buff);
-	const char* indicator = C2D_TextParse(result, buff, str);
-	C2D_TextOptimize(result);
+    const char* indicator = C2D_TextParse(result, buf, str);
+    C2D_TextOptimize(result);
 
     if (indicator == NULL) {
         printConsole("MakeText: parse failed for \"%s\"", str);
+        *result = (C2D_Text){0}; //draws nothing
     } else if (*indicator != '\0') {
         printConsole("MakeText: buffer full, stopped at '%c' in \"%s\"", *indicator, str);
     }
