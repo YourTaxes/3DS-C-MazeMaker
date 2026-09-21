@@ -3,16 +3,7 @@
 #include <stdlib.h>
 #include <citro2d.h>
 #include <3ds.h>
-#include "util.h"
-
-#define TOP_SCREEN_WIDTH 400
-#define TOP_SCREEN_HIGHT 240
-
-#define TILE_SIZE 16
-#define TILES_PER_SCREEN 375
-
-#define BOTTOM_SCREEN_WIDTH 320
-#define BOTTOM_SCREEN_HIGHT 240
+#include "util.h" //screen and tile size defines live there
 
 
 typedef struct{

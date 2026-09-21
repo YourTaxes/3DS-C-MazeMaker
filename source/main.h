@@ -6,8 +6,6 @@
 #include <math.h>
 #include "util.h"
 #include "level_file.h"
-#include "top_screen.h"
-#include "bottom_screen.h"
 #include "MainMenu.h"
 #include "Debug_state.h"
 

@@ -8,3 +8,5 @@ build/*
 *.3dsx
 *.elf
 *.smdh
+#linker map listing
+*.lst

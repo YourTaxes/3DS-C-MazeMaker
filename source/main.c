@@ -62,8 +62,6 @@ static void DrawState(){
 		case STATE_DEBUG:
 			Debug_Draw(top, bottom);
 			break;
-			//Top_Tick(&State, top);
-			//Bottom_Tick(&State, bottom);
 		case STATE_MAIN_MENU:
 			//from the main menu, if the player presses A or , they go to the mazemaker game
 			MainMenu_Draw(top, bottom);
@@ -141,9 +139,6 @@ int main(int argc, char **argv)
 
 	top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
-
-	//Init_Top();
-	//Init_Bottom();
 
 	MakeColors();
 
