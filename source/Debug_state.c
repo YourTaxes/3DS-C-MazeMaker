@@ -8,7 +8,7 @@ static C2D_Text* bottom_text;
 
 
 
-Game_State Debug_logic(const FrameInput* in){
+Game_State Debug_logic(const FrameInput* in, GameContext* ctx){
     if (in->kDown & KEY_L)
     {
         printConsole("L pressed on debug state");
@@ -17,7 +17,7 @@ Game_State Debug_logic(const FrameInput* in){
     return STATE_NONE;
 }
 
-void Debug_Init(void){
+void Debug_Init(GameContext* ctx){
     printConsole("init debug state");
 
     top_text = malloc (sizeof(C2D_Text));

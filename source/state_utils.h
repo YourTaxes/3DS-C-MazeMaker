@@ -4,6 +4,17 @@
 #include <citro2d.h>
 #include <3ds.h>
 #include "util.h" //screen and tile size defines live there
+#include "level_file.h"
+
+/*
+* game-wide data that outlives any one state. owned by main, and every
+* state's _Init and _Logic get a pointer to it.
+*/
+typedef struct {
+    Raw_Level* rawLvl;     //the editable grid for the current save slot
+    Built_Level* builtLvl; //the playable version compiled from rawLvl
+    bool rebuildLevel;     //rawLvl changed, so builtLvl is stale and must be recompiled
+} GameContext;
 
 
 typedef struct{

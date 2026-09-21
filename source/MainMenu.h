@@ -16,9 +16,9 @@ typedef enum {
 /*
 * returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
 */
-Game_State MainMenu_Logic(const FrameInput* in, Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl);
+Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx);
 
-void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl);
+void MainMenu_Init(GameContext* ctx);
 
 void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
 

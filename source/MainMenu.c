@@ -30,7 +30,7 @@ static C2D_Text* lvlSelectText;
 static C2D_Text* quitText;
 
 
-void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
+void MainMenu_Init(GameContext* ctx){
     printConsole("init Main Menu");
 
     curHighlightPos = malloc(sizeof(HighlightPositions));
@@ -93,12 +93,12 @@ void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
     MakeText("Level Select", lvlSelectText);
     MakeText("Quit Game", quitText);
 
-    if (*rebuildLvl) {
+    if (ctx->rebuildLevel) {
         printConsole("Coalesce the level here");
 
-        //make funcition to rebuild the level and call it here
+        //make funcition to rebuild ctx->builtLvl from ctx->rawLvl and call it here
 
-        *rebuildLvl = false;
+        ctx->rebuildLevel = false;
     }
 
 }
@@ -140,7 +140,7 @@ void SetHightlightPos(){
 
 
 
-Game_State MainMenu_Logic(const FrameInput* in, Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
+Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
 
     if (in->kDown & KEY_L)
     {

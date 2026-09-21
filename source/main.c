@@ -10,9 +10,10 @@
 
 //global variables
 Game_State State = STATE_DEBUG;
-bool RebuildLevel = true;
 Raw_Level rawLvl;
 Built_Level builtLvl;
+//the level starts out needing a build, since nothing has been compiled yet
+GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = true };
 
 C3D_RenderTarget* top;
 C3D_RenderTarget* bottom;
@@ -27,10 +28,10 @@ static void InitCurrentState(void)
 {
 	switch (State){
 	case STATE_DEBUG:
-		Debug_Init();
+		Debug_Init(&ctx);
 		break;
 	case STATE_MAIN_MENU:
-		MainMenu_Init(&rawLvl, &builtLvl, &RebuildLevel);
+		MainMenu_Init(&ctx);
 		break;
 	default:
 		break;
@@ -44,9 +45,9 @@ static void InitCurrentState(void)
 static Game_State StateFrameLogic(const FrameInput* in){
 	switch (State){
 		case STATE_DEBUG:
-			return Debug_logic(in);
+			return Debug_logic(in, &ctx);
 		case STATE_MAIN_MENU:
-			return MainMenu_Logic(in, &rawLvl, &builtLvl, &RebuildLevel);
+			return MainMenu_Logic(in, &ctx);
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
 			//then they will stop playing and go to the menu
