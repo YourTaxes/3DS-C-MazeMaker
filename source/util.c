@@ -24,7 +24,10 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
     float rawY = (float)cpad->dy;
     float magnatude = sqrtf(rawX * rawX + rawY * rawY);
 
-    //apply deadzone
+    //inside the deadzone the pad reads as centred
+    *normX = 0.0f;
+    *normY = 0.0f;
+
     if (magnatude > CPAD_DEADZONE) {
         float dirX = rawX / magnatude;
         float dirY = rawY / magnatude;

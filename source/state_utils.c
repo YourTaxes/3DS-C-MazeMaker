@@ -35,21 +35,23 @@ bool touchingRect(Rect* rect, touchPosition* touch){
 
 
 
-void MakeText(char* str, C2D_Text* result)
+void MakeText(const char* str, C2D_Text* result)
 {
     C2D_TextBuf buff = C2D_TextBufNew(strlen(str));
+    if (buff == NULL) {
+        printConsole("MakeText: C2D_TextBufNew failed for \"%s\"", str);
+        *result = (C2D_Text){0}; //draws nothing, safe to pass to C2D_TextBufDelete
+        return;
+    }
 	C2D_TextBufClear(buff);
 	const char* indicator = C2D_TextParse(result, buff, str);
 	C2D_TextOptimize(result);
 
-    //printConsole("Char Array = %s", str);
     if (indicator == NULL) {
-        printConsole("Indicator is Null");
+        printConsole("MakeText: parse failed for \"%s\"", str);
     } else if (*indicator != '\0') {
-        printConsole("Indicator is %c", *indicator);
+        printConsole("MakeText: buffer full, stopped at '%c' in \"%s\"", *indicator, str);
     }
-	return;
-	
 }
 
 void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color){

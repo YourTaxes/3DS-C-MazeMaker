@@ -60,7 +60,7 @@ void printConsole(const char* fmt, ...);
 
 /*
 * normalies the circle pad's inputs for use with the player controller
-* outputs through normX and normY
+* outputs through normX and normY, each in -1.0 to 1.0; both are 0 inside the deadzone
 */
 void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY);
 

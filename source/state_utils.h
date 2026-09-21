@@ -33,7 +33,7 @@ bool touchingRect(Rect* rect, touchPosition* touch);
 * The string is the source of the text
 * Text is rendered with the shared system font (same for JPN/USA/EUR/AUS consoles)
 */
-void MakeText(char* str, C2D_Text* result);
+void MakeText(const char* str, C2D_Text* result);
 
 /*
 * Draws Text to the screen with it's center at the point given. 
