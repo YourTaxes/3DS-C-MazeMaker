@@ -10,8 +10,6 @@
 
 //global vars
 
-static Game_State* nextState;
-
 //rects
 static Rect* startMazeButton;
 static Rect* startMakerButton;
@@ -34,8 +32,6 @@ static C2D_Text* quitText;
 
 void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
     printConsole("init Main Menu");
-    nextState = malloc(sizeof(Game_State));
-    *nextState = (Game_State)-1; 
 
     curHighlightPos = malloc(sizeof(HighlightPositions));
     *curHighlightPos = Highlight_Maze;
@@ -108,16 +104,19 @@ void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl){
 }
 
 
-void MazeButtonPressed(bool* stateSwitch){
+static Game_State MazeButtonPressed(void){
     printConsole("Maze button pressed");
+    return STATE_NONE;
 }
 
-void MakerButtonPressed(bool* stateSwitch){
+static Game_State MakerButtonPressed(void){
     printConsole("Maker button pressed");
+    return STATE_NONE;
 }
 
-void LvlButtonPressed(bool* stateSwitch){
+static Game_State LvlButtonPressed(void){
     printConsole("Lvl button pressed");
+    return STATE_NONE;
 }
 
 void SetHightlightPos(){
@@ -141,8 +140,8 @@ void SetHightlightPos(){
 
 
 
-bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl){
-    
+Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl){
+
     if (*stateSwitch) {
         MainMenu_Init(rawLvl, builtLvl, rebuildLvl);
         *stateSwitch = false;
@@ -150,10 +149,11 @@ bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Le
     if (kDown & KEY_L)
     {
         printConsole("L pressed on Main Menu state");
-        *stateSwitch = true;
-        *nextState = STATE_DEBUG; //THIS IS DEBUG AND WILL BE CHANGED LATER
+        return STATE_DEBUG; //THIS IS DEBUG AND WILL BE CHANGED LATER
     }
-    
+
+    Game_State next = STATE_NONE;
+
     //clicking A on button logic, is overrided if player taps on button in same frame
     if (kDown & KEY_UP || kDown & KEY_CPAD_UP)
     {
@@ -171,47 +171,38 @@ bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Le
     if (kDown & KEY_A) {
         switch (*curHighlightPos){
             case Highlight_Maze:
-                // switch to maze
-                MazeButtonPressed(stateSwitch);
+                next = MazeButtonPressed();
                 break;
             case Highlight_Maker:
-                // switch to maker
-                MakerButtonPressed(stateSwitch);
+                next = MakerButtonPressed();
                 break;
             case Highlight_Lvl:
-                // switch to level select
-                LvlButtonPressed(stateSwitch);
+                next = LvlButtonPressed();
                 break;
             case Highlight_Quit:
-                //quit game
-                printConsole("player touched quit button");
-                *stateSwitch = true;
-                *nextState = STATE_MAIN_MENU;
-                return 1;
-                break;
+                printConsole("player pressed A on quit button");
+                return STATE_QUIT;
         };
     }
 
     // detecting player touches a button, takes priority over clicking A
     if (touchingRect(startMazeButton, touch)){
         printConsole("player touched start maze button");
-        MazeButtonPressed(stateSwitch);
+        next = MazeButtonPressed();
     }
     if (touchingRect(startMakerButton, touch)){
         printConsole("player touched start maker button");
-        MakerButtonPressed(stateSwitch);
+        next = MakerButtonPressed();
     }
     if (touchingRect(lvlSelectButton, touch)){
         printConsole("player touched level select button");
-        LvlButtonPressed(stateSwitch);
+        next = LvlButtonPressed();
     }
     if (touchingRect(quitButton, touch)){
         printConsole("player touched quit button");
-        *stateSwitch = true;
-        *nextState = STATE_MAIN_MENU;
-        return 1;
+        return STATE_QUIT;
     }
-    return 0;
+    return next;
 }
 
 
@@ -244,10 +235,8 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
 }
 
 
-void MainMenu_End(Game_State* state){
+void MainMenu_End(void){
     //safe to call even if MainMenu_Init never ran, and safe to call twice
-    if (nextState) *state = *nextState;
-    free(nextState);
     free(startMazeButton);
     free(startMakerButton);
     free(lvlSelectButton);
@@ -271,7 +260,6 @@ void MainMenu_End(Game_State* state){
     free(lvlSelectText);
     free(quitText);
 
-    nextState = NULL;
     startMazeButton = startMakerButton = lvlSelectButton = quitButton = selectHighlight = NULL;
     titleText = nameText = mazeText = makerText = lvlSelectText = quitText = NULL;
 }

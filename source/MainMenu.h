@@ -13,10 +13,13 @@ typedef enum {
 
 #define Highlight_COUNT (Highlight_Quit + 1)
 
-bool MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl);
+/*
+* returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
+*/
+Game_State MainMenu_Logic(u32 kDown, touchPosition* touch, Raw_Level* rawLvl, Built_Level* builtLvl, bool* stateSwitch, bool* rebuildLvl);
 
 void MainMenu_Init(Raw_Level* rawLvl, Built_Level* builtLvl, bool* rebuildLvl);
 
 void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
 
-void MainMenu_End(Game_State* state);
+void MainMenu_End(void);

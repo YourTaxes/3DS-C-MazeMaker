@@ -23,17 +23,15 @@ C3D_RenderTarget* bottom;
 //player positions
 
 /*
-* Does the framelogic function for the current selected state
+* Does the framelogic function for the current selected state.
+* returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
 */
-static void StateFrameLogic(touchPosition* touch, u32 kDown, bool* quitGame){
+static Game_State StateFrameLogic(touchPosition* touch, u32 kDown){
 	switch (State){
 		case STATE_DEBUG:
-			Debug_logic(kDown, &StateSwitch);
-			break;
+			return Debug_logic(kDown, &StateSwitch);
 		case STATE_MAIN_MENU:
-			//from the main menu, if the player presses A or , they go to the mazemaker game
-			*quitGame = MainMenu_Logic(kDown, touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
-			break;
+			return MainMenu_Logic(kDown, touch, &rawLvl, &builtLvl, &StateSwitch, &RebuildLevel);
 		case STATE_MAZE_GAME:
 			//if the player hits the button to stop,
 			//then they will stop playing and go to the menu
@@ -51,7 +49,10 @@ static void StateFrameLogic(touchPosition* touch, u32 kDown, bool* quitGame){
 		case STATE_you_recieved_the_egg:
 			//him
 			break;
+		default:
+			break;
 	};
+	return STATE_NONE;
 }
 
 /*
@@ -83,6 +84,8 @@ static void DrawState(){
 		case STATE_you_recieved_the_egg:
 			//him
 			break;
+		default:
+			break;
 		};
 }
 
@@ -94,12 +97,10 @@ static void EndCurrentState(void)
 {
 	switch (State){
 	case STATE_DEBUG:
-		Debug_end(&State);
-		//end debug state
+		Debug_end();
 		break;
 	case STATE_MAIN_MENU:
-		//from the main menu, if the player presses A or , they go to the mazemaker game
-		MainMenu_End(&State);
+		MainMenu_End();
 		break;
 	case STATE_MAZE_GAME:
 		//if the player hits the button to stop,
@@ -117,6 +118,8 @@ static void EndCurrentState(void)
 		break;
 	case STATE_you_recieved_the_egg:
 		//him
+		break;
+	default:
 		break;
 	};
 }
@@ -147,10 +150,6 @@ int main(int argc, char **argv)
 	u32 kDown = 0, kHeld = 0, kUp = 0, kDownOld = 0, kHeldOld = 0, kUpOld = 0; //In these variables there will be information about keys detected in the previous frame
 
 	printConsole("By Finnegan McDevitt");
-
-	bool quitGame = false;
-
-
 
 
 	// Main loop
@@ -206,31 +205,22 @@ int main(int argc, char **argv)
 
 
 		//do frame logic
-		
+		Game_State next = StateFrameLogic(&touch, kDown);
 
-		StateFrameLogic(&touch, kDown, &quitGame);
-		
-		
-		
 		//Render the scene
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
-		//handle drawing
-		
-		
 		DrawState();
-		
-
-
 		//End the frame once, after every screen has been drawn
 		C3D_FrameEnd(0);
 
-		if (StateSwitch){
-			//handle state switching
+		//handle state switching. the old state is drawn one last time above,
+		//then torn down; the new one inits itself on its first _Logic call.
+		if (next != STATE_NONE){
+			StateSwitch = true;
 			EndCurrentState();
+			if (next == STATE_QUIT) break;
+			State = next;
 		}
-
-		if (quitGame) break;
 
 
 		if (kDown & KEY_Y){

@@ -3,14 +3,12 @@
 
 //global variables
 
-static Game_State* nextState;
-
 static C2D_Text* top_text;
 static C2D_Text* bottom_text;
 
 
 
-void Debug_logic(u32 kDown, bool* stateSwitch){
+Game_State Debug_logic(u32 kDown, bool* stateSwitch){
     if (*stateSwitch){
         Debug_Init(stateSwitch);
         *stateSwitch = false;
@@ -18,15 +16,13 @@ void Debug_logic(u32 kDown, bool* stateSwitch){
     if (kDown & KEY_L)
     {
         printConsole("L pressed on debug state");
-        *stateSwitch = true;
-        *nextState = STATE_MAIN_MENU;
+        return STATE_MAIN_MENU;
     }
+    return STATE_NONE;
 }
 
 void Debug_Init(bool* stateSwitch){
     printConsole("init debug state");
-    nextState = malloc(sizeof(Game_State));
-    *nextState = (Game_State)-1; 
 
     top_text = malloc (sizeof(C2D_Text));
     bottom_text = malloc(sizeof(C2D_Text));
@@ -47,15 +43,11 @@ void Debug_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
 }
 
 
-void Debug_end(Game_State* state) {
+void Debug_end(void) {
     //safe to call even if Debug_Init never ran (e.g. exit on the first frame)
-    if (nextState) *state = *nextState;
-    free(nextState);
-
     if (top_text) C2D_TextBufDelete(top_text->buf);
     if (bottom_text) C2D_TextBufDelete(bottom_text->buf);
     free(top_text);
     free(bottom_text);
     top_text = bottom_text = NULL;
-    nextState = NULL;
 }

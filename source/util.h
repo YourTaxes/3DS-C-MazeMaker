@@ -28,7 +28,12 @@ typedef enum{
     STATE_you_recieved_the_egg,
     //STATE_the_man_smiles,
     //STATE_there_is_no_longer_a_man_behind_the_tree,
-    STATE_DEBUG
+    STATE_DEBUG,
+
+    //non switching status identifiers
+    STATE_COUNT, //number of real states above
+    STATE_NONE,  //stay in the current state
+    STATE_QUIT   //leave the game
 } Game_State;
 
 typedef enum{
