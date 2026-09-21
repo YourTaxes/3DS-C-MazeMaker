@@ -248,8 +248,6 @@ int main(int argc, char **argv)
 			printConsole("linear free: %lu", (unsigned long)linearSpaceFree());
 		}
 
-		//Wait for VBlank
-		gspWaitForVBlank();
 	}
 
 	//the loop can exit (START / HOME) between a state's _Init and _End,
