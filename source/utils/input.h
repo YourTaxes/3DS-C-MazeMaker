@@ -6,6 +6,15 @@
 #define CPAD_DEADZONE 15.0f
 
 /*
+* HID pad bits 12 and 13 have no names in libctru. the hardware calls them the
+* debug button and GPIO14, and neither is wired up on a retail 3DS, so they are
+* free to use as emulator-only debug keys: azahar lists both in its input config
+* right under the real buttons. on hardware these never fire, which is the point.
+*/
+#define KEY_DEBUG  BIT(12)
+#define KEY_GPIO14 BIT(13)
+
+/*
 * everything the player did this frame. filled once per frame by Input_Read
 * in main and passed to the current state's _Logic.
 */

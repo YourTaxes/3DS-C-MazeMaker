@@ -1,4 +1,4 @@
-#include <malloc.h> // mallinfo, for the heap stats on KEY_Y
+#include <malloc.h> // mallinfo, for the heap stats on KEY_GPIO14
 #include <3ds.h>
 #include <citro2d.h>
 #include "utils/debug.h"
@@ -81,8 +81,24 @@ int main(int argc, char **argv)
 		//Scan all the inputs. This should be done once for each frame
 		Input_Read(&in);
 
-		if (in.kDown & KEY_X){
+		if (in.kDown & KEY_DEBUG){
 			printInputs(&in);
+		}
+
+		if (in.kDown & KEY_GPIO14){
+			//percentages are printed as integers on purpose: newlib's printf mallocs
+			//scratch buffers the first time it formats a float and never frees them,
+			//which would shift the very heap number we're trying to read.
+			int cpu = (int)(C3D_GetProcessingTime()*600.0f); //hundredths of a percent
+			int gpu = (int)(C3D_GetDrawingTime()*600.0f);
+			int cmd = (int)(C3D_GetCmdBufUsage()*10000.0f);
+			printConsole("CPU:     %3d.%02d%%", cpu/100, cpu%100);
+			printConsole("GPU:     %3d.%02d%%", gpu/100, gpu%100);
+			printConsole("CmdBuf:  %3d.%02d%%", cmd/100, cmd%100);
+			//guest-side memory: bytes currently malloc'd, and free linear (GPU) memory.
+			//if these stay flat across state switches, the game itself is not leaking.
+			printConsole("heap used:   %d", mallinfo().uordblks);
+			printConsole("linear free: %lu", (unsigned long)linearSpaceFree());
 		}
 
 		//keyboard test demo
@@ -117,23 +133,6 @@ int main(int argc, char **argv)
 				State = next;
 				STATES[State].init(&ctx);
 			}
-		}
-
-
-		if (in.kDown & KEY_Y){
-			//percentages are printed as integers on purpose: newlib's printf mallocs
-			//scratch buffers the first time it formats a float and never frees them,
-			//which would shift the very heap number we're trying to read.
-			int cpu = (int)(C3D_GetProcessingTime()*600.0f); //hundredths of a percent
-			int gpu = (int)(C3D_GetDrawingTime()*600.0f);
-			int cmd = (int)(C3D_GetCmdBufUsage()*10000.0f);
-			printConsole("CPU:     %3d.%02d%%", cpu/100, cpu%100);
-			printConsole("GPU:     %3d.%02d%%", gpu/100, gpu%100);
-			printConsole("CmdBuf:  %3d.%02d%%", cmd/100, cmd%100);
-			//guest-side memory: bytes currently malloc'd, and free linear (GPU) memory.
-			//if these stay flat across state switches, the game itself is not leaking.
-			printConsole("heap used:   %d", mallinfo().uordblks);
-			printConsole("linear free: %lu", (unsigned long)linearSpaceFree());
 		}
 
 	}

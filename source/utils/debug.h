@@ -6,7 +6,7 @@
 * printf a debug line to the debugger (stderr). Everything is passed
 * straight to printf; a newline is appended.
 * avoid %f: newlib's printf mallocs scratch buffers the first time it formats
-* a float and never frees them, which shifts the heap numbers we watch on KEY_Y.
+* a float and never frees them, which shifts the heap numbers we watch on KEY_GPIO14.
 */
 void printConsole(const char* fmt, ...);
 
