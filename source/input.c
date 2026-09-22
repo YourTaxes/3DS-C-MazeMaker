@@ -1,22 +1,6 @@
-#include "util.h"
-#include <stdarg.h>
-#include <stdio.h>
-
-u32 Colors[11];
-
-/*
-* printf a debug line. Everything is passed straight to printf.
-* There is no on-screen console; stderr is routed to the debugger
-* (GDB / Azahar log) by consoleDebugInit(debugDevice_SVC).
-*/
-void printConsole(const char* fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-    fputc('\n', stderr); // flush the buffer
-}
+#include "input.h"
+#include "debug.h"
+#include <math.h>
 
 void Input_Read(FrameInput* in) {
     hidScanInput();
@@ -59,9 +43,8 @@ void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
     }
 }
 
-
 void printInputs(const FrameInput* in){
-    //integers, not %f: see the KEY_Y heap stats in main.c for why
+    //integers, not %f: see printConsole in debug.h for why
     printConsole("Circle pad position (x100): %d %d", (int)(in->cpadX * 100.0f), (int)(in->cpadY * 100.0f));
     printConsole("Touch: %d %d", in->touch.px, in->touch.py);
     //print all of the button info
@@ -71,47 +54,6 @@ void printInputs(const FrameInput* in){
     printConsole("up is   %s", ToBinary(in->kUp, binBuff));
 }
 
-/*
-* Writes the 32-bit binary representation of value into buff (MSB first).
-* buff must be at least 33 bytes. Returns buff so it can be used inline.
-*/
-char* ToBinary(u32 value, char* buff)
-{
-    for (int i = 0; i < 32; i++)
-        buff[i] = (value & (1u << (31 - i))) ? '1' : '0';
-    buff[32] = '\0';
-    return buff;
-}
-
-
-/*
-* creates the colors for the color array
-*/
-void MakeColors(){
-    Colors[CLR_RED] = C2D_Color32(255, 0, 0, 255);
-    Colors[CLR_ORANGE] = C2D_Color32(255, 200, 0, 255);
-    Colors[CLR_YELLOW] = C2D_Color32(255, 255, 0, 255);
-    Colors[CLR_GREEN] = C2D_Color32(0, 255, 0, 255);
-    Colors[CLR_CYAN] = C2D_Color32(0, 255, 255, 255);
-    Colors[CLR_BLUE] = C2D_Color32(0, 0, 255, 255);
-    Colors[CLR_LT_GRAY] = C2D_Color32(192, 192, 192, 255);
-    Colors[CLR_GRAY] = C2D_Color32(128, 128, 128, 255);
-    Colors[CLR_DK_GRAY] = C2D_Color32(64, 64, 64, 255);
-    Colors[CLR_BLACK] = C2D_Color32(0, 0, 0, 255);
-    Colors[CLR_WHITE] = C2D_Color32(255, 255, 255, 255);
-}
-
-
-
-
-
-
-
-/*
-* returns true if the user ended the session with the OK button
-* returns false if not
-* outputs the response through the buff pointer no matter what
-*/
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type) 
 {
     printConsole("Keyboard Starting");
@@ -136,6 +78,3 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type)
 	}
 	return false;
 }
-
-
-

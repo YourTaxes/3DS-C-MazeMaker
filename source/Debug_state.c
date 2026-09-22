@@ -1,4 +1,7 @@
 #include "Debug_state.h"
+#include "graphics.h"
+#include "debug.h"
+#include <stdlib.h>
 
 #define TOP_SCREEN_MAX_GLYPHS 32
 #define BOTTOM_SCREEN_MAX_GLYPHS 32

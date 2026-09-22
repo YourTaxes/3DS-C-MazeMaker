@@ -1,6 +1,24 @@
-#include "state_utils.h"
+#include "graphics.h"
+#include "debug.h"
 
+u32 Colors[11];
 
+/*
+* creates the colors for the color array
+*/
+void MakeColors(void){
+    Colors[CLR_RED] = C2D_Color32(255, 0, 0, 255);
+    Colors[CLR_ORANGE] = C2D_Color32(255, 200, 0, 255);
+    Colors[CLR_YELLOW] = C2D_Color32(255, 255, 0, 255);
+    Colors[CLR_GREEN] = C2D_Color32(0, 255, 0, 255);
+    Colors[CLR_CYAN] = C2D_Color32(0, 255, 255, 255);
+    Colors[CLR_BLUE] = C2D_Color32(0, 0, 255, 255);
+    Colors[CLR_LT_GRAY] = C2D_Color32(192, 192, 192, 255);
+    Colors[CLR_GRAY] = C2D_Color32(128, 128, 128, 255);
+    Colors[CLR_DK_GRAY] = C2D_Color32(64, 64, 64, 255);
+    Colors[CLR_BLACK] = C2D_Color32(0, 0, 0, 255);
+    Colors[CLR_WHITE] = C2D_Color32(255, 255, 255, 255);
+}
 
 
 void DrawRect(const Rect* rect){
@@ -17,8 +35,6 @@ bool Rect_Tapped(const Rect* rect, const FrameInput* in){
     //so kDown & KEY_TOUCH is "the touch began this frame"
     return (in->kDown & KEY_TOUCH) && Rect_Contains(rect, in->touch.px, in->touch.py);
 }
-
-
 
 
 void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf)

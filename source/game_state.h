@@ -1,10 +1,30 @@
 #pragma once
 
-#include <stdlib.h>
-#include <citro2d.h>
+#include <citro2d.h> //C3D_RenderTarget
 #include <3ds.h>
-#include "util.h" //screen and tile size defines live there
+#include "input.h"
 #include "level_file.h"
+
+typedef enum{
+    STATE_MAIN_MENU,
+    STATE_MAZE_GAME,
+    STATE_MAZE_MAKER,
+    STATE_SAVE_SELECT,
+    STATE_OOB, //out of bounds
+    //STATE_there_is_a_man_here,
+    //STATE_he_is_behind_the_tree,
+    //STATE_he_offers_you_something,
+    //STATE_you_reach_out_your_hand,
+    STATE_you_recieved_the_egg,
+    //STATE_the_man_smiles,
+    //STATE_there_is_no_longer_a_man_behind_the_tree,
+    STATE_DEBUG,
+
+    //non switching status identifiers
+    STATE_COUNT, //number of real states above
+    STATE_NONE,  //stay in the current state
+    STATE_QUIT   //leave the game
+} Game_State;
 
 /*
 * game-wide data that outlives any one state. owned by main, and every
@@ -30,42 +50,3 @@ typedef struct {
     void (*draw)(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
     void (*end)(void);
 } StateFns;
-
-
-typedef struct{
-    u32 Color;
-    float x;
-    float y;
-    float z;
-    float width;
-    float height;
-} Rect;
-
-void DrawRect(const Rect* rect);
-
-/*
-* is the point inside the rectangle
-*/
-bool Rect_Contains(const Rect* rect, int px, int py);
-
-/*
-* returns true only on the frame the stylus first lands inside the rectangle.
-*/
-bool Rect_Tapped(const Rect* rect, const FrameInput* in);
-
-/*
-* Parses str into result, storing its glyphs in buf. A state owns one buf
-* (C2D_TextBufNew in _Init, C2D_TextBufDelete in _End) shared by all its text.
-* Text is rendered with the shared system font (same for JPN/USA/EUR/AUS consoles)
-*/
-void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf);
-
-/*
-* Draws Text to the screen with it's center at the point given.
-*/
-void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
-
-/*
-* Draws Text centered inside the rectangle (e.g. a button's label).
-*/
-void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color);

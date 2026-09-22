@@ -45,8 +45,18 @@ This file holds only the main loop. it chooses what state's files to run based o
     * delete the render targets, C2D finish, C3D finish, romfsExit, gfxExit
 
 
+
+## SHARED FILES
+each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, and game_state <- (input, level_file). nothing includes something that includes it back.
+* debug.h/.c - printConsole (stderr to the debugger) and ToBinary. no game knowledge.
+* input.h/.c - FrameInput, Input_Read, normalizeCirclePad, printInputs, GetKeyboard. the only place the hid is read.
+* graphics.h/.c - screen size defines, Colors[] / MakeColors, Rect + DrawRect / Rect_Contains / Rect_Tapped, MakeText / DrawTextCentered / DrawTextInRect.
+* game_state.h - Game_State enum, GameContext, StateFns. header only, this is the contract every state file implements.
+* level_file.h - tile / level / save file structs and their sizes. header only.
+* when the maker palette needs a generic Button (rect + label + action), it should go in a new ui.h/.c on top of graphics.h rather than growing graphics.h.
+
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
-every state file provides the same four functions, with the same signatures, so main can hold them in the StateFns table (state_utils.h). main guarantees the order: init, then logic/draw every frame, then end. exactly once each.
+every state file provides the same four functions, with the same signatures, so main can hold them in the StateFns table (game_state.h). main guarantees the order: init, then logic/draw every frame, then end. exactly once each.
 
 * ONE STRUCT, ONE POINTER. each file defines a struct holding EVERYTHING the state owns while active (rects, C2D_Texts, the text buf handle, counters, whatever) and exactly one static pointer to it:
     ```c
