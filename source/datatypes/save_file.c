@@ -6,6 +6,22 @@
 #include <sys/stat.h> // mkdir
 
 /*
+* a best time and its valid flag, in the order Raw_Level keeps them. writing
+* exactly TIME_PAIR_BYTES sends the double and the bool and stops, so the byte
+* after the flag (`empty`, for the standard pair) is left alone. sizeof(TimePair)
+* would be 16 with trailing padding and would clobber it.
+*/
+typedef struct { double time; bool valid; } TimePair;
+#define TIME_PAIR_BYTES (offsetof(TimePair, valid) + sizeof(bool))
+
+//Raw_Level keeps each time next to its own flag on purpose, so one write does both.
+//if someone reorders those fields, this stops the build instead of corrupting saves.
+_Static_assert(offsetof(Raw_Level, standardTimeValid) - offsetof(Raw_Level, bestTimeStandard) == offsetof(TimePair, valid),
+               "bestTimeStandard and standardTimeValid must stay adjacent");
+_Static_assert(offsetof(Raw_Level, hardTimeValid) - offsetof(Raw_Level, bestTimeHard) == offsetof(TimePair, valid),
+               "bestTimeHard and hardTimeValid must stay adjacent");
+
+/*
 * byte offset of Levels[slot] inside the file, or -1 if slot is out of range.
 * every per slot function goes through this so the offset math is written once.
 */
@@ -89,7 +105,7 @@ bool SaveFile_Ensure(void)
 
     printConsole("creating a fresh save file, %u bytes", (unsigned)sizeof(Save_File));
 
-    //zeroed memory already means every tile is EMPTY, bestTime 0 and levelName "".
+    //zeroed memory already means every tile is EMPTY, both times 0 and invalid, and levelName "".
     //the buffer is freed before returning so the heap is back where it started.
     Save_File* fresh = calloc(1, sizeof(Save_File));
     if (fresh == NULL){
@@ -145,11 +161,19 @@ bool SaveFile_WriteSlot(int slot, const Raw_Level* lvl)
     return transferAt(offset, (void*)lvl, sizeof(Raw_Level), true);
 }
 
-bool SaveFile_WriteSlotTime(int slot, double bestTime)
+bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time)
 {
     long offset = slotOffset(slot);
     if (offset < 0) return false;
+
+    size_t fieldOff = hardMode ? offsetof(Raw_Level, bestTimeHard)
+                               : offsetof(Raw_Level, bestTimeStandard);
+
+    //recording a time is what makes it valid, so the flag goes out with it
+    TimePair pair = { .time = time, .valid = true };
+
     //no %f in the log (see debug.h), so the time is reported in whole milliseconds
-    printConsole("slot %d best time -> %ld ms", slot, (long)(bestTime * 1000.0));
-    return transferAt(offset + offsetof(Raw_Level, bestTime), &bestTime, sizeof bestTime, true);
+    printConsole("slot %d best %s time -> %ld ms", slot, hardMode ? "hard" : "standard",
+                 (long)(time * 1000.0));
+    return transferAt(offset + (long)fieldOff, &pair, TIME_PAIR_BYTES, true);
 }

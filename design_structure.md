@@ -58,10 +58,11 @@ This file holds only the main loop. it chooses what state's files to run based o
 each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, game_state <- (input, level_file), and save_file <- (level_file, debug). nothing includes something that includes it back. states include these; these never include a state.
 * utils/debug.h/.c - printConsole (stderr to the debugger) and ToBinary. no game knowledge.
 * utils/input.h/.c - FrameInput, Input_Read, normalizeCirclePad, printInputs, GetKeyboard. the only place the hid is read.
+* utils/format.h/.c - FormatTime (seconds -> mm:ss:mmm, minutes never clamped, negatives treated as 0) and TIME_STR_LEN. converts to whole milliseconds and formats integers only, so no %f ever reaches printf.
 * utils/graphics.h/.c - screen size defines, Colors[] / MakeColors, Rect + DrawRect / Rect_Contains / Rect_Tapped, MakeText / DrawTextCentered / DrawTextInRect.
 * datatypes/game_state.h - Game_State enum, GameContext, StateFns. header only, this is the contract every state file implements.
-* datatypes/level_file.h - tile / level / save file structs and their sizes. header only.
-* datatypes/save_file.h/.c - the only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime (game, new best time). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
+* datatypes/level_file.h - tile / level / save file structs and their sizes. header only. inside Raw_Level each best time is kept immediately before its own valid flag, so SaveFile_WriteSlotTime can write the time and the flag in one go. _Static_asserts in save_file.c break the build if that order is disturbed.
+* datatypes/save_file.h/.c - the only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime(slot, hardMode, time) (game, new best time: writes that one time and marks it valid). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
 * when the maker palette needs a generic Button (rect + label + action), it should go in a new utils/ui.h/.c on top of graphics.h rather than growing graphics.h.
 
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
@@ -99,10 +100,17 @@ every state file provides the same four functions, with the same signatures, so 
 this file will load the currently selected save slot, and allow for switching to all other states (except for egg room and debug) 
 * the buttons are a static const table MENU_ITEMS[] of { label, target state }, in top to bottom order. init, logic and draw all loop over it, so adding a button is one line. STATE_QUIT is just another target.
 * layout is a handful of #defines (BUTTON_X, BUTTON_Y0, BUTTON_SPACING, BUTTON_W, BUTTON_H, HIGHLIGHT_PAD). button i is at y = BUTTON_Y0 + i * BUTTON_SPACING. all positions are hardcoded, just hardcoded once.
-* MainMenuState: textBuf, the title and name text for the top screen, a Rect and a C2D_Text per button, and cur (index of the highlighted button).
+* the slot info block in the middle of the top screen has its own layout defines (INFO_Y0, INFO_LINE_SPACING, INFO_GROUP_GAP, INFO_TEXT_SCALE). line i is at y = INFO_Y0 + i * INFO_LINE_SPACING, plus INFO_GROUP_GAP once the time pair starts, so the two pairs read as two groups.
+* MainMenuState: textBuf, the title and byline text for the top screen, the four slot info texts plus drawHardTime, a Rect and a C2D_Text per button, and cur (index of the highlighted button).
+* MAIN_MENU_MAX_GLYPHS is 256. every character a state parses takes a slot (citro2d only treats '\n' specially, spaces included), and the worst case here is 179, mostly the 32 char level name and the two time lines. if a line is added, recount and round up to the next power of two.
 
 * MainMenu_Init(GameContext* ctx):
     * calloc s, make the text buf, parse all text, fill the button rects from the layout defines, cur = 0
+    * build the four slot info lines from ctx->curSlot and ctx->rawLvl into local char buffers, then MakeText each one. the buffers are locals because C2D_TextParse copies the glyphs into textBuf, so nothing has to outlive Init. this is also why the block refreshes for free: main runs Init again on every entry to the state, so coming back from the save menu shows the new slot.
+        * line 1, always: "Slot N", with N as curSlot + 1 so the player sees 1-4, not 0-3.
+        * line 2: "Name: Empty" on an empty slot, otherwise "Name: " and the level name. the name is printed with a precision of LEVEL_NAME_MAX_LEN, since levelName is a fixed char[32] that a full length rename leaves unterminated.
+        * lines 3 and 4: "Best Standard Time: " and "Best Hard Time: ", each followed by FormatTime of the matching time, or "No time yet" when its valid flag is false.
+        * on an empty slot, line 3 is "Empty level, no best times" instead and drawHardTime is false, so line 4 is not drawn at all. (drawing is skipped rather than parsing an empty string, which would trip a MakeText log line.)
     * if ctx->rebuildLevel is true, then rebuild the Built_Level from the Raw_Level and clear the flag.
         * have not determined the logic for this yet, but it should be done here.
 
@@ -113,7 +121,7 @@ this file will load the currently selected save slot, and allow for switching to
     * otherwise return STATE_NONE.
 
 * MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom):
-    * top screen is Game title, and my name below it. 
+    * top screen is the game title, the current slot's info block centered under it, and my name at the bottom. the info lines are held in a small array and looped over, drawing 3 of them or 4 depending on drawHardTime.
     * bottom screen: the highlight (the selected button's rect grown by HIGHLIGHT_PAD, drawn first so it sits underneath), then each button rect with its label centered in it (DrawTextInRect).
     * (the earlier plan had 3 buttons plus a "press start to exit" message. there are now 4 buttons including Quit; START still exits from anywhere.)
 

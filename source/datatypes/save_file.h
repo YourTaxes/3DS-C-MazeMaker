@@ -43,7 +43,8 @@ bool SaveFile_ReadSlot(int slot, Raw_Level* out);
 bool SaveFile_WriteSlot(int slot, const Raw_Level* lvl);
 
 /*
-* overwrite only the bestTime field of save slot `slot` on disk. false on any failure.
+* overwrite one best time of save slot `slot` on disk, standard or hard, and mark it
+* valid. nothing else in the slot is touched. false on any failure.
 * the game calls this after a level is completed with a new best.
 */
-bool SaveFile_WriteSlotTime(int slot, double bestTime);
+bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time);
