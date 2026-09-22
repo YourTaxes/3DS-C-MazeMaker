@@ -1,7 +1,7 @@
 #pragma once
 
 #include <3ds.h>
-#include "level_file.h"
+#include "datatypes/level_file.h"
 
 /*
 * the save file lives on the SD card. this is the only place the SD card is touched.

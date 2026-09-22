@@ -1,6 +1,14 @@
 # DESIGN STRUCTURE
 
-## main.c
+## PROJECT LAYOUT
+* source/ - main.c and nothing else.
+* source/datatypes/ - the structs the whole game shares, and the code that reads and writes them. game_state.h, level_file.h, save_file.h/.c.
+* source/utils/ - stateless helpers.
+* source/states/<Name>/ - one folder per state: its four functions plus anything only that state uses, eg maze game logic.
+* the Makefile lists every one of these folders in SOURCES and source/ in INCLUDES. 
+* important, cant't make files that have the same name.
+
+## source/main.c
 This file holds only the main loop. it chooses what state's files to run based on if the state variable
 * global varibles 
     * Game_State State: init to STATE_MAIN_MENU
@@ -47,14 +55,14 @@ This file holds only the main loop. it chooses what state's files to run based o
 
 
 ## SHARED FILES
-each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, game_state <- (input, level_file), and save_file <- (level_file, debug). nothing includes something that includes it back.
-* debug.h/.c - printConsole (stderr to the debugger) and ToBinary. no game knowledge.
-* input.h/.c - FrameInput, Input_Read, normalizeCirclePad, printInputs, GetKeyboard. the only place the hid is read.
-* graphics.h/.c - screen size defines, Colors[] / MakeColors, Rect + DrawRect / Rect_Contains / Rect_Tapped, MakeText / DrawTextCentered / DrawTextInRect.
-* game_state.h - Game_State enum, GameContext, StateFns. header only, this is the contract every state file implements.
-* level_file.h - tile / level / save file structs and their sizes. header only.
-* save_file.h/.c - the only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime (game, new best time). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
-* when the maker palette needs a generic Button (rect + label + action), it should go in a new ui.h/.c on top of graphics.h rather than growing graphics.h.
+each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, game_state <- (input, level_file), and save_file <- (level_file, debug). nothing includes something that includes it back. states include these; these never include a state.
+* utils/debug.h/.c - printConsole (stderr to the debugger) and ToBinary. no game knowledge.
+* utils/input.h/.c - FrameInput, Input_Read, normalizeCirclePad, printInputs, GetKeyboard. the only place the hid is read.
+* utils/graphics.h/.c - screen size defines, Colors[] / MakeColors, Rect + DrawRect / Rect_Contains / Rect_Tapped, MakeText / DrawTextCentered / DrawTextInRect.
+* datatypes/game_state.h - Game_State enum, GameContext, StateFns. header only, this is the contract every state file implements.
+* datatypes/level_file.h - tile / level / save file structs and their sizes. header only.
+* datatypes/save_file.h/.c - the only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime (game, new best time). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
+* when the maker palette needs a generic Button (rect + label + action), it should go in a new utils/ui.h/.c on top of graphics.h rather than growing graphics.h.
 
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
 every state file provides the same four functions, with the same signatures, so main can hold them in the StateFns table (game_state.h). main guarantees the order: init, then logic/draw every frame, then end. exactly once each.
@@ -87,7 +95,7 @@ every state file provides the same four functions, with the same signatures, so 
     
 
 
-## Main_Menu.c/h
+## states/MainMenu/MainMenu.c/h
 this file will load the currently selected save slot, and allow for switching to all other states (except for egg room and debug) 
 * the buttons are a static const table MENU_ITEMS[] of { label, target state }, in top to bottom order. init, logic and draw all loop over it, so adding a button is one line. STATE_QUIT is just another target.
 * layout is a handful of #defines (BUTTON_X, BUTTON_Y0, BUTTON_SPACING, BUTTON_W, BUTTON_H, HIGHLIGHT_PAD). button i is at y = BUTTON_Y0 + i * BUTTON_SPACING. all positions are hardcoded, just hardcoded once.
@@ -116,7 +124,7 @@ this file will load the currently selected save slot, and allow for switching to
 * set the game logic to be to always switch to the game screen
 * leave running and see if memory usage increases.
 
-## Level Select
+## Level Select - states/LevelSelect/
 * LevelSelectState holds a Save_File (the whole file, loaded with SaveFile_Read in _Init, so the file is only in RAM while this state is active). saving a slot / rename / copy / delete edit that struct, then SaveFile_Write flushes it to disk. main and the other states never hold the file, only rawLvl. loading a slot sets ctx->curSlot.
 * UPON THIS STATE BEGINING, THE PLAYER WILL BE ASKED IF THEY WANT TO SAVE THEIR SLOT BEFORE CONTINUING. 
 
@@ -154,7 +162,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 
 
-## Maze Game
+## Maze Game - states/Maze/
 * IMPORTANT IDEA FROM KELIN - ONLY CHECK COLISION WITH TILES WITHIN 1 TILE UNIT OF THE PLAYER.
     * if player is in [1, 1], check colision with [0,0], [1,0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 1]. 
     * keep track of what cordanate grid space the player is in by dividing their cordinates by the length of a tile. 

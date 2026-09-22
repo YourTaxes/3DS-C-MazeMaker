@@ -1,6 +1,6 @@
-#include "MainMenu.h"
-#include "graphics.h"
-#include "debug.h"
+#include "states/MainMenu/MainMenu.h"
+#include "utils/graphics.h"
+#include "utils/debug.h"
 #include <stdlib.h>
 
 //bottom screen button layout. every button is the same size, stacked top to bottom.
@@ -123,8 +123,8 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    DrawTextCentered(&mmstate->titleText, TOP_SCREEN_WIDTH / 2, 60, 2, 2, Colors[CLR_BLACK]);
-    DrawTextCentered(&mmstate->nameText, TOP_SCREEN_WIDTH / 2, 180, 1, 1, Colors[CLR_BLACK]);
+    DrawTextCentered(&mmstate->titleText, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HIGHT / 4, 2, 2, Colors[CLR_BLACK]);
+    DrawTextCentered(&mmstate->nameText, TOP_SCREEN_WIDTH / 2, 19 * (TOP_SCREEN_HIGHT / 20), 1, 1, Colors[CLR_BLACK]);
 
     //draw the bottom screen
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);

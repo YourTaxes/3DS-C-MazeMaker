@@ -1,5 +1,5 @@
-#include "graphics.h"
-#include "debug.h"
+#include "utils/graphics.h"
+#include "utils/debug.h"
 
 u32 Colors[11];
 

@@ -1,6 +1,6 @@
-#include "Debug_state.h"
-#include "graphics.h"
-#include "debug.h"
+#include "states/Debug/Debug_state.h"
+#include "utils/graphics.h"
+#include "utils/debug.h"
 #include <stdlib.h>
 
 #define TOP_SCREEN_MAX_GLYPHS 32

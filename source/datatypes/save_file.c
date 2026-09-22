@@ -1,5 +1,5 @@
-#include "save_file.h"
-#include "debug.h"
+#include "datatypes/save_file.h"
+#include "utils/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>   // offsetof

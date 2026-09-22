@@ -2,7 +2,7 @@
 
 #include <citro2d.h>
 #include <3ds.h>
-#include "input.h" //Rect_Tapped reads the frame's touch
+#include "utils/input.h" //Rect_Tapped reads the frame's touch
 
 #define TOP_SCREEN_WIDTH 400
 #define TOP_SCREEN_HIGHT 240

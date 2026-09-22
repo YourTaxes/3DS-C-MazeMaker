@@ -1,14 +1,14 @@
 #include <malloc.h> // mallinfo, for the heap stats on KEY_Y
 #include <3ds.h>
 #include <citro2d.h>
-#include "debug.h"
-#include "input.h"
-#include "graphics.h"
-#include "game_state.h"
-#include "level_file.h"
-#include "save_file.h"
-#include "MainMenu.h"
-#include "Debug_state.h"
+#include "utils/debug.h"
+#include "utils/input.h"
+#include "utils/graphics.h"
+#include "datatypes/game_state.h"
+#include "datatypes/level_file.h"
+#include "datatypes/save_file.h"
+#include "states/MainMenu/MainMenu.h"
+#include "states/Debug/Debug_state.h"
 
 
 //global variables

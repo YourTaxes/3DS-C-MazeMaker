@@ -1,5 +1,5 @@
-#include "input.h"
-#include "debug.h"
+#include "utils/input.h"
+#include "utils/debug.h"
 #include <math.h>
 
 void Input_Read(FrameInput* in) {

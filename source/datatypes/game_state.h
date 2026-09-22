@@ -2,8 +2,8 @@
 
 #include <citro2d.h> //C3D_RenderTarget
 #include <3ds.h>
-#include "input.h"
-#include "level_file.h"
+#include "utils/input.h"
+#include "datatypes/level_file.h"
 
 typedef enum{
     STATE_MAIN_MENU,
