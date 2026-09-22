@@ -61,6 +61,11 @@ bool Rect_Tapped(const Rect* rect, const FrameInput* in);
 void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf);
 
 /*
-* Draws Text to the screen with it's center at the point given. 
+* Draws Text to the screen with it's center at the point given.
 */
-void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
+void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
+
+/*
+* Draws Text centered inside the rectangle (e.g. a button's label).
+*/
+void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color);

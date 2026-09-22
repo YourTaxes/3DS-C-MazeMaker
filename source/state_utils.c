@@ -34,7 +34,7 @@ void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf)
     }
 }
 
-void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color){
+void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color){
     float width, height;
     C2D_TextGetDimensions(text, scaleX, scaleY, &width, &height);
 
@@ -42,4 +42,8 @@ void DrawTextCentered(C2D_Text* text, float centerX, float centerY, float scaleX
     float drawY = centerY - (height / 2.0f);
 
     C2D_DrawText(text, C2D_WithColor, drawX, drawY, 1.0f, scaleX, scaleY, color);
+}
+
+void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color){
+    DrawTextCentered(text, rect->x + rect->width / 2.0f, rect->y + rect->height / 2.0f, scale, scale, color);
 }

@@ -1,41 +1,17 @@
 #include "MainMenu.h"
 
-//defines
+//bottom screen button layout. every button is the same size, stacked top to bottom.
 #define BUTTON_X 40
-
-#define HIGHLIGHT_POS_MAZE 10
-#define HIGHLIGHT_POS_MAKER 70
-#define HIGHLIGHT_POS_LEVEL 130
-#define HIGHLIGHT_POS_QUIT 190
+#define BUTTON_Y0 15       //top edge of the first button
+#define BUTTON_SPACING 60  //top edge of one button to the top edge of the next
+#define BUTTON_W 240
+#define BUTTON_H 30
+#define HIGHLIGHT_PAD 5    //how far the highlight sticks out past the selected button
+#define BUTTON_TEXT_SCALE 0.6f
 
 #define MAIN_MENU_MAX_GLYPHS 128 //room for every string this state parses
 
-/*
-* everything this state owns while it is active. one allocation in _Init,
-* one free in _End, and a single 4 byte pointer while the state is inactive.
-*/
-typedef struct {
-    C2D_TextBuf textBuf; //handle to the glyph storage, its own heap block
 
-    //rects
-    Rect startMazeButton;
-    Rect startMakerButton;
-    Rect lvlSelectButton;
-    Rect quitButton;
-    Rect selectHighlight;
-
-    HighlightPositions curHighlightPos;
-
-    //text objects
-    //top screen
-    C2D_Text titleText;
-    C2D_Text nameText;
-    //bottom screen
-    C2D_Text mazeText;
-    C2D_Text makerText;
-    C2D_Text lvlSelectText;
-    C2D_Text quitText;
-} MainMenuState;
 
 static MainMenuState* s; //NULL whenever the state is not active
 
@@ -44,16 +20,6 @@ void MainMenu_Init(GameContext* ctx){
     printConsole("init Main Menu, %u bytes", (unsigned)sizeof(MainMenuState));
     s = calloc(1, sizeof(MainMenuState));
 
-    s->curHighlightPos = Highlight_Maze;
-
-    s->selectHighlight  = (Rect){ .x = BUTTON_X - 5, .y = HIGHLIGHT_POS_MAZE, .width = 250, .height = 40, .Color = Colors[CLR_YELLOW] };
-
-    s->startMazeButton  = (Rect){ .x = BUTTON_X, .y = 15,  .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
-    s->startMakerButton = (Rect){ .x = BUTTON_X, .y = 75,  .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
-    s->lvlSelectButton  = (Rect){ .x = BUTTON_X, .y = 135, .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
-    s->quitButton       = (Rect){ .x = BUTTON_X, .y = 195, .width = 240, .height = 30, .Color = Colors[CLR_DK_GRAY] };
-
-    //init text
     s->textBuf = C2D_TextBufNew(MAIN_MENU_MAX_GLYPHS);
 
     //top screen
@@ -61,10 +27,17 @@ void MainMenu_Init(GameContext* ctx){
     MakeText("By Finnegan McDevitt", &s->nameText, s->textBuf);
 
     //bottom screen
-    MakeText("Start Maze", &s->mazeText, s->textBuf);
-    MakeText("Start Maker", &s->makerText, s->textBuf);
-    MakeText("Level Select", &s->lvlSelectText, s->textBuf);
-    MakeText("Quit Game", &s->quitText, s->textBuf);
+    for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
+        s->rects[i] = (Rect){
+            .x = BUTTON_X,
+            .y = BUTTON_Y0 + i * BUTTON_SPACING,
+            .width = BUTTON_W,
+            .height = BUTTON_H,
+            .Color = Colors[CLR_DK_GRAY],
+        };
+        MakeText(MENU_ITEMS[i].label, &s->menu_text[i], s->textBuf);
+    }
+    s->cur = 0;
 
     if (ctx->rebuildLevel) {
         printConsole("Coalesce the level here");
@@ -72,39 +45,6 @@ void MainMenu_Init(GameContext* ctx){
         //make funcition to rebuild ctx->builtLvl from ctx->rawLvl and call it here
 
         ctx->rebuildLevel = false;
-    }
-}
-
-
-static Game_State MazeButtonPressed(void){
-    printConsole("Maze button pressed");
-    return STATE_MAZE_GAME;
-}
-
-static Game_State MakerButtonPressed(void){
-    printConsole("Maker button pressed");
-    return STATE_MAZE_MAKER;
-}
-
-static Game_State LvlButtonPressed(void){
-    printConsole("Lvl button pressed");
-    return STATE_SAVE_SELECT;
-}
-
-static void SetHightlightPos(void){
-    switch(s->curHighlightPos){
-        case Highlight_Maze:
-            s->selectHighlight.y = HIGHLIGHT_POS_MAZE;
-            break;
-        case Highlight_Maker:
-            s->selectHighlight.y = HIGHLIGHT_POS_MAKER;
-            break;
-        case Highlight_Lvl:
-            s->selectHighlight.y = HIGHLIGHT_POS_LEVEL;
-            break;
-        case Highlight_Quit:
-            s->selectHighlight.y = HIGHLIGHT_POS_QUIT;
-            break;
     }
 }
 
@@ -117,57 +57,29 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
         return STATE_DEBUG; //THIS IS DEBUG AND WILL BE CHANGED LATER
     }
 
-    Game_State next = STATE_NONE;
-
-    //clicking A on button logic, is overrided if player taps on button in same frame
+    //move the highlight, wrapping at both ends
     if (in->kDown & (KEY_UP | KEY_CPAD_UP))
     {
-        printConsole("player pressed up or cpad up");
-        s->curHighlightPos = (s->curHighlightPos + Highlight_COUNT - 1) % Highlight_COUNT;
-        SetHightlightPos();
+        s->cur = (s->cur + MENU_BUTTON_COUNT - 1) % MENU_BUTTON_COUNT;
     }
     if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
     {
-        printConsole("player pressed down or cpad down");
-        s->curHighlightPos = (s->curHighlightPos + 1) % Highlight_COUNT;
-        SetHightlightPos();
+        s->cur = (s->cur + 1) % MENU_BUTTON_COUNT;
     }
 
+    //only allow one action per frame. if both happen, then screen touch takes priority
+    for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
+        if (Rect_Tapped(&s->rects[i], in)) {
+            printConsole("player touched \"%s\"", MENU_ITEMS[i].label);
+            return MENU_ITEMS[i].target;
+        }
+    }
     if (in->kDown & KEY_A) {
-        switch (s->curHighlightPos){
-            case Highlight_Maze:
-                next = MazeButtonPressed();
-                break;
-            case Highlight_Maker:
-                next = MakerButtonPressed();
-                break;
-            case Highlight_Lvl:
-                next = LvlButtonPressed();
-                break;
-            case Highlight_Quit:
-                printConsole("player pressed A on quit button");
-                return STATE_QUIT;
-        };
+        printConsole("player pressed A on \"%s\"", MENU_ITEMS[s->cur].label);
+        return MENU_ITEMS[s->cur].target;
     }
 
-    // detecting player touches a button, takes priority over clicking A
-    if (Rect_Tapped(&s->startMazeButton, in)){
-        printConsole("player touched start maze button");
-        next = MazeButtonPressed();
-    }
-    if (Rect_Tapped(&s->startMakerButton, in)){
-        printConsole("player touched start maker button");
-        next = MakerButtonPressed();
-    }
-    if (Rect_Tapped(&s->lvlSelectButton, in)){
-        printConsole("player touched level select button");
-        next = LvlButtonPressed();
-    }
-    if (Rect_Tapped(&s->quitButton, in)){
-        printConsole("player touched quit button");
-        return STATE_QUIT;
-    }
-    return next;
+    return STATE_NONE;
 }
 
 
@@ -176,24 +88,26 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    DrawTextCentered(&s->titleText, 200, 60, 2, 2, Colors[CLR_BLACK]);
-    DrawTextCentered(&s->nameText, 200, 180, 1, 1, Colors[CLR_BLACK]);
+    DrawTextCentered(&s->titleText, TOP_SCREEN_WIDTH / 2, 60, 2, 2, Colors[CLR_BLACK]);
+    DrawTextCentered(&s->nameText, TOP_SCREEN_WIDTH / 2, 180, 1, 1, Colors[CLR_BLACK]);
 
     //draw the bottom screen
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
 
-    DrawRect(&s->selectHighlight);
+    //highlight: the selected button's rect, grown by the pad, drawn underneath it
+    Rect highlight = s->rects[s->cur];
+    highlight.x -= HIGHLIGHT_PAD;
+    highlight.y -= HIGHLIGHT_PAD;
+    highlight.width += 2 * HIGHLIGHT_PAD;
+    highlight.height += 2 * HIGHLIGHT_PAD;
+    highlight.Color = Colors[CLR_YELLOW];
+    DrawRect(&highlight);
 
-    DrawRect(&s->startMazeButton);
-    DrawRect(&s->startMakerButton);
-    DrawRect(&s->lvlSelectButton);
-    DrawRect(&s->quitButton);
-
-    DrawTextCentered(&s->mazeText, 160, 30, .6, .6, Colors[CLR_WHITE]);
-    DrawTextCentered(&s->makerText, 160, 90, .6, .6, Colors[CLR_WHITE]);
-    DrawTextCentered(&s->lvlSelectText, 160, 150, .6, .6, Colors[CLR_WHITE]);
-    DrawTextCentered(&s->quitText, 160, 210, .6, .6, Colors[CLR_WHITE]);
+    for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
+        DrawRect(&s->rects[i]);
+        DrawTextInRect(&s->menu_text[i], &s->rects[i], BUTTON_TEXT_SCALE, Colors[CLR_WHITE]);
+    }
 }
 
 
