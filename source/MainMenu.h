@@ -3,16 +3,15 @@
 #include "state_utils.h"
 
 /*
-* the buttons, in top to bottom order. this is the only place a button is
+* the main menu buttons, in top to bottom order. this is the only place a button is
 * defined: init, logic and draw all loop over it. compile time data, so it
-* lives in the executable and costs no RAM.
+* lives in the executable. It will be eventually loaded into memory, but in all honesty, this alone is fine.
+* it's either here or beind dynamically allocated.
 */
 static const struct {
     const char* label;
     Game_State target; //where the button takes you. STATE_QUIT leaves the game
-} 
-
-MENU_ITEMS[] = {
+} MENU_ITEMS[] = {
     { "Start Maze",   STATE_MAZE_GAME   },
     { "Start Maker",  STATE_MAZE_MAKER  },
     { "Level Select", STATE_SAVE_SELECT },
@@ -34,7 +33,7 @@ typedef struct {
     //bottom screen
     C2D_Text menu_text[MENU_BUTTON_COUNT];
     Rect rects[MENU_BUTTON_COUNT];
-    int cur; //index of the highlighted button
+    int highlight_index; //index of the highlighted button
 } MainMenuState;
 
 void MainMenu_Init(GameContext* ctx);

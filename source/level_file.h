@@ -39,6 +39,7 @@ typedef struct{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
     double bestTime;
+    bool empty;
 } Raw_Level;
 
 //The structure for the save file.

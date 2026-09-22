@@ -1,124 +1,145 @@
 # DESIGN STRUCTURE
 
-## main.c/h
-This file will hold only the main loop for the game. It will do this
+## main.c
+This file holds only the main loop. it chooses what state's files to run based on if the state variable
 * global varibles 
-    * Game_State State: init to MainMenu
-    * bool State_Switch: init to true
-    * bool Rebuld_Level: init to true
-    * Raw_Level rawLvl: init to NULL
-    * Built_Level builtLvl
+    * Game_State State: init to STATE_MAIN_MENU
+    * Raw_Level rawLvl, Built_Level builtLvl: stores all details about the current loaded level
+    * GameContext ctx: holds at the two above, plus rebuildLevel (init to true). this is what gets handed to every state.
+    * C3D_RenderTarget* top, bottom
+    * static const StateFns STATES[STATE_COUNT]: one row per state, holding its init / logic / draw / end functions. 
+        * to add a state: write its four functions, add one row here. nothing else in main changes.
+        * states with no row yet are all NULL. the main loop refuses to switch to them and logs it.
+
+* rebuildLevel (inside ctx) means the playable level needs to be rebuilt from the raw level. it should only be true in these 3 situations
+    * when moving from the level select after selecting a different level to the main menu
+    * when moving from the maze maker to the main menu when there were edits made in the maze maker (level number stays the same, but the raw data changed)
+    * the game just started (now)
 
 * initalize everything
-    * State
-    * State_Switch 
-        * this varaible will be set to true whenever the state switches, so that on the next frame, the new state can run it's init code.
-        * this is always initalized to true when the game starts
-    * the global variable that indicates if the current playable level needs to be rebuilt from the raw level.
-        * should only be true in these 3 situations
-            * when moving from the level select after selecting a different level to the main menu
-            * when moving from the maze maker to the main menu when there were edits made in the maze maker (level number stays the same, but the raw data changed)
-            * the game just started (now)
     * init gfx
     * the debug log, no console on 3ds screen
     * C3D and C2D
     * the romfs
-    * the font
-    * find the save file. if none exists, then create it.
-    * raw_lvl: init this to the level in the first save slot. 
-    * initalize the builtLvl to NULL, it will be initalized on the first frame.
-    * call the init functions of all other files
+    * the render targets
     * the colors
-    * the variables that hold the frame's inputs
-
-
+    * TODO: the font
+    * TODO: find the save file. if none exists, then create it. check magic then version (see level_file.h).
+    * TODO: rawLvl: init this to the level in the first save slot. 
+    * one throwaway hidScanInput, so an input that is already held at boot doesn't count as a press on the first frame
+    * STATES[State].init(&ctx) for the starting state. FROM HERE UNTIL THE LOOP EXITS THERE IS ALWAYS EXACTLY ONE LIVE STATE.
 
 * the main loop
-    * first, it will check all inputs for the frame, and normalize the circle pad
-    * do all logic for the frame, do this by calling the function for the corresponding frame's state, and record weather or not the state is changing
-    * start the C3D frame
-    * do the render function for the selected state. 
-    * end C3D frame
-    * if the state frame logic returned true, then do the logic for frame switching.
-    * gspWaitForVBlank
+    * Input_Read fills a FrameInput (kDown, kHeld, kUp, touch, normalized circle pad). this is the only place the hid is read.
+    * debug hotkeys (X input dump, B keyboard) (temporary, not going to stay)
+    * next = STATES[State].logic(&in, &ctx). the state returns what should happen: STATE_NONE to stay, STATE_QUIT to leave, or the state to switch to.
+    * START always sets next to STATE_QUIT, from any state.
+    * start the C3D frame, STATES[State].draw(top, bottom), end the C3D frame.
+    * if next is STATE_QUIT: stop looping.
+    * else if next is a state: STATES[State].end(), State = next, STATES[State].init(&ctx). the old state got drawn one last time, the new one is fully set up before its first frame.
+    * Y prints cpu / gpu / heap stats. printed as integers on purpose, as testing found that newlib's printf mallocs on its first %f and that would move the heap number, which I would rather not do.
 
 * after main loop
-    * if font exists, then free it
-    * C2D finish
-    * C3D finish
-    * gfxExit
-    * exit
+    * STATES[State].end() - one state is always live here, whether we left by STATE_QUIT or the HOME menu.
+    * TODO: if font exists, then free it
+    * delete the render targets, C2D finish, C3D finish, romfsExit, gfxExit
 
 
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
-these files all should follow a similar layout, with these steps and functions
-* STATIC global variables for each file, so that the values are shared between the functions without having to go through the main loop. 
-    * INCREDIBLY IMPORTANT: ALL OF THESE STATIC VARIABLES (with the exception of datatypes smaller than 8 bytes) MUST BE POINTERS, AND IN state_init THEY ARE ALL SET TO MALLOCED REGIONS OF THE RIGHT SIZE. this ensures that when the state is not active, the memory usage is minimal.
-    * global static GameState "Next_State" for what state the game will be set to next, initalized to -1 at start, and only set to a value when the variable above is set to true
-    * need to make a rectangle struct (holds only float x, float y, float width, float height, u32 Color), and each rectangle (or set of rectangles) will be a static global variables.
-    * static C2D_Text* and C2D_TextBuf* for each line of text on screen
-        * the text buf will be created in init, and each text buff should be immedietly filled by with it's corresponding text using 
-        buff = C2D_TextBufNew(strlen(str));
-        C2D_TextBufClear(buff);
-        const char* indicator = C2D_TextFontParse(result, *font, buff, str);
-        C2D_TextOptimize(result);
+every state file provides the same four functions, with the same signatures, so main can hold them in the StateFns table (state_utils.h). main guarantees the order: init, then logic/draw every frame, then end. exactly once each.
 
-* void state_logic(bool* stateSwitch) - this is called in the main loop right after checking inputs. this function will determine what needs to be done and calculate the values, doing things such as moving the player and checking colision, or determining what tiles were clicked on and determining what should be done with that.
-    * If the actions of this frame cause the state to switch, then set stateswitch to true. 
-    * right after calling init, set stateswitch to false
+* ONE STRUCT, ONE POINTER. each file defines a struct holding EVERYTHING the state owns while active (rects, C2D_Texts, the text buf handle, counters, whatever) and exactly one static pointer to it:
+    ```c
+    typedef struct { ... } MainMenuState;
+    static MainMenuState* s; // NULL whenever the state is not active
+    ```
+    * this is how a state costs almost nothing when inactive: 4 bytes for the pointer. when active it is one calloc, so one heap block, so the heap number is the same every visit.
+    * do NOT make separate static pointers for each thing. that was the old way and was very unprofesional. use arrays instead and loop through them.
+    * data that is fixed at compile time (button labels, target states, layouts) goes in a static const table, not in the struct. it lives in the executable and costs no RAM.
+    * rects are plain Rect values inside the struct, filled with compound literals: s->rect = (Rect){ .x = .., .y = .., .width = .., .height = .., .Color = .. };
+    * text: the struct holds ONE C2D_TextBuf for the whole state, plus a C2D_Text per line. init does s->textBuf = C2D_TextBufNew(MAX_GLYPHS) then MakeText(str, &s->someText, s->textBuf) for each line. MakeText logs if the buffer is too small, so size MAX_GLYPHS per state and watch the log.
 
-* state_init(bool* stateSwitch) - this is called inside of the state_logic function, but only on the frame where switched_state is true, this should be the first thing that is done in the frame logic code.
-    * this initalizes all of the variables
-    * IMPORTANT - THIS INITALIZES ALL OF THE GLOBAL VALUES FOR THE FILE BY MALLOCING THEM. DON'T SCREW THIS UP. Also will copy neccicary data into those malloced instances. 
-    * this loads the neccicary data into the correct places
-    * it's an init function
+* void state_Init(GameContext* ctx) - called by main right after the switch to this state (or before the loop for the starting state).
+    * s = calloc(1, sizeof *s), then fill it: make the text buf, parse the text, set up rects, load whatever data the state needs from ctx.
+    * print sizeof the struct once so the number is known.
 
-* state_end(GameState* state) - this is only called in the main function if the state_logic returned true, meaning "State_Switches" is true.
-    * reads the global variable "Next_State" and sets the current state to the next state. 
-    * EXTREMELY IMPORTANT DO NOT FUCK UP - FREES ALL GLOBAL VARIABLES AND EVERYTHING CREATED IN INIT, CLEANS UP THE STATE PERFECTLY. WILL NEED A LOT OF TESTING. THE STATE SHOULD TAKE UP ALMOST NO MEMORY WHEN IT IS NOT THE ACTIVE STATE. free text buffs with C2D_TextBufFree
+* Game_State state_Logic(const FrameInput* in, GameContext* ctx) - called every frame right after the inputs are read. does all the thinking for the frame: moving the player, colision, what tile was clicked, etc.
+    * returns STATE_NONE to stay in this state, STATE_QUIT to leave the game, or the Game_State to switch to. that return value is the ONLY way a state changes.
+    * FrameInput is read only. GameContext may be written (the maker edits rawLvl and sets rebuildLevel, etc).
+    * touch: use Rect_Tapped(&rect, in). it is true only on the frame the stylus first lands inside the rect (kDown & KEY_TOUCH), so a touch that was already down when the state started, or slid in from outside, does not count. no per rect touch state to maintain.
+
+* void state_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom) - draws both screens from s. the C3D frame is begun and ended by main.
+
+* void state_End(void) - called by main once, after the state's last draw, when switching away or when the game exits.
+    * C2D_TextBufDelete(s->textBuf); free any other big buffers the state made; free(s); s = NULL;
+    * that's it. if the state only allocates through s and its text buf, End can't get this wrong.
     
 
 
 ## Main_Menu.c/h
 this file will load the currently selected save slot, and allow for switching to all other states (except for egg room and debug) 
-* Globals 
-    * static bool StateSwitch: init to false in code
-    * static GameState* NextState: init to null in code and on init
-    * static text buff and text as described in general state outline.
+* the buttons are a static const table MENU_ITEMS[] of { label, target state }, in top to bottom order. init, logic and draw all loop over it, so adding a button is one line. STATE_QUIT is just another target.
+* layout is a handful of #defines (BUTTON_X, BUTTON_Y0, BUTTON_SPACING, BUTTON_W, BUTTON_H, HIGHLIGHT_PAD). button i is at y = BUTTON_Y0 + i * BUTTON_SPACING. all positions are hardcoded, just hardcoded once.
+* MainMenuState: textBuf, the title and name text for the top screen, a Rect and a C2D_Text per button, and cur (index of the highlighted button).
 
-* All text and button positions will be hardcoded.
-
-    
-
-* void MainMenu_logic(bool* stateSwitch, u32 kDown, bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLvl):
-    * if stateswitch is true, calls MainMenu_Init(Rebuild_Level, rawLvl, builtLvl), then sets stateswitch to false
-
-    * have system for a highlight for each each button so that you can select them based on the d pad. have the only button for moving between scenes on this screen be A.
-
-    * checks if the player pressed or touched the a button to start the maze game, if they did, set "StateSwitch" to true, and set "NextState" to STATE_MAZE_GAME.
-    * check if the player pressed or touched the button to go to the maze maker, if they did, set "StateSwitch" to true, and set "NextState" to STATE_MAZE_MAKER.
-    * check if the player pressed or touched the button to go to the level select, if they did, set "StateSwitch" to true and set "NextState" to STATE_SAVE_SELECT.
-    * return StateSwitch
-
-* MainMenu_Init(bool Rebuild_Level, Raw_Level* rawLvl, Built_Level* builtLevel):
-    * sets nextState to malloc(sizeof(Game_State))
-    * create all of the text buffs as explained above
-    * if Rebuild_Level is true, then rebuld the Built_Level from the Raw_Level. 
+* MainMenu_Init(GameContext* ctx):
+    * calloc s, make the text buf, parse all text, fill the button rects from the layout defines, cur = 0
+    * if ctx->rebuildLevel is true, then rebuild the Built_Level from the Raw_Level and clear the flag.
         * have not determined the logic for this yet, but it should be done here.
 
-* MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom): Probably the first thing to implement. draws everything for the main menu.
-    * Use a custom Rectangle struct to hold the values for the buttons.
-    * top screen is Game title, and my name below it. 
-    * bottom screen is split into 4 horizontal spaces, with the top 3 being buttons to switch states and the last being a message to press start to exit.
+* MainMenu_Logic(const FrameInput* in, GameContext* ctx):
+    * L goes to the debug state (THIS IS DEBUG AND WILL BE CHANGED LATER)
+    * up/down on the d pad or circle pad move cur, wrapping at both ends.
+    * at most one button acts per frame: first check Rect_Tapped on each button in order and return that button's target; otherwise if A was pressed return MENU_ITEMS[cur].target. a tap wins over A if both happen at once.
+    * otherwise return STATE_NONE.
 
-* MainMenu_End(GameState* state): if this was called, it means StateSwitch was true.
-    * free EVERY Global variable. they will get initalized again when the player comes back to the main menu.
-    * set *state to *NextState.
+* MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom):
+    * top screen is Game title, and my name below it. 
+    * bottom screen: the highlight (the selected button's rect grown by HIGHLIGHT_PAD, drawn first so it sits underneath), then each button rect with its label centered in it (DrawTextInRect).
+    * (the earlier plan had 3 buttons plus a "press start to exit" message. there are now 4 buttons including Quit; START still exits from anywhere.)
+
+* MainMenu_End(void): delete the text buf, free s, s = NULL.
 
 ## MEMORY LEAK TEST. 
 * temporarily set main menu to go to the game screen always, not just on A press.
 * set the game logic to be to always switch to the game screen
 * leave running and see if memory usage increases.
+
+## Level Select
+* UPON THIS STATE BEGINING, THE PLAYER WILL BE ASKED IF THEY WANT TO SAVE THEIR SLOT BEFORE CONTINUING. 
+
+* when the player hovers over a level with the cursor, then on the top screen, show the full layout (all 9 screens) of the level (at .75 - .5 scale.) with the name displayed on top. 
+
+
+* at any time during this screen, the player can press X to save their game to the slot they were on. 
+* vars for this state are enum action and enum "are you sure". 
+* action has 3 values LOAD, RENAME, COPY, DELETE
+* are you sure has values NONE, AYS1, AYS2, AYS3
+* this will consist of 4 buttons in the middle of the screen, with text below them showing their names. 
+* STRETCH GOAL - as part of compilation, create a static png of the entire level(all screens), and have that png be shown on the button.
+* in the bottom left corner of the screen, there should be 2 small buttons, 
+"rename" "copy" and "delete"
+* the 3 buttons for rename copy and delete are replaced by 1 button called cancel when action is not LOAD. 
+* when rename is pressed, the Action is set to rename. this puts the state in rename mode, where interacting with the save slot buttons will instead bring up a keyboard and allow the player to rename the save.
+* when delete is pressed, it sets action to delete. when action is DELETE, the when the player presses the save, they get an are you sure, then another are you sure, then another. (keep track of these with the enum AYS). pressing B or no at any time during the are you sures will result in AYS being set to NONE, and the delete is cancled. if the AYS goes through, (yes pressed while AYS = AYS3) then the file is wiped, and the save's empty bool is set to true.
+* if the player tries to delete a level that is already empty, nothing happens.
+* when the player presses the copy button, action gets set to copy, and if the player clicks on an empty save, then the currently loaded level is copied to the empty slot. if the selected slot is not empty, then the AYS stuff happens from delete.
+
+
+* WHEN YOU LOAD A LEVEL, THEN SET REBUILD LEVEL TO TRUE.
+
+
+* when the player presses B in an are you sure section, then the are you sure is set to no and ends. if they are in an action that is not NONE, then the action is set to none, if they are in no action, then they go back to the main menu.
+
+
+* there should still be dpad option for this menu. the buttons should be stored in a matrix [3][2], arranged as
+[level1, level2],
+[level3, level4],
+[rename, copy, delete],
+and the cursor starts on the level 1 spot, and when left and right are pressed, then the current button moves to the left or right, and loops around if it goes off an edge, and when up and down are pressed, the current button moves up or down and loops around like the main menu, but without the enum, and only keeping track of max hight.
+
+
+
 
 
 ## Maze Game

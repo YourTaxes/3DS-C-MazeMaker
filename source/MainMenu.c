@@ -13,31 +13,31 @@
 
 
 
-static MainMenuState* s; //NULL whenever the state is not active
+static MainMenuState* mmstate; //NULL whenever the state is not active
 
 
 void MainMenu_Init(GameContext* ctx){
     printConsole("init Main Menu, %u bytes", (unsigned)sizeof(MainMenuState));
-    s = calloc(1, sizeof(MainMenuState));
+    mmstate = calloc(1, sizeof(MainMenuState));
 
-    s->textBuf = C2D_TextBufNew(MAIN_MENU_MAX_GLYPHS);
+    mmstate->textBuf = C2D_TextBufNew(MAIN_MENU_MAX_GLYPHS);
 
     //top screen
-    MakeText("Maze Maker", &s->titleText, s->textBuf);
-    MakeText("By Finnegan McDevitt", &s->nameText, s->textBuf);
+    MakeText("Maze Maker", &mmstate->titleText, mmstate->textBuf);
+    MakeText("By Finnegan McDevitt", &mmstate->nameText, mmstate->textBuf);
 
     //bottom screen
     for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
-        s->rects[i] = (Rect){
+        mmstate->rects[i] = (Rect){
             .x = BUTTON_X,
             .y = BUTTON_Y0 + i * BUTTON_SPACING,
             .width = BUTTON_W,
             .height = BUTTON_H,
             .Color = Colors[CLR_DK_GRAY],
         };
-        MakeText(MENU_ITEMS[i].label, &s->menu_text[i], s->textBuf);
+        MakeText(MENU_ITEMS[i].label, &mmstate->menu_text[i], mmstate->textBuf);
     }
-    s->cur = 0;
+    mmstate->highlight_index = 0;
 
     if (ctx->rebuildLevel) {
         printConsole("Coalesce the level here");
@@ -60,23 +60,23 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
     //move the highlight, wrapping at both ends
     if (in->kDown & (KEY_UP | KEY_CPAD_UP))
     {
-        s->cur = (s->cur + MENU_BUTTON_COUNT - 1) % MENU_BUTTON_COUNT;
+        mmstate->highlight_index = (mmstate->highlight_index + MENU_BUTTON_COUNT - 1) % MENU_BUTTON_COUNT;
     }
     if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
     {
-        s->cur = (s->cur + 1) % MENU_BUTTON_COUNT;
+        mmstate->highlight_index = (mmstate->highlight_index + 1) % MENU_BUTTON_COUNT;
     }
 
     //only allow one action per frame. if both happen, then screen touch takes priority
     for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
-        if (Rect_Tapped(&s->rects[i], in)) {
+        if (Rect_Tapped(&mmstate->rects[i], in)) {
             printConsole("player touched \"%s\"", MENU_ITEMS[i].label);
             return MENU_ITEMS[i].target;
         }
     }
     if (in->kDown & KEY_A) {
-        printConsole("player pressed A on \"%s\"", MENU_ITEMS[s->cur].label);
-        return MENU_ITEMS[s->cur].target;
+        printConsole("player pressed A on \"%s\"", MENU_ITEMS[mmstate->highlight_index].label);
+        return MENU_ITEMS[mmstate->highlight_index].target;
     }
 
     return STATE_NONE;
@@ -88,15 +88,15 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    DrawTextCentered(&s->titleText, TOP_SCREEN_WIDTH / 2, 60, 2, 2, Colors[CLR_BLACK]);
-    DrawTextCentered(&s->nameText, TOP_SCREEN_WIDTH / 2, 180, 1, 1, Colors[CLR_BLACK]);
+    DrawTextCentered(&mmstate->titleText, TOP_SCREEN_WIDTH / 2, 60, 2, 2, Colors[CLR_BLACK]);
+    DrawTextCentered(&mmstate->nameText, TOP_SCREEN_WIDTH / 2, 180, 1, 1, Colors[CLR_BLACK]);
 
     //draw the bottom screen
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
 
     //highlight: the selected button's rect, grown by the pad, drawn underneath it
-    Rect highlight = s->rects[s->cur];
+    Rect highlight = mmstate->rects[mmstate->highlight_index];
     highlight.x -= HIGHLIGHT_PAD;
     highlight.y -= HIGHLIGHT_PAD;
     highlight.width += 2 * HIGHLIGHT_PAD;
@@ -105,14 +105,14 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     DrawRect(&highlight);
 
     for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
-        DrawRect(&s->rects[i]);
-        DrawTextInRect(&s->menu_text[i], &s->rects[i], BUTTON_TEXT_SCALE, Colors[CLR_WHITE]);
+        DrawRect(&mmstate->rects[i]);
+        DrawTextInRect(&mmstate->menu_text[i], &mmstate->rects[i], BUTTON_TEXT_SCALE, Colors[CLR_WHITE]);
     }
 }
 
 
 void MainMenu_End(void){
-    C2D_TextBufDelete(s->textBuf);
-    free(s);
-    s = NULL;
+    C2D_TextBufDelete(mmstate->textBuf);
+    free(mmstate);
+    mmstate = NULL;
 }
