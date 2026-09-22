@@ -5,7 +5,7 @@ This file holds only the main loop. it chooses what state's files to run based o
 * global varibles 
     * Game_State State: init to STATE_MAIN_MENU
     * Raw_Level rawLvl, Built_Level builtLvl: stores all details about the current loaded level
-    * GameContext ctx: holds at the two above, plus rebuildLevel (init to true). this is what gets handed to every state.
+    * GameContext ctx: holds at the two above, plus rebuildLevel (init to true) and curSlot (which save slot rawLvl came from, init to 0, so the maker and the game know where to write back). this is what gets handed to every state.
     * C3D_RenderTarget* top, bottom
     * static const StateFns STATES[STATE_COUNT]: one row per state, holding its init / logic / draw / end functions. 
         * to add a state: write its four functions, add one row here. nothing else in main changes.
@@ -24,8 +24,8 @@ This file holds only the main loop. it chooses what state's files to run based o
     * the render targets
     * the colors
     * TODO: the font
-    * TODO: find the save file. if none exists, then create it. check magic then version (see level_file.h).
-    * TODO: rawLvl: init this to the level in the first save slot. 
+    * the save file: SaveFile_Ensure() checks sdmc:/3ds/MazeMaker/save.bin. if it is missing, the wrong size, or has the wrong magic or version, a fresh one (every slot empty) is written in its place. (see level_file.h / save_file.h)
+    * rawLvl: SaveFile_ReadSlot(ctx.curSlot, &rawLvl) copies just that slot out of the file. if either step failed, rawLvl stays zeroed with empty = true and the game runs anyway.
     * one throwaway hidScanInput, so an input that is already held at boot doesn't count as a press on the first frame
     * STATES[State].init(&ctx) for the starting state. FROM HERE UNTIL THE LOOP EXITS THERE IS ALWAYS EXACTLY ONE LIVE STATE.
 
@@ -47,12 +47,13 @@ This file holds only the main loop. it chooses what state's files to run based o
 
 
 ## SHARED FILES
-each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, and game_state <- (input, level_file). nothing includes something that includes it back.
+each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, game_state <- (input, level_file), and save_file <- (level_file, debug). nothing includes something that includes it back.
 * debug.h/.c - printConsole (stderr to the debugger) and ToBinary. no game knowledge.
 * input.h/.c - FrameInput, Input_Read, normalizeCirclePad, printInputs, GetKeyboard. the only place the hid is read.
 * graphics.h/.c - screen size defines, Colors[] / MakeColors, Rect + DrawRect / Rect_Contains / Rect_Tapped, MakeText / DrawTextCentered / DrawTextInRect.
 * game_state.h - Game_State enum, GameContext, StateFns. header only, this is the contract every state file implements.
 * level_file.h - tile / level / save file structs and their sizes. header only.
+* save_file.h/.c - the only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime (game, new best time). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
 * when the maker palette needs a generic Button (rect + label + action), it should go in a new ui.h/.c on top of graphics.h rather than growing graphics.h.
 
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
@@ -116,6 +117,7 @@ this file will load the currently selected save slot, and allow for switching to
 * leave running and see if memory usage increases.
 
 ## Level Select
+* LevelSelectState holds a Save_File (the whole file, loaded with SaveFile_Read in _Init, so the file is only in RAM while this state is active). saving a slot / rename / copy / delete edit that struct, then SaveFile_Write flushes it to disk. main and the other states never hold the file, only rawLvl. loading a slot sets ctx->curSlot.
 * UPON THIS STATE BEGINING, THE PLAYER WILL BE ASKED IF THEY WANT TO SAVE THEIR SLOT BEFORE CONTINUING. 
 
 * when the player hovers over a level with the cursor, then on the top screen, show the full layout (all 9 screens) of the level (at .75 - .5 scale.) with the name displayed on top. 

@@ -34,6 +34,7 @@ typedef struct {
     Raw_Level* rawLvl;     //the editable grid for the current save slot
     Built_Level* builtLvl; //the playable version compiled from rawLvl
     bool rebuildLevel;     //rawLvl changed, so builtLvl is stale and must be recompiled
+    int curSlot;           //which save slot rawLvl came from, so the maker and the game know where to write back
 } GameContext;
 
 /*

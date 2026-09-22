@@ -6,6 +6,7 @@
 #include "graphics.h"
 #include "game_state.h"
 #include "level_file.h"
+#include "save_file.h"
 #include "MainMenu.h"
 #include "Debug_state.h"
 
@@ -14,8 +15,9 @@
 Game_State State = STATE_MAIN_MENU;
 Raw_Level rawLvl;
 Built_Level builtLvl;
-//the level starts out needing a build, since nothing has been compiled yet
-GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = true };
+//the level starts out needing a build, since nothing has been compiled yet.
+//the game boots on save slot 0.
+GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = true, .curSlot = 0 };
 
 C3D_RenderTarget* top;
 C3D_RenderTarget* bottom;
@@ -56,7 +58,13 @@ int main(int argc, char **argv)
 
 	MakeColors();
 
-	
+	//the save file lives on the SD card. make sure it exists and is ours, then
+	//boot with the current slot as the loaded level. if either step fails the
+	//game still runs, on the zeroed global rawLvl marked as an empty slot.
+	if (!SaveFile_Ensure() || !SaveFile_ReadSlot(ctx.curSlot, &rawLvl)){
+		printConsole("no usable save file, continuing with an empty level");
+		rawLvl.empty = true;
+	}
 
 	printConsole("By Finnegan McDevitt");
 
