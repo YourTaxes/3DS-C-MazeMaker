@@ -38,8 +38,13 @@ typedef struct{
 typedef struct{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
-    double bestTime;
+    //make these values adjacent to make write slot time only one write
+    double bestTimeStandard;
+    bool standardTimeValid;
     bool empty;
+    double bestTimeHard;
+    bool hardTimeValid;
+    
 } Raw_Level;
 
 //The structure for the save file.
@@ -49,7 +54,7 @@ typedef struct{
 //layout what this build expects, or does it need migrating?). bump
 //SAVE_VERSION whenever anything below the header changes shape.
 #define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
-#define SAVE_VERSION 1
+#define SAVE_VERSION 2
 
 typedef struct {
     u32 magic;   //always SAVE_MAGIC

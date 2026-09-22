@@ -144,6 +144,7 @@ this file will load the currently selected save slot, and allow for switching to
 * when delete is pressed, it sets action to delete. when action is DELETE, the when the player presses the save, they get an are you sure, then another are you sure, then another. (keep track of these with the enum AYS). pressing B or no at any time during the are you sures will result in AYS being set to NONE, and the delete is cancled. if the AYS goes through, (yes pressed while AYS = AYS3) then the file is wiped, and the save's empty bool is set to true.
 * if the player tries to delete a level that is already empty, nothing happens.
 * when the player presses the copy button, action gets set to copy, and if the player clicks on an empty save, then the currently loaded level is copied to the empty slot. if the selected slot is not empty, then the AYS stuff happens from delete.
+* when the player presses the clear times button, it is nearly the same as the delete button, but it only deletes the best times for the level
 
 
 * WHEN YOU LOAD A LEVEL, THEN SET REBUILD LEVEL TO TRUE.
@@ -152,10 +153,10 @@ this file will load the currently selected save slot, and allow for switching to
 * when the player presses B in an are you sure section, then the are you sure is set to no and ends. if they are in an action that is not NONE, then the action is set to none, if they are in no action, then they go back to the main menu.
 
 
-* there should still be dpad option for this menu. the buttons should be stored in a matrix [3][2], arranged as
+* there should still be dpad option for this menu. the buttons should be stored in a matrix, arranged as
 [level1, level2],
 [level3, level4],
-[rename, copy, delete],
+[MainMenu, rename, copy, clear_times, delete],
 and the cursor starts on the level 1 spot, and when left and right are pressed, then the current button moves to the left or right, and loops around if it goes off an edge, and when up and down are pressed, the current button moves up or down and loops around like the main menu, but without the enum, and only keeping track of max hight.
 
 

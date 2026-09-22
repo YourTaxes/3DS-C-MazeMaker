@@ -26,7 +26,7 @@ static const struct {
 } MENU_ITEMS[] = {
     { "Start Maze",   STATE_MAZE_GAME   },
     { "Start Maker",  STATE_MAZE_MAKER  },
-    { "Level Select", STATE_SAVE_SELECT },
+    { "Save Menu", STATE_SAVE_SELECT },
     { "Quit Game",    STATE_QUIT        },
 };
 #define MENU_BUTTON_COUNT (sizeof(MENU_ITEMS) / sizeof(MENU_ITEMS[0]))
