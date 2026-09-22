@@ -2,8 +2,10 @@
 
 #include <3ds.h>
 
+#define TILE_SIZE 16 //pixels. 25 x 15 tiles fills the 400 x 240 top screen
 #define TILES_VERT 15
 #define TILES_HORIZ 25
+#define TILES_PER_SCREEN (TILES_VERT * TILES_HORIZ)
 
 #define LEVEL_SLOT_CNT 4
 #define LEVEL_NAME_MAX_LEN 32
@@ -29,7 +31,8 @@ typedef enum {
 } Tile_Type;
 
 typedef struct{
-    Tile_Type tiles[TILES_VERT][TILES_HORIZ];
+    //holds Tile_Type values. u8 because it's smaller.
+    u8 tiles[TILES_VERT][TILES_HORIZ];
 } Raw_Screen;
 
 typedef struct{
@@ -39,8 +42,17 @@ typedef struct{
 } Raw_Level;
 
 //The structure for the save file.
-//this is the the struct that is written to the save file
+//this is the the struct that is written to the save file.
+//the header lets a later version of the game recognise a save it wrote in a previous version
+//check magic first (is this even our file?), then version (is the
+//layout what this build expects, or does it need migrating?). bump
+//SAVE_VERSION whenever anything below the header changes shape.
+#define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
+#define SAVE_VERSION 1
+
 typedef struct {
+    u32 magic;   //always SAVE_MAGIC
+    u32 version; //SAVE_VERSION of the build that wrote the file
     Raw_Level Levels[LEVEL_SLOT_CNT];
 } Save_File;
 
