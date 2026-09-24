@@ -1,7 +1,7 @@
 #include "utils/graphics.h"
 #include "utils/debug.h"
 
-u32 Colors[11];
+u32 Colors[12];
 
 /*
 * creates the colors for the color array
@@ -18,6 +18,7 @@ void MakeColors(void){
     Colors[CLR_DK_GRAY] = C2D_Color32(64, 64, 64, 255);
     Colors[CLR_BLACK] = C2D_Color32(0, 0, 0, 255);
     Colors[CLR_WHITE] = C2D_Color32(255, 255, 255, 255);
+    Colors[CLR_PINK] = C2D_Color32(255, 175, 175, 255);
 }
 
 
@@ -62,4 +63,89 @@ void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float 
 
 void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color){
     DrawTextCentered(text, rect->x + rect->width / 2.0f, rect->y + rect->height / 2.0f, scale, scale, color);
+}
+
+void BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Tex3DS_SubTexture *levelSubTex, Raw_Level *cur_level, C2D_Image *out){
+    //actually init the texture and render target
+    C3D_TexInitVRAM(level_Texture, 512, 256, GPU_RGBA8);
+
+    //map the viewport constraints to the layout size
+    *levelTarget = C3D_RenderTargetCreateFromTex(level_Texture, GPU_TEXFACE_2D, 0, -1);
+    (*levelSubTex).width = BAKED_LEVEL_IMG_WIDTH;
+    (*levelSubTex).height = BAKED_LEVEL_IMG_HEIGHT;
+    (*levelSubTex).left = 0.0f;
+    (*levelSubTex).top = 1.0f;
+    (*levelSubTex).right = (float)BAKED_LEVEL_IMG_WIDTH / 512.0f;
+    (*levelSubTex).bottom = 1.0f - ((float)BAKED_LEVEL_IMG_HEIGHT / 256.0f);
+
+    C2D_SceneBegin(*levelTarget);
+    C2D_TargetClear(*levelTarget, Colors[CLR_WHITE]);
+
+    for (int curScreenY = 0; curScreenY < SCREENS_VERT; curScreenY++){
+        for (int curScreenX = 0; curScreenX < SCREENS_HORIZ; curScreenX++){
+            //for each screen
+            for (int curTileY = 0; curTileY < TILES_VERT; curTileY++){
+                for (int curTileX = 0; curTileX < TILES_HORIZ; curTileX++){
+                    //for each tile 
+                    Rect curRect;
+                    curRect.x = (curScreenX * BAKED_ROOM_WIDTH) + (curTileX * BAKED_LEVEL_TILE_SIZE);
+                    curRect.y = (curScreenY * BAKED_ROOM_HIGHT) + (curTileY * BAKED_LEVEL_TILE_SIZE);
+                    curRect.z = 0.0f;
+                    curRect.height = BAKED_LEVEL_TILE_SIZE;
+                    curRect.width = BAKED_LEVEL_TILE_SIZE;
+                    switch(cur_level->screens[curScreenY][curScreenX].tiles[curTileY][curTileX]){
+                        case EMPTY:
+                            curRect.Color = Colors[CLR_WHITE];
+                            break;
+                        case FINISH:
+                        case START:
+                            curRect.Color = Colors[CLR_LT_GRAY];
+                            break;
+                        case WALL:
+                            curRect.Color = Colors[CLR_YELLOW];
+                            break;
+                        case RED_WALL:
+                        case RED_KEY:
+                            curRect.Color = Colors[CLR_RED];
+                            break;
+                        case GREEN_KEY:
+                        case GREEN_WALL:
+                            curRect.Color = Colors[CLR_GREEN];
+                            break;
+                        case BLUE_KEY:
+                        case BLUE_WALL:
+                            curRect.Color = Colors[CLR_BLUE];
+                            break;
+                        case PINK_KEY:
+                        case PINK_WALL:
+                            curRect.Color = Colors[CLR_PINK];
+                            break;
+                        case PORTAL:
+                            curRect.Color = Colors[CLR_BLUE];
+                            break;
+                        default:
+                            curRect.Color = Colors[CLR_BLACK];
+                            break;
+                    };
+                    DrawRect(&curRect);
+                }
+            }
+        }
+    }
+    C2D_Flush();
+    out->subtex = levelSubTex;
+    out->tex = level_Texture;
+}
+
+void updateBakedTile(int roomX, int roomY, int tileX, int tileY, u32 newColor, C3D_RenderTarget **target){
+    C2D_SceneBegin(*target);
+    Rect curRect;
+    curRect.Color = newColor;
+    curRect.x = (roomX * BAKED_ROOM_WIDTH) + (tileX * BAKED_LEVEL_TILE_SIZE);
+    curRect.y = (roomY * BAKED_ROOM_HIGHT) + (tileY * BAKED_LEVEL_TILE_SIZE);
+    curRect.z = 0.0f;
+    curRect.height = BAKED_LEVEL_TILE_SIZE;
+    curRect.width = BAKED_LEVEL_TILE_SIZE;
+    DrawRect(&curRect);
+    C2D_Flush();
 }

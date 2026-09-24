@@ -9,6 +9,7 @@
 #include "datatypes/save_file.h"
 #include "states/MainMenu/MainMenu.h"
 #include "states/Debug/Debug_state.h"
+#include "states/LevelSelect/LevelSelect.h"
 
 
 //global variables
@@ -35,6 +36,7 @@ C3D_RenderTarget* bottom;
 static const StateFns STATES[STATE_COUNT] = {
 	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_Draw, MainMenu_End },
 	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_Draw,    Debug_end    },
+	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_Draw, LevelSelect_End}
 };
 
 
@@ -102,7 +104,7 @@ int main(int argc, char **argv)
 		}
 
 		//keyboard test demo
-		if(in.kDown & KEY_B)
+		if(in.kDown & KEY_X)
 		{
 			char buff[20];
 

@@ -136,7 +136,9 @@ this file will load the currently selected save slot, and allow for switching to
 * LevelSelectState holds a Save_File (the whole file, loaded with SaveFile_Read in _Init, so the file is only in RAM while this state is active). saving a slot / rename / copy / delete edit that struct, then SaveFile_Write flushes it to disk. main and the other states never hold the file, only rawLvl. loading a slot sets ctx->curSlot.
 * UPON THIS STATE BEGINING, THE PLAYER WILL BE ASKED IF THEY WANT TO SAVE THEIR SLOT BEFORE CONTINUING. 
 
-* when the player hovers over a level with the cursor, then on the top screen, show the full layout (all 9 screens) of the level (at .75 - .5 scale.) with the name displayed on top. 
+* when the player hovers over a level with the cursor, then on the top screen, show the full layout (all 9 screens) of the level through a custom texture. 
+
+* The currently active save slot should have it's color changed from the rest.
 
 
 * at any time during this screen, the player can press X to save their game to the slot they were on. 
@@ -158,7 +160,7 @@ this file will load the currently selected save slot, and allow for switching to
 * WHEN YOU LOAD A LEVEL, THEN SET REBUILD LEVEL TO TRUE.
 
 
-* when the player presses B in an are you sure section, then the are you sure is set to no and ends. if they are in an action that is not NONE, then the action is set to none, if they are in no action, then they go back to the main menu.
+* when the player presses B in an are you sure section, then the are you sure is set to no and ends then the action is set to load, if they were already in the load action, then they go back to the main menu.
 
 
 * there should still be dpad option for this menu. the buttons should be stored in a matrix, arranged as
@@ -171,9 +173,22 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 
 
+
 ## Maze Game - states/Maze/
 * IMPORTANT IDEA FROM KELIN - ONLY CHECK COLISION WITH TILES WITHIN 1 TILE UNIT OF THE PLAYER.
     * if player is in [1, 1], check colision with [0,0], [1,0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 1]. 
     * keep track of what cordanate grid space the player is in by dividing their cordinates by the length of a tile. 
     * using this strategy, it may not be needed to compile the levels in the way specified before, as all of the blocks could then be drawn regularly, as the 3ds can handle a lot of blocks. 
     * the compilation would still need to define some specific things though, such as the start location, and the locations of the portals. 
+
+
+
+
+
+
+
+
+
+## Maze Maker - states/Maze/
+* When in the actual maze maker, DO NOT DRAW THE ENTIRE TOP SCREEN EVERY FRAME, to save preformance. instead, in the struct of state vars, keep a boolean for all 9 rooms for if they need to be drawn this frame. in init initalize all of these to true.
+    * in Draw, check each of these individually, and if one is true, clear and 

@@ -1,11 +1,20 @@
 #pragma once
 
 #include <3ds.h>
+#include "datatypes/graphics_types.h" //Rect
 
-#define TILE_SIZE 16 //pixels. 25 x 15 tiles fills the 400 x 240 top screen
-#define TILES_VERT 15
-#define TILES_HORIZ 25
-#define TILES_PER_SCREEN (TILES_VERT * TILES_HORIZ)
+#define TILE_SIZE 20 //pixels. 25 x 15 tiles fills the 400 x 240 top screen
+#define TILES_VERT 12
+#define TILES_HORIZ 20
+#define TILES_PER_SCREEN (TILES_VERT * TILES_HORIZ) //240
+//total tile count is 2160
+//total level size in tiles is 108 * 180
+
+//the size of each tile when made into a texture and put into vram
+#define BAKED_LEVEL_TILE_SIZE 3
+//total level size in pixels is 300 * 180
+#define BAKED_LEVEL_IMG_WIDTH 300
+#define BAKED_LEVEL_IMG_HEIGHT 180
 
 #define LEVEL_SLOT_CNT 4
 #define LEVEL_NAME_MAX_LEN 32
@@ -64,14 +73,9 @@ typedef struct {
 
 
 typedef struct{
-    u32 Color;
-    float x;
-    float y;
-    float width;
-    float height;
+    Rect rect;
     Tile_Type type;
     bool interactable;
-
 } Wall_Rect;
 
 
