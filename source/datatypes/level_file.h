@@ -3,18 +3,27 @@
 #include <3ds.h>
 #include "datatypes/graphics_types.h" //Rect
 
-#define TILE_SIZE 20 //pixels. 25 x 15 tiles fills the 400 x 240 top screen
+#define TILE_SIZE 20 //pixels. 20 x 12 tiles fills the 400 x 240 top screen
 #define TILES_VERT 12
 #define TILES_HORIZ 20
 #define TILES_PER_SCREEN (TILES_VERT * TILES_HORIZ) //240
 //total tile count is 2160
-//total level size in tiles is 108 * 180
+//total level size in tiles is 60 wide by 36 tall
 
-//the size of each tile when made into a texture and put into vram
-#define BAKED_LEVEL_TILE_SIZE 3
-//total level size in pixels is 300 * 180
-#define BAKED_LEVEL_IMG_WIDTH 300
-#define BAKED_LEVEL_IMG_HEIGHT 180
+//the size of each tile when made into a texture and put into vram.
+//an exact quarter of TILE_SIZE, so the baked level is a clean 1:4 minimap of the
+//playfield: whole pixels per tile, and no fractional tile anywhere in the image.
+#define BAKED_LEVEL_TILE_SIZE 5
+//total level size in pixels is 300 * 180, which is exactly centered on the
+//400 x 240 top screen when drawn at (50, 30).
+#define BAKED_LEVEL_IMG_WIDTH  (SCREENS_HORIZ * TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
+#define BAKED_LEVEL_IMG_HEIGHT (SCREENS_VERT * TILES_VERT * BAKED_LEVEL_TILE_SIZE)
+
+//the texture the level is baked into. the GPU only takes power of two sizes, so
+//this is the smallest pair that holds BAKED_LEVEL_IMG_WIDTH x _HEIGHT. the image
+//sits in the top left corner and the rest of the texture goes unused.
+#define BAKED_LEVEL_TEX_WIDTH  512
+#define BAKED_LEVEL_TEX_HEIGHT 256
 
 #define LEVEL_SLOT_CNT 4
 #define LEVEL_NAME_MAX_LEN 32

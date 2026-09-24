@@ -1,6 +1,10 @@
 #include "utils/graphics.h"
 #include "utils/debug.h"
 
+
+_Static_assert(BAKED_LEVEL_IMG_WIDTH  <= BAKED_LEVEL_TEX_WIDTH,  "baked level is wider than its texture");
+_Static_assert(BAKED_LEVEL_IMG_HEIGHT <= BAKED_LEVEL_TEX_HEIGHT, "baked level is taller than its texture");
+
 u32 Colors[12];
 
 /*
@@ -74,10 +78,14 @@ bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Te
     //512 x 256 RGBA8 is half a megabyte of VRAM and there is one of these per save
     //slot, so this really can run out. a failed texture has no backing store, and a
     //render target built over one draws into nowhere, so stop here instead.
-    if (!C3D_TexInitVRAM(level_Texture, 512, 256, GPU_RGBA8)){
-        printConsole("BakeLevelTexture: out of VRAM for a 512x256 texture");
+    if (!C3D_TexInitVRAM(level_Texture, BAKED_LEVEL_TEX_WIDTH, BAKED_LEVEL_TEX_HEIGHT, GPU_RGBA8)){
+        printConsole("BakeLevelTexture: out of VRAM for a %d x %d texture",
+                     BAKED_LEVEL_TEX_WIDTH, BAKED_LEVEL_TEX_HEIGHT);
         return false;
     }
+
+    //use nearest to ensure smearing does not happen
+    C3D_TexSetFilter(level_Texture, GPU_NEAREST, GPU_NEAREST);
 
     *levelTarget = C3D_RenderTargetCreateFromTex(level_Texture, GPU_TEXFACE_2D, 0, -1);
     if (*levelTarget == NULL){
@@ -91,8 +99,8 @@ bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Te
     (*levelSubTex).height = BAKED_LEVEL_IMG_HEIGHT;
     (*levelSubTex).left = 0.0f;
     (*levelSubTex).top = 1.0f;
-    (*levelSubTex).right = (float)BAKED_LEVEL_IMG_WIDTH / 512.0f;
-    (*levelSubTex).bottom = 1.0f - ((float)BAKED_LEVEL_IMG_HEIGHT / 256.0f);
+    (*levelSubTex).right = (float)BAKED_LEVEL_IMG_WIDTH / (float)BAKED_LEVEL_TEX_WIDTH;
+    (*levelSubTex).bottom = 1.0f - ((float)BAKED_LEVEL_IMG_HEIGHT / (float)BAKED_LEVEL_TEX_HEIGHT);
 
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
     C2D_TargetClear(*levelTarget, Colors[CLR_WHITE]);

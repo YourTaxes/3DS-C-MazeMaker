@@ -9,6 +9,10 @@
 #define SLOT_COUNT 4
 #define BOTTOM_RECT_COUNT 12
 
+//where the baked level image sits on the top screen.
+#define LEVEL_IMG_X ((TOP_SCREEN_WIDTH - BAKED_LEVEL_IMG_WIDTH) / 2)
+#define LEVEL_IMG_Y ((TOP_SCREEN_HIGHT - BAKED_LEVEL_IMG_HEIGHT) / 2)
+
 
 
 //structs
@@ -119,14 +123,13 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     if (lsstate == NULL) return;
 
-    //full texture is drawn at 50, 30
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
     //a slot whose bake failed has no texture, and drawing it would follow a null one
     C2D_Image slotImage = lsstate->fullLevelImages[lsstate->curSlotImage];
     if (slotImage.tex != NULL){
-        C2D_DrawImageAt(slotImage, 50, 30, 0, NULL, 1, 1);
+        C2D_DrawImageAt(slotImage, LEVEL_IMG_X, LEVEL_IMG_Y, 0, NULL, 1, 1);
     }
 
     //draw rest of top screen

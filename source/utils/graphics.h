@@ -12,8 +12,9 @@
 #define BOTTOM_SCREEN_WIDTH 320
 #define BOTTOM_SCREEN_HIGHT 240
 
-#define BAKED_ROOM_WIDTH 60
-#define BAKED_ROOM_HIGHT 36
+//one room's footprint in the baked level texture, in pixels
+#define BAKED_ROOM_WIDTH (TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
+#define BAKED_ROOM_HIGHT (TILES_VERT * BAKED_LEVEL_TILE_SIZE)
 
 void DrawRect(const Rect* rect);
 
