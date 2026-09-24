@@ -48,3 +48,16 @@ bool SaveFile_WriteSlot(int slot, const Raw_Level* lvl);
 * the game calls this after a level is completed with a new best.
 */
 bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time);
+
+/*
+* read the slot the player was last on from disk into *out, without loading the rest
+* of the file. false on any failure, including a stored slot outside 0..LEVEL_SLOT_CNT-1,
+* in which case *out is left alone and the caller should fall back to its own default.
+*/
+bool SaveFile_ReadLastSlot(int* out);
+
+/*
+* record `slot` (0..LEVEL_SLOT_CNT-1) as the slot the player was last on, leaving the
+* rest of the file alone. false on any failure.
+*/
+bool SaveFile_WriteLastSlot(int slot);

@@ -261,6 +261,8 @@ static void CursorToRect(int rectID){
 
 
 void LevelSelect_Init(GameContext* ctx){
+    printConsole("init Level Select, %u bytes", (unsigned)sizeof(LevelSelectState));
+
     //calloc, not malloc: _Draw and _End both read the texture and target arrays, and
     //a slot that fails to bake leaves its entry at zero, which both of them treat as
     //"nothing here" rather than as a stale pointer.
@@ -269,6 +271,7 @@ void LevelSelect_Init(GameContext* ctx){
         printConsole("LevelSelect_Init: out of memory for the state");
         return;
     }
+
 
     lsstate->savfle = malloc(sizeof(Save_File));
     if (lsstate->savfle == NULL || !SaveFile_Read(lsstate->savfle)){
@@ -328,7 +331,30 @@ void LevelSelect_Init(GameContext* ctx){
 
     
     //the cursor needs no init, the calloc already puts it on row 0 column 0, slot 1
-    lsstate->curSlotImage = 0;
+    lsstate->curSlotImage = ctx->curSlot;
+    switch(ctx->curSlot){
+        case RECT_LVL1:
+            lsstate->cursorCol = 0;
+            lsstate->cursorRow = 0;
+            break;
+        case RECT_LVL2:
+            lsstate->cursorCol = 1;
+            lsstate->cursorRow = 0;
+            break;
+        case RECT_LVL3:
+            lsstate->cursorCol = 0;
+            lsstate->cursorRow = 1;
+            break;
+        case RECT_LVL4:
+            lsstate->cursorCol = 1;
+            lsstate->cursorRow = 1;
+            break;
+        default:
+            lsstate->cursorCol = 0;
+            lsstate->cursorRow = 0;
+            lsstate->curSlotImage = 0;
+            break;
+    }
 
     return;
 }
@@ -384,8 +410,14 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 
     switch (pressed){
         case RECT_LVL1: case RECT_LVL2: case RECT_LVL3: case RECT_LVL4:
-            //selecting a slot does not load it yet, the preview is all that moves
-            printConsole("player selected slot %d", pressed - RECT_LVL1 + 1);
+            printConsole("player selected slot %d", pressed + 1);
+            //copy in the loaded save file and set it to the active one
+            lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_DK_GRAY];
+            *ctx->rawLvl = lsstate->savfle->Levels[pressed];
+            ctx->rebuildLevel = true;
+            ctx->curSlot = pressed;
+            lsstate->activeSlot = pressed;
+            lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_GREEN];
             break;
 
         case RECT_MAINMENU:

@@ -36,7 +36,7 @@ C3D_RenderTarget* bottom;
 static const StateFns STATES[STATE_COUNT] = {
 	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_Draw, MainMenu_End },
 	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_Draw,    Debug_end    },
-	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_Draw, LevelSelect_End}
+	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_Draw, LevelSelect_End	}
 };
 
 
@@ -59,6 +59,14 @@ int main(int argc, char **argv)
 	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 
 	MakeColors();
+
+	if (SaveFile_Ensure()){
+		//read what the last selected slot was and set curSlot to it.
+		if (!SaveFile_ReadLastSlot(&ctx.curSlot)){
+			printConsole("there was an error reading the last slot, defaulting to 0");
+			ctx.curSlot = 0;
+		}
+	}
 
 	//the save file lives on the SD card. make sure it exists and is ours, then
 	//boot with the current slot as the loaded level. if either step fails the
@@ -141,6 +149,9 @@ int main(int argc, char **argv)
 
 	//whether we left via STATE_QUIT or HOME (aptMainLoop), one state is still live
 	STATES[State].end();
+
+	//write what the last selected slot was.
+	SaveFile_WriteLastSlot(ctx.curSlot);
 
 	// Exit services
 	C3D_RenderTargetDelete(top);

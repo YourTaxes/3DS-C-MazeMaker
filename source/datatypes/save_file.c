@@ -22,15 +22,25 @@ _Static_assert(offsetof(Raw_Level, hardTimeValid) - offsetof(Raw_Level, bestTime
                "bestTimeHard and hardTimeValid must stay adjacent");
 
 /*
+* is `slot` one this build has room for? logs it if not, so the complaint is worded
+* once for every function that takes a slot number.
+*/
+static bool slotInRange(int slot)
+{
+    if (slot < 0 || slot >= LEVEL_SLOT_CNT){
+        printConsole("save slot %d is out of range (0..%d)", slot, LEVEL_SLOT_CNT - 1);
+        return false;
+    }
+    return true;
+}
+
+/*
 * byte offset of Levels[slot] inside the file, or -1 if slot is out of range.
 * every per slot function goes through this so the offset math is written once.
 */
 static long slotOffset(int slot)
 {
-    if (slot < 0 || slot >= LEVEL_SLOT_CNT){
-        printConsole("save slot %d is out of range (0..%d)", slot, LEVEL_SLOT_CNT - 1);
-        return -1;
-    }
+    if (!slotInRange(slot)) return -1;
     return (long)(offsetof(Save_File, Levels) + (size_t)slot * sizeof(Raw_Level));
 }
 
@@ -176,4 +186,27 @@ bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time)
     printConsole("slot %d best %s time -> %ld ms", slot, hardMode ? "hard" : "standard",
                  (long)(time * 1000.0));
     return transferAt(offset + (long)fieldOff, &pair, TIME_PAIR_BYTES, true);
+}
+
+bool SaveFile_ReadLastSlot(int* out)
+{
+    //lastSlot is a u8 on disk but an int everywhere else, so it is read into its own
+    //byte and widened here rather than read straight through `out`.
+    u8 stored;
+    if (!transferAt((long)offsetof(Save_File, lastSlot), &stored, sizeof stored, false)) return false;
+
+    //a slot from an older or hand edited file could point past the end of Levels.
+    //*out is left as the caller set it so their default survives.
+    if (!slotInRange((int)stored)) return false;
+
+    *out = (int)stored;
+    return true;
+}
+
+bool SaveFile_WriteLastSlot(int slot)
+{
+    if (!slotInRange(slot)) return false;
+
+    u8 stored = (u8)slot;
+    return transferAt((long)offsetof(Save_File, lastSlot), &stored, sizeof stored, true);
 }

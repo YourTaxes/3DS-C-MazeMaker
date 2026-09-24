@@ -72,12 +72,13 @@ typedef struct{
 //layout what this build expects, or does it need migrating?). bump
 //SAVE_VERSION whenever anything below the header changes shape.
 #define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
-#define SAVE_VERSION 2
+#define SAVE_VERSION 3
 
 typedef struct {
     u32 magic;   //always SAVE_MAGIC
     u32 version; //SAVE_VERSION of the build that wrote the file
     Raw_Level Levels[LEVEL_SLOT_CNT];
+    u8 lastSlot;
 } Save_File;
 
 
