@@ -2,6 +2,7 @@
 #include "utils/graphics.h"
 #include "utils/debug.h"
 #include "datatypes/save_file.h"
+#include "utils/format.h" //FormatTime, for the best time lines
 #include <stdlib.h>
 #include <stdio.h> //snprintf, for the slot number labels
 
@@ -13,6 +14,20 @@
 //where the baked level image sits on the top screen.
 #define LEVEL_IMG_X ((TOP_SCREEN_WIDTH - BAKED_LEVEL_IMG_WIDTH) / 2)
 #define LEVEL_IMG_Y ((TOP_SCREEN_HIGHT - BAKED_LEVEL_IMG_HEIGHT) / 2)
+
+//the hovered slot's level name, centered in the strip above the baked image.
+#define NAME_TEXT_SCALE 0.7f
+#define NAME_Y (LEVEL_IMG_Y / 2)
+//"Slot 4: " 8 plus a levelName that a full length rename leaves unterminated, plus the NUL
+#define NAME_LINE_MAX (8 + LEVEL_NAME_MAX_LEN + 1)
+
+//the hovered slot's two best times, in the strip below the baked image. that strip is the
+//same height as the one above it, so one line at this scale clears it.
+#define TIME_TEXT_SCALE 0.6f
+#define TIME_Y (LEVEL_IMG_Y + BAKED_LEVEL_IMG_HEIGHT + LEVEL_IMG_Y / 2)
+#define TIME_STANDARD_X 100
+#define TIME_HARD_X 300
+#define TIME_LINE_MAX (10 + TIME_STR_LEN) //"Standard: " plus a formatted time
 
 //save slot buttons, a 2x2 grid on the upper part of the bottom screen
 #define SLOT_W 80
@@ -32,9 +47,23 @@
 //how far the highlight sticks out past the selected button, same idea as MainMenu.
 #define HIGHLIGHT_PAD 5
 
-//"Main\nMenu" 9 + "Rename" 6 + "Copy" 4 + "Clear\nTimes" 11 + "Delete" 6 + four slot
-//numbers 4 = 40 glyphs. rounded up to the next power of two.
+/*
+* the static buffer, everything that is built once in _Init and never reparsed:
+* "Main\nMenu" 9 + "Rename" 6 + "Copy" 4 + "Clear\nTimes" 11 + "Delete" 6 + four slot
+* numbers 4 = 40 glyphs. rounded up to the next power of two.
+*/
 #define LEVEL_SELECT_MAX_GLYPHS 64
+
+/*
+* a C2D_TextBuf can only be cleared whole, never entry by entry, so anything that changes
+* while the state is up needs a buffer holding nothing but itself. the two below are
+* those, and both are a fraction of the static one.
+*
+* the names change on rename, copy and delete. the times change on clear times, copy
+* and delete. each group is reparsed without disturbing the other.
+*/
+#define LEVEL_SELECT_NAME_GLYPHS (SLOT_COUNT * NAME_LINE_MAX)
+#define LEVEL_SELECT_TIME_GLYPHS (SLOT_COUNT * 2 * TIME_LINE_MAX)
 
 
 
@@ -96,7 +125,9 @@ static const u8 ACTION_COL_TO_SLOT_COL[CURSOR_MAX_COLS] = { 0, 0, 0, 1, 1 };
 
 //everything owned by the LevelSelect
 typedef struct{
-    C2D_TextBuf textBuf;
+    C2D_TextBuf textBuf; //the static text, parsed once in _Init
+    C2D_TextBuf nameBuf; //just the four level names, reparsed on a rename
+    C2D_TextBuf timeBuf; //just the eight best times, reparsed when a time is cleared
 
     C3D_Tex fullLevelTextures[SLOT_COUNT];
     C3D_RenderTarget *fullLevelTarget[SLOT_COUNT];
@@ -112,6 +143,16 @@ typedef struct{
     //one label per button, parallel to the rects above
     C2D_Text slotLabels[SLOT_COUNT];
     C2D_Text actionLabels[ACTION_BUTTON_COUNT];
+
+    //the name of the level in each slot, drawn above that slot's preview on the top
+    //screen. these live in nameBuf, so they all go stale together whenever
+    //RebuildNameLabels runs. same indexing as fullLevelImages.
+    C2D_Text slotNameLabels[SLOT_COUNT];
+
+    //each slot's two best times, below the preview. these live in timeBuf, so they all
+    //go stale together whenever RebuildTimeLabels runs.
+    C2D_Text slotStandardLabels[SLOT_COUNT];
+    C2D_Text slotHardLabels[SLOT_COUNT];
 
     //the d pad cursor's place in CURSOR_GRID. starts on slot 1, which the calloc gives free.
     u8 cursorRow;
@@ -149,6 +190,59 @@ typedef struct{
 } LevelSelectState;
 
 static LevelSelectState* lsstate;
+
+
+/*
+* reparse all four level names out of lsstate->savfle. a C2D_TextBuf cannot drop one
+* entry, so every name is rebuilt even when only one changed, which is what nameBuf holds
+* nothing else for. called after any action that edits a name: rename, copy, delete.
+*/
+static void RebuildNameLabels(void){
+    C2D_TextBufClear(lsstate->nameBuf);
+
+    for (int i = 0; i < SLOT_COUNT; i++){
+        char line[NAME_LINE_MAX];
+        //a slot with no save file behind it reads the same as an empty one, since
+        //neither has a level to name
+        if (lsstate->savfle == NULL || lsstate->savfle->Levels[i].empty){
+            snprintf(line, sizeof line, "Slot %d: Empty", i + 1);
+        } else {
+            //levelName is a fixed char[32] that a full length rename leaves unterminated,
+            //so the precision caps how far %s reads. an unbounded %s could run off the end.
+            snprintf(line, sizeof line, "Slot %d: %.*s", i + 1,
+                     LEVEL_NAME_MAX_LEN, lsstate->savfle->Levels[i].levelName);
+        }
+        MakeText(line, &lsstate->slotNameLabels[i], lsstate->nameBuf);
+    }
+}
+
+/*
+* reparse all eight best time lines out of lsstate->savfle. same logic as
+* RebuildNameLabels: timeBuf holds nothing else, so clearing it costs only these eight.
+* called after any action that edits a time: clear times, copy, delete.
+*/
+static void RebuildTimeLabels(void){
+    C2D_TextBufClear(lsstate->timeBuf);
+
+    for (int i = 0; i < SLOT_COUNT; i++){
+        //a slot with no save file behind it, an empty one, and one that has never been
+        //finished all read the same: there is no time to print
+        const Raw_Level* lvl = (lsstate->savfle != NULL && !lsstate->savfle->Levels[i].empty)
+                             ? &lsstate->savfle->Levels[i] : NULL;
+        char line[TIME_LINE_MAX];
+        char time[TIME_STR_LEN];
+
+        if (lvl != NULL && lvl->standardTimeValid) FormatTime(lvl->bestTimeStandard, time, sizeof time);
+        snprintf(line, sizeof line, "Standard: %s",
+                 (lvl != NULL && lvl->standardTimeValid) ? time : "--");
+        MakeText(line, &lsstate->slotStandardLabels[i], lsstate->timeBuf);
+
+        if (lvl != NULL && lvl->hardTimeValid) FormatTime(lvl->bestTimeHard, time, sizeof time);
+        snprintf(line, sizeof line, "Hard: %s",
+                 (lvl != NULL && lvl->hardTimeValid) ? time : "--");
+        MakeText(line, &lsstate->slotHardLabels[i], lsstate->timeBuf);
+    }
+}
 
 
 //put the cursor on the button the player just touched, so the highlight does not sit
@@ -193,6 +287,8 @@ void LevelSelect_Init(GameContext* ctx){
     }
 
     lsstate->textBuf = C2D_TextBufNew(LEVEL_SELECT_MAX_GLYPHS);
+    lsstate->nameBuf = C2D_TextBufNew(LEVEL_SELECT_NAME_GLYPHS);
+    lsstate->timeBuf = C2D_TextBufNew(LEVEL_SELECT_TIME_GLYPHS);
 
     //which slot the game is on right now. green on the bottom screen, and the only
     //thing this state reads off the context.
@@ -213,6 +309,11 @@ void LevelSelect_Init(GameContext* ctx){
         MakeText(label, &lsstate->slotLabels[i], lsstate->textBuf);
     }
 
+    //the names and the times each live in a buffer of their own, so they are built
+    //through the same helpers that rename, copy, delete and clear times use
+    RebuildNameLabels();
+    RebuildTimeLabels();
+
     //the action button row along the bottom
     for (int i = 0; i < ACTION_BUTTON_COUNT; i++){
         lsstate->bottomRects[RECT_MAINMENU + i] = (Rect){
@@ -225,10 +326,8 @@ void LevelSelect_Init(GameContext* ctx){
         MakeText(ACTION_BUTTONS[i].label, &lsstate->actionLabels[i], lsstate->textBuf);
     }
 
-    //the three RECT_AYS_* entries stay zeroed by the calloc. a zero width rect can never
-    //pass Rect_Contains, so they are inert until the are you sure window is built out.
-
-    //the cursor needs no init either, the calloc already puts it on row 0 column 0, slot 1
+    
+    //the cursor needs no init, the calloc already puts it on row 0 column 0, slot 1
     lsstate->curSlotImage = 0;
 
     return;
@@ -328,6 +427,19 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
         C2D_DrawImageAt(slotImage, LEVEL_IMG_X, LEVEL_IMG_Y, 0, NULL, 1, 1);
     }
 
+    //the hovered slot's level name, in the strip above the preview
+    DrawTextCentered(&lsstate->slotNameLabels[lsstate->curSlotImage],
+                     TOP_SCREEN_WIDTH / 2.0f, NAME_Y,
+                     NAME_TEXT_SCALE, NAME_TEXT_SCALE, Colors[CLR_BLACK]);
+
+    //its two best times, side by side in the strip below the preview
+    DrawTextCentered(&lsstate->slotStandardLabels[lsstate->curSlotImage],
+                     TIME_STANDARD_X, TIME_Y,
+                     TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
+    DrawTextCentered(&lsstate->slotHardLabels[lsstate->curSlotImage],
+                     TIME_HARD_X, TIME_Y,
+                     TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
+
     //draw rest of top screen
 
 
@@ -370,6 +482,8 @@ void LevelSelect_End(void){
         C3D_TexDelete(&lsstate->fullLevelTextures[i]);
     }
     C2D_TextBufDelete(lsstate->textBuf);
+    C2D_TextBufDelete(lsstate->nameBuf);
+    C2D_TextBufDelete(lsstate->timeBuf);
     free(lsstate->savfle);
     free(lsstate);
     lsstate = NULL;
