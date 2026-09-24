@@ -45,9 +45,15 @@ void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float 
 */
 void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color);
 
-//bake an entire level into a single texture 
+//bake an entire level into a single texture
 //need to free these seperately at end of state
-void BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Tex3DS_SubTexture *levelSubTex, Raw_Level *cur_level, C2D_Image *out);
+//this draws, so it opens and closes a frame of its own. that means it must NOT be
+//called from inside another C3D_FrameBegin/C3D_FrameEnd pair, i.e. not from a
+//state's _Draw. one frame per call also keeps each bake's rects under citro2d's
+//per frame object limit.
+//returns false if the texture or its render target could not be made, in which
+//case *levelTarget is NULL and *out is zeroed, and there is nothing to free.
+bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Tex3DS_SubTexture *levelSubTex, Raw_Level *cur_level, C2D_Image *out);
 
 
 void updateBakedTile(int roomX, int roomY, int tileX, int tileY, u32 newColor, C3D_RenderTarget **target);

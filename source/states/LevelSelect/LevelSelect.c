@@ -1,6 +1,7 @@
 #include "states/LevelSelect/LevelSelect.h"
 #include "utils/graphics.h"
 #include "utils/debug.h"
+#include "datatypes/save_file.h"
 #include <stdlib.h>
 
 
@@ -31,7 +32,10 @@ typedef struct{
     
     Rect bottomRects[BOTTOM_RECT_COUNT];
     
-    
+    //the whole save file, read once in _Init and kept for the life of the state so
+    //the slot list and the rename, copy and delete actions all work off one copy.
+    //it is on the heap because a Save_File is far too big to sit in a stack frame.
+    Save_File *savfle;
 
 
     //levelSelect specific details
@@ -61,10 +65,31 @@ static LevelSelectState* lsstate;
 
 
 void LevelSelect_Init(GameContext* ctx){
-    lsstate = malloc(sizeof(LevelSelectState));
-    //create all 4 level textures here
-    for (int i = 0; i < SLOT_COUNT; i++){
-        BakeLevelTexture(&lsstate->fullLevelTextures[i], &lsstate->fullLevelTarget[i], &lsstate->fullLevelSubTex[i], ctx->rawLvl, &lsstate->fullLevelImages[i]);
+    (void)ctx; //the slots come off the disk here, not from the loaded level
+
+    //calloc, not malloc: _Draw and _End both read the texture and target arrays, and
+    //a slot that fails to bake leaves its entry at zero, which both of them treat as
+    //"nothing here" rather than as a stale pointer.
+    lsstate = calloc(1, sizeof(LevelSelectState));
+    if (lsstate == NULL){
+        printConsole("LevelSelect_Init: out of memory for the state");
+        return;
+    }
+
+    lsstate->savfle = malloc(sizeof(Save_File));
+    if (lsstate->savfle == NULL || !SaveFile_Read(lsstate->savfle)){
+        printConsole("LevelSelect_Init: could not read the save file");
+        free(lsstate->savfle);
+        lsstate->savfle = NULL;
+    }
+
+    //create all 4 level textures here, one per save slot.
+    if (lsstate->savfle != NULL){
+        for (int i = 0; i < SLOT_COUNT; i++){
+            if (!BakeLevelTexture(&lsstate->fullLevelTextures[i], &lsstate->fullLevelTarget[i], &lsstate->fullLevelSubTex[i], &lsstate->savfle->Levels[i], &lsstate->fullLevelImages[i])){
+                printConsole("LevelSelect_Init: slot %d did not bake", i);
+            }
+        }
     }
 
     lsstate->curSlotImage = 0;
@@ -92,25 +117,41 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 
 
 void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
+    if (lsstate == NULL) return;
+
     //full texture is drawn at 50, 30
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    C2D_DrawImageAt(lsstate->fullLevelImages[lsstate->curSlotImage], 50, 30, 0, NULL, 1, 1);
+    //a slot whose bake failed has no texture, and drawing it would follow a null one
+    C2D_Image slotImage = lsstate->fullLevelImages[lsstate->curSlotImage];
+    if (slotImage.tex != NULL){
+        C2D_DrawImageAt(slotImage, 50, 30, 0, NULL, 1, 1);
+    }
+
+    //draw rest of top screen
 
 
+    C2D_TargetClear(bottom, Colors[CLR_WHITE]);
+    C2D_SceneBegin(bottom);
+    //draw bottom screen
 }
 
 
 
 void LevelSelect_End(void){
+    if (lsstate == NULL) return;
+
+    //free all four, skipping any slot that never baked
     for (int i = 0; i < SLOT_COUNT; i++){
+        if (lsstate->fullLevelTarget[i] == NULL) continue;
         C3D_RenderTargetDelete(lsstate->fullLevelTarget[i]);
         lsstate->fullLevelTarget[i] = NULL;
         C3D_TexDelete(&lsstate->fullLevelTextures[i]);
     }
+    free(lsstate->savfle);
     free(lsstate);
-    //free all four 
+    lsstate = NULL;
     return;
 }
 
