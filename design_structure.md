@@ -181,6 +181,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
     * using this strategy, it may not be needed to compile the levels in the way specified before, as all of the blocks could then be drawn regularly, as the 3ds can handle a lot of blocks. 
     * the compilation would still need to define some specific things though, such as the start location, and the locations of the portals. 
 
+* automatically save the times if they are new bests when the player reaches the victory screen.
 
 
 
@@ -189,6 +190,9 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 
 
-## Maze Maker - states/Maze/
+
+## Maze Maker - states/Maker/
 * When in the actual maze maker, DO NOT DRAW THE ENTIRE TOP SCREEN EVERY FRAME, to save preformance. instead, in the struct of state vars, keep a boolean for all 9 rooms for if they need to be drawn this frame. in init initalize all of these to true.
     * in Draw, check each of these individually, and if one is true, clear and 
+
+* Automatically save the raw level when the player leaves the Maker

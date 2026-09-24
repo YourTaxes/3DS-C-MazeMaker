@@ -3,6 +3,7 @@
 #include "utils/debug.h"
 #include "datatypes/save_file.h"
 #include <stdlib.h>
+#include <stdio.h> //snprintf, for the slot number labels
 
 
 //defines
@@ -13,11 +14,83 @@
 #define LEVEL_IMG_X ((TOP_SCREEN_WIDTH - BAKED_LEVEL_IMG_WIDTH) / 2)
 #define LEVEL_IMG_Y ((TOP_SCREEN_HIGHT - BAKED_LEVEL_IMG_HEIGHT) / 2)
 
+//save slot buttons, a 2x2 grid on the upper part of the bottom screen
+#define SLOT_W 80
+#define SLOT_H 80
+#define SLOT_X0 70            //left edge of the left column
+#define SLOT_Y0 10            //top edge of the top row
+#define SLOT_COL_SPACING 100  //left edge of one column to the left edge of the next
+#define SLOT_ROW_SPACING 100
+#define SLOT_TEXT_SCALE 1.0f
+
+//the action button row across the bottom
+#define ACTION_W 50
+#define ACTION_H 30
+#define ACTION_Y 200
+#define ACTION_TEXT_SCALE 0.45f
+
+//how far the highlight sticks out past the selected button, same idea as MainMenu.
+#define HIGHLIGHT_PAD 5
+
+//"Main\nMenu" 9 + "Rename" 6 + "Copy" 4 + "Clear\nTimes" 11 + "Delete" 6 + four slot
+//numbers 4 = 40 glyphs. rounded up to the next power of two.
+#define LEVEL_SELECT_MAX_GLYPHS 64
+
 
 
 //structs
 
+/*
+* the action button row, in left to right order, which is also RECT_MAINMENU through
+* RECT_DELETE. this is the only place one is defined: _Init, _Logic and _Draw all loop
+* over it. the x values are not evenly spaced, so they are spelled out rather than
+* derived the way the slot grid is.
+*/
+static const struct {
+    const char* label; //drawn on the button, so it carries its own line break
+    const char* name;  //the same button on one line, for the console
+    float x;
+} ACTION_BUTTONS[] = {
+    { "Main\nMenu",    "Main Menu",    10 },
+    { "Rename",        "Rename",       70 },
+    { "Copy",          "Copy",        135 },
+    { "Clear\nTimes",  "Clear Times", 200 },
+    { "Delete",        "Delete",      260 },
+};
+#define ACTION_BUTTON_COUNT (sizeof(ACTION_BUTTONS) / sizeof(ACTION_BUTTONS[0]))
+_Static_assert(ACTION_BUTTON_COUNT == RECT_DELETE - RECT_MAINMENU + 1,
+               "ACTION_BUTTONS must cover RECT_MAINMENU through RECT_DELETE");
 
+
+#define CURSOR_ROW_COUNT 3
+#define CURSOR_MAX_COLS 5
+#define ACTION_ROW 2 //special case, 5 buttons in this row
+
+/*
+* the d and circle pad navigation matrix. rows 0 and 1 are the save slots, row 2 is the
+* action row. entries are RectIDs, and count is how far right that row goes, since the
+* rows are not all the same length.
+*/
+static const struct {
+    u8 count;
+    u8 rects[CURSOR_MAX_COLS];
+} CURSOR_GRID[CURSOR_ROW_COUNT] = {
+    { 2, { RECT_LVL1, RECT_LVL2 } },
+    { 2, { RECT_LVL3, RECT_LVL4 } },
+    { 5, { RECT_MAINMENU, RECT_RENAME, RECT_COPY, RECT_CLEAR_TIMES, RECT_DELETE } },
+};
+_Static_assert(RECT_LVL1 == 0 && RECT_LVL4 == SLOT_COUNT - 1,
+               "the four slot rects must lead RectIDs for the hover check to work");
+
+/*
+* the slot rows are two wide and the action row is five, so a vertical move across them
+* translates the column instead of keeping it. the pairs are by what sits under what on
+* screen: slots 1 and 3 are above Rename, slots 2 and 4 are above Clear Times. going the
+* other way, Main Menu, Rename and Copy are all left of the gap between the slot columns,
+* Clear Times and Delete are right of it.
+*/
+static const u8 SLOT_COL_TO_ACTION_COL[2] = { 1, 3 }; //-> RECT_RENAME, RECT_CLEAR_TIMES
+static const u8 ACTION_COL_TO_SLOT_COL[CURSOR_MAX_COLS] = { 0, 0, 0, 1, 1 };
 
 
 
@@ -33,9 +106,21 @@ typedef struct{
     
 
     //this holds all the rects for the ui for the bottom screen.
-    
+
     Rect bottomRects[BOTTOM_RECT_COUNT];
-    
+
+    //one label per button, parallel to the rects above
+    C2D_Text slotLabels[SLOT_COUNT];
+    C2D_Text actionLabels[ACTION_BUTTON_COUNT];
+
+    //the d pad cursor's place in CURSOR_GRID. starts on slot 1, which the calloc gives free.
+    u8 cursorRow;
+    u8 cursorCol;
+
+    //the slot the game currently has loaded, copied off ctx in _Init because _Draw is
+    //not handed a GameContext. 0 indexed, and its button is drawn green.
+    int activeSlot;
+
     //the whole save file, read once in _Init and kept for the life of the state so
     //the slot list and the rename, copy and delete actions all work off one copy.
     //it is on the heap because a Save_File is far too big to sit in a stack frame.
@@ -66,11 +151,22 @@ typedef struct{
 static LevelSelectState* lsstate;
 
 
+//put the cursor on the button the player just touched, so the highlight does not sit
+//somewhere else after a tap. a rect that is not on the grid leaves the cursor alone.
+static void CursorToRect(int rectID){
+    for (int r = 0; r < CURSOR_ROW_COUNT; r++){
+        for (int c = 0; c < CURSOR_GRID[r].count; c++){
+            if (CURSOR_GRID[r].rects[c] == rectID){
+                lsstate->cursorRow = (u8)r;
+                lsstate->cursorCol = (u8)c;
+                return;
+            }
+        }
+    }
+}
 
 
 void LevelSelect_Init(GameContext* ctx){
-    (void)ctx; //the slots come off the disk here, not from the loaded level
-
     //calloc, not malloc: _Draw and _End both read the texture and target arrays, and
     //a slot that fails to bake leaves its entry at zero, which both of them treat as
     //"nothing here" rather than as a stale pointer.
@@ -96,6 +192,43 @@ void LevelSelect_Init(GameContext* ctx){
         }
     }
 
+    lsstate->textBuf = C2D_TextBufNew(LEVEL_SELECT_MAX_GLYPHS);
+
+    //which slot the game is on right now. green on the bottom screen, and the only
+    //thing this state reads off the context.
+    lsstate->activeSlot = ctx->curSlot;
+
+    //the save slot buttons, a 2x2 grid.
+    char label[8];
+    for (int i = 0; i < SLOT_COUNT; i++){
+        lsstate->bottomRects[RECT_LVL1 + i] = (Rect){
+            .x = SLOT_X0 + (i % 2) * SLOT_COL_SPACING,
+            .y = SLOT_Y0 + (i / 2) * SLOT_ROW_SPACING,
+            .width = SLOT_W,
+            .height = SLOT_H,
+            //the slot the game is currently on reads green, the rest are the normal gray
+            .Color = Colors[i == lsstate->activeSlot ? CLR_GREEN : CLR_DK_GRAY],
+        };
+        snprintf(label, sizeof label, "%d", i + 1); //slots read 1-4, not 0-3
+        MakeText(label, &lsstate->slotLabels[i], lsstate->textBuf);
+    }
+
+    //the action button row along the bottom
+    for (int i = 0; i < ACTION_BUTTON_COUNT; i++){
+        lsstate->bottomRects[RECT_MAINMENU + i] = (Rect){
+            .x = ACTION_BUTTONS[i].x,
+            .y = ACTION_Y,
+            .width = ACTION_W,
+            .height = ACTION_H,
+            .Color = Colors[CLR_DK_GRAY],
+        };
+        MakeText(ACTION_BUTTONS[i].label, &lsstate->actionLabels[i], lsstate->textBuf);
+    }
+
+    //the three RECT_AYS_* entries stay zeroed by the calloc. a zero width rect can never
+    //pass Rect_Contains, so they are inert until the are you sure window is built out.
+
+    //the cursor needs no init either, the calloc already puts it on row 0 column 0, slot 1
     lsstate->curSlotImage = 0;
 
     return;
@@ -104,9 +237,72 @@ void LevelSelect_Init(GameContext* ctx){
 
 
 Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
-    //do real frame logic
-    
-    
+    (void)ctx; //nothing here writes back to the context yet
+    if (lsstate == NULL) return STATE_MAIN_MENU; //_Init ran out of memory, do not stay here
+
+    //left and right walk the row the player is on, wrapping at both ends
+    const u8 rowLen = CURSOR_GRID[lsstate->cursorRow].count;
+    if (in->kDown & (KEY_LEFT | KEY_CPAD_LEFT))
+        lsstate->cursorCol = (lsstate->cursorCol + rowLen - 1) % rowLen;
+    if (in->kDown & (KEY_RIGHT | KEY_CPAD_RIGHT))
+        lsstate->cursorCol = (lsstate->cursorCol + 1) % rowLen;
+
+    //up and down wrap too, but crossing into or out of the five wide action row has to
+    //translate the column, or the cursor would not land under where it started
+    u8 newRow = lsstate->cursorRow;
+    if (in->kDown & (KEY_UP | KEY_CPAD_UP))
+        newRow = (newRow + CURSOR_ROW_COUNT - 1) % CURSOR_ROW_COUNT;
+    if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
+        newRow = (newRow + 1) % CURSOR_ROW_COUNT;
+
+    if (newRow != lsstate->cursorRow){
+        if (newRow == ACTION_ROW)
+            lsstate->cursorCol = SLOT_COL_TO_ACTION_COL[lsstate->cursorCol];
+        else if (lsstate->cursorRow == ACTION_ROW)
+            lsstate->cursorCol = ACTION_COL_TO_SLOT_COL[lsstate->cursorCol];
+        //slot row to slot row keeps the column, both of those rows are the same width
+        lsstate->cursorRow = newRow;
+    }
+
+    //only allow one action per frame. if both happen, then screen touch takes priority
+    int pressed = -1;
+    for (int i = RECT_LVL1; i <= RECT_DELETE; i++){
+        if (Rect_Tapped(&lsstate->bottomRects[i], in)){
+            pressed = i;
+            break;
+        }
+    }
+    if (pressed >= 0){
+        CursorToRect(pressed); //the highlight follows the finger
+    } else if (in->kDown & KEY_A){
+        pressed = CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol];
+    }
+
+    //the top screen preview follows the cursor, so moving onto a slot with the d pad shows
+    //that slot's level. a tap lands here too, because CursorToRect just put the cursor on it.
+    u8 hovered = CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol];
+    if (hovered < SLOT_COUNT) lsstate->curSlotImage = hovered; //RECT_LVL1..4 lead the enum
+
+    switch (pressed){
+        case RECT_LVL1: case RECT_LVL2: case RECT_LVL3: case RECT_LVL4:
+            //selecting a slot does not load it yet, the preview is all that moves
+            printConsole("player selected slot %d", pressed - RECT_LVL1 + 1);
+            break;
+
+        case RECT_MAINMENU:
+            printConsole("player is going back to main menu from level select");
+            return STATE_MAIN_MENU;
+
+        case RECT_RENAME:      lsstate->curAction = ACTION_RENAME;      break;
+        case RECT_COPY:        lsstate->curAction = ACTION_COPY;        break;
+        case RECT_CLEAR_TIMES: lsstate->curAction = ACTION_CLEAR_TIMES; break;
+        case RECT_DELETE:      lsstate->curAction = ACTION_DELETE;      break;
+
+        default: break; //-1, nothing was pressed this frame
+    }
+    if (pressed >= RECT_RENAME && pressed <= RECT_DELETE){
+        printConsole("action set to \"%s\"", ACTION_BUTTONS[pressed - RECT_MAINMENU].name);
+    }
 
     //do state exit logic (only way to leave is to go back to main menu)
     //if player pressed b or touched Main Menu button or clicked on it, return STATE_MAINMENU
@@ -137,7 +333,28 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
 
     C2D_TargetClear(bottom, Colors[CLR_WHITE]);
     C2D_SceneBegin(bottom);
-    //draw bottom screen
+
+    //highlight: the cursor's rect, grown by the pad, drawn first so it sits underneath
+    Rect highlight = lsstate->bottomRects[CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol]];
+    highlight.x -= HIGHLIGHT_PAD;
+    highlight.y -= HIGHLIGHT_PAD;
+    highlight.width += 2 * HIGHLIGHT_PAD;
+    highlight.height += 2 * HIGHLIGHT_PAD;
+    highlight.Color = Colors[CLR_YELLOW];
+    DrawRect(&highlight);
+
+    //every rect carries its own fill color from _Init, so the active slot comes out
+    //green here without a special case
+    for (int i = 0; i < SLOT_COUNT; i++){
+        DrawRect(&lsstate->bottomRects[RECT_LVL1 + i]);
+        DrawTextInRect(&lsstate->slotLabels[i], &lsstate->bottomRects[RECT_LVL1 + i],
+                       SLOT_TEXT_SCALE, Colors[CLR_WHITE]);
+    }
+    for (int i = 0; i < ACTION_BUTTON_COUNT; i++){
+        DrawRect(&lsstate->bottomRects[RECT_MAINMENU + i]);
+        DrawTextInRect(&lsstate->actionLabels[i], &lsstate->bottomRects[RECT_MAINMENU + i],
+                       ACTION_TEXT_SCALE, Colors[CLR_WHITE]);
+    }
 }
 
 
@@ -152,6 +369,7 @@ void LevelSelect_End(void){
         lsstate->fullLevelTarget[i] = NULL;
         C3D_TexDelete(&lsstate->fullLevelTextures[i]);
     }
+    C2D_TextBufDelete(lsstate->textBuf);
     free(lsstate->savfle);
     free(lsstate);
     lsstate = NULL;

@@ -58,11 +58,13 @@ void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf)
 void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color){
     float width, height;
     C2D_TextGetDimensions(text, scaleX, scaleY, &width, &height);
+    (void)width; //C2D_AlignCenter takes the center itself, so only the height is needed here
 
-    float drawX = centerX - (width / 2.0f);
     float drawY = centerY - (height / 2.0f);
 
-    C2D_DrawText(text, C2D_WithColor, drawX, drawY, 1.0f, scaleX, scaleY, color);
+    //C2D_AlignCenter centers every line on centerX, so a label with a '\n' in it comes out
+    //as stacked centered lines rather than left aligned ones inside a centered block
+    C2D_DrawText(text, C2D_WithColor | C2D_AlignCenter, centerX, drawY, 1.0f, scaleX, scaleY, color);
 }
 
 void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color){
