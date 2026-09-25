@@ -15,8 +15,7 @@ void Input_Read(FrameInput* in) {
     hidCircleRead(&cpad);
     normalizeCirclePad(&cpad, &in->cpadX, &in->cpadY);
 
-    float slider = osGet3DSliderState();
-	float depth = slider * SCALE_3D;
+	in->screenDepth = osGet3DSliderState() * SCALE_3D;
 }
 
 void normalizeCirclePad(circlePosition* cpad, float* normX, float* normY) {
@@ -55,7 +54,7 @@ void printInputs(const FrameInput* in){
     printConsole("down is %s", ToBinary(in->kDown, binBuff));
     printConsole("held is %s", ToBinary(in->kHeld, binBuff));
     printConsole("up is   %s", ToBinary(in->kUp, binBuff));
-    printConsole("3DSlider is %s", in->screenDepth);
+    printConsole("3DSlider is %.2f", in->screenDepth);
 }
 
 bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type) 
