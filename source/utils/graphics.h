@@ -56,5 +56,5 @@ void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 col
 //case *levelTarget is NULL and *out is zeroed, and there is nothing to free.
 bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Tex3DS_SubTexture *levelSubTex, Raw_Level *cur_level, C2D_Image *out);
 
-
+//update one tile in the baked texture.
 void updateBakedTile(int roomX, int roomY, int tileX, int tileY, u32 newColor, C3D_RenderTarget **target);

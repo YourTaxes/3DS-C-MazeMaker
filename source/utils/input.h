@@ -14,6 +14,8 @@
 #define KEY_DEBUG  BIT(12)
 #define KEY_GPIO14 BIT(13)
 
+#define SCALE_3D 3.0f
+
 /*
 * everything the player did this frame. filled once per frame by Input_Read
 * in main and passed to the current state's _Logic.
@@ -25,6 +27,7 @@ typedef struct {
     touchPosition touch; //px, py are 0,0 when the screen is not touched
     float cpadX; //circle pad, -1.0 to 1.0, 0 inside the deadzone
     float cpadY;
+    float screenDepth; //between 0 and MAX_POPOUT
 } FrameInput;
 
 /*
