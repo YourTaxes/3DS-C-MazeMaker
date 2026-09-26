@@ -4,6 +4,9 @@
 #remove built binaries
 build/*
 
+#tex3ds output. the sources are the png and t3s pairs in gfx/
+romfs/gfx/
+
 #remove built game files
 *.3dsx
 *.elf

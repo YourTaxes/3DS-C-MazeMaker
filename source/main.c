@@ -60,6 +60,13 @@ int main(int argc, char **argv)
 
 	MakeColors();
 
+	//every gui picture, loaded once out of romfs and held by graphics.c until FreeImages
+	//below. states borrow these with GetImage and must never free what they get back.
+	//a failure here is not worth refusing to boot over: a missing image just draws nothing.
+	if (!LoadImages()){
+		printConsole("some gui images did not load, continuing without them");
+	}
+
 	if (SaveFile_Ensure()){
 		//read what the last selected slot was and set curSlot to it.
 		if (!SaveFile_ReadLastSlot(&ctx.curSlot)){
@@ -109,6 +116,8 @@ int main(int argc, char **argv)
 			//if these stay flat across state switches, the game itself is not leaking.
 			printConsole("heap used:   %d", mallinfo().uordblks);
 			printConsole("linear free: %lu", (unsigned long)linearSpaceFree());
+			//Print Vram debug, used for detecting memory leaks with the image previews
+			printConsole("vram free:   %lu", (unsigned long)vramSpaceFree());
 		}
 
 		//keyboard test demo
@@ -152,6 +161,10 @@ int main(int argc, char **argv)
 
 	//write what the last selected slot was.
 	SaveFile_WriteLastSlot(ctx.curSlot);
+
+	//after the last state's end(), so nothing is still holding a borrowed C2D_Image, and
+	//before C2D_Fini, because the sheets are citro2d objects
+	FreeImages();
 
 	// Exit services
 	C3D_RenderTargetDelete(top);

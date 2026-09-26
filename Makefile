@@ -40,9 +40,10 @@ SOURCES		:=	source source/datatypes source/utils source/states \
 DATA		:=	data
 INCLUDES	:=	source
 GRAPHICS	:=	gfx
-GFXBUILD	:=	$(BUILD)
 ROMFS		:=	romfs
-#GFXBUILD	:=	$(ROMFS)/gfx
+#the t3x files go into romfs rather than being linked into the executable, so the game
+#loads them at runtime with C2D_SpriteSheetLoad("romfs:/gfx/<name>.t3x")
+GFXBUILD	:=	$(ROMFS)/gfx
 
 APP_TITLE	:= Maze Maker
 APP_AUTHOR	:= Finnegan McDevitt

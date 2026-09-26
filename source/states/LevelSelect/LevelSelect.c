@@ -129,10 +129,10 @@ typedef struct{
     C2D_TextBuf nameBuf; //just the four level names, reparsed on a rename
     C2D_TextBuf timeBuf; //just the eight best times, reparsed when a time is cleared
 
-    //C3D_Tex fullLevelTextures[SLOT_COUNT];
-    //C3D_RenderTarget *fullLevelTarget[SLOT_COUNT];
-    //Tex3DS_SubTexture fullLevelSubTex[SLOT_COUNT];
-    C2D_Image fullLevelImages[SLOT_COUNT];
+    //one preview per save slot, each carrying whether its texture is ours to free, so a
+    //borrowed gui image can sit in a slot without being deleted out from under graphics.c.
+    LevelPreview fullLevelPreviews[SLOT_COUNT];
+    C3D_RenderTarget *fullLevelTarget[SLOT_COUNT];
 
     
 
@@ -146,7 +146,7 @@ typedef struct{
 
     //the name of the level in each slot, drawn above that slot's preview on the top
     //screen. these live in nameBuf, so they all go stale together whenever
-    //RebuildNameLabels runs. same indexing as fullLevelImages.
+    //RebuildNameLabels runs. same indexing as fullLevelPreviews.
     C2D_Text slotNameLabels[SLOT_COUNT];
 
     //each slot's two best times, below the preview. these live in timeBuf, so they all
@@ -263,9 +263,11 @@ static void CursorToRect(int rectID){
 void LevelSelect_Init(GameContext* ctx){
     printConsole("init Level Select, %u bytes", (unsigned)sizeof(LevelSelectState));
 
-    //calloc, not malloc: _Draw and _End both read the texture and target arrays, and
+    //calloc, not malloc: _Draw and _End both read the preview and target arrays, and
     //a slot that fails to bake leaves its entry at zero, which both of them treat as
-    //"nothing here" rather than as a stale pointer.
+    //"nothing here" rather than as a stale pointer. the zeroing is also what lets the
+    //bake loop below run without freeing first, since BakeLevelTexture overwrites its
+    //output rather than releasing what was already there.
     lsstate = calloc(1, sizeof(LevelSelectState));
     if (lsstate == NULL){
         printConsole("LevelSelect_Init: out of memory for the state");
@@ -283,7 +285,8 @@ void LevelSelect_Init(GameContext* ctx){
     //create all 4 level textures here, one per save slot.
     if (lsstate->savfle != NULL){
         for (int i = 0; i < SLOT_COUNT; i++){
-            if (!BakeLevelTexture(&lsstate->fullLevelImages[i], &lsstate->savfle->Levels[i], true)){//BakeLevelTexture(&lsstate->fullLevelTarget[i], &lsstate->fullLevelSubTex[i], &lsstate->savfle->Levels[i], &lsstate->fullLevelImages[i], true)){
+            if (!BakeLevelTexture(&lsstate->fullLevelPreviews[i], &lsstate->fullLevelTarget[i],
+                                  &lsstate->savfle->Levels[i], true)){
                 printConsole("LevelSelect_Init: slot %d did not bake", i);
             }
         }
@@ -453,11 +456,13 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    //a slot whose bake failed has no texture, and drawing it would follow a null one
-    C2D_Image slotImage = lsstate->fullLevelImages[lsstate->curSlotImage];
-    if (slotImage.tex != NULL){
-        C2D_DrawImageAt(slotImage, LEVEL_IMG_X, LEVEL_IMG_Y, 0, NULL, 1, 1);
-    }
+    //a baked preview is exactly BAKED_LEVEL_IMG_WIDTH x _HEIGHT, so it lands at scale 1 in
+    //the same place it always has. the borrowed gui image an empty slot gets is a different
+    //size, so it is the one that actually gets shrunk and centered here.
+    //DrawImageFitCentered handles a slot with no picture at all, so there is no check here.
+    DrawImageFitCentered(lsstate->fullLevelPreviews[lsstate->curSlotImage].img,
+                         LEVEL_IMG_X, LEVEL_IMG_Y,
+                         BAKED_LEVEL_IMG_WIDTH, BAKED_LEVEL_IMG_HEIGHT);
 
     //the hovered slot's level name, in the strip above the preview
     DrawTextCentered(&lsstate->slotNameLabels[lsstate->curSlotImage],
@@ -506,9 +511,16 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
 void LevelSelect_End(void){
     if (lsstate == NULL) return;
 
-    //free all four, skipping any slot that never baked
+    //all four, target before texture: a render target that outlives the texture it draws
+    //into leaves citro3d holding a pointer into freed VRAM. FreeLevelImage handles the
+    //rest, including a slot that never baked and a slot holding a borrowed gui image,
+    //which has no target of its own.
     for (int i = 0; i < SLOT_COUNT; i++){
-        FreeLevelImage(&lsstate->fullLevelImages[i]);
+        if (lsstate->fullLevelTarget[i] != NULL){
+            C3D_RenderTargetDelete(lsstate->fullLevelTarget[i]);
+            lsstate->fullLevelTarget[i] = NULL;
+        }
+        FreeLevelImage(&lsstate->fullLevelPreviews[i]);
     }
     C2D_TextBufDelete(lsstate->textBuf);
     C2D_TextBufDelete(lsstate->nameBuf);
