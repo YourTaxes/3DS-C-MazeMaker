@@ -2,9 +2,13 @@
 
 #include <citro2d.h>
 #include <3ds.h>
+#include <stdlib.h>
 #include "utils/input.h" //Rect_Tapped reads the frame's touch
 #include "datatypes/graphics_types.h" //Rect, Colors
 #include "datatypes/level_file.h"
+#include "utils/debug.h"
+
+
 
 #define TOP_SCREEN_WIDTH 400
 #define TOP_SCREEN_HIGHT 240
@@ -54,7 +58,10 @@ void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 col
 //per frame object limit.
 //returns false if the texture or its render target could not be made, in which
 //case *levelTarget is NULL and *out is zeroed, and there is nothing to free.
-bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Tex3DS_SubTexture *levelSubTex, Raw_Level *cur_level, C2D_Image *out);
+bool BakeLevelTexture(C2D_Image *curImage, Raw_Level *cur_level, bool emptyShowNoneImage);
+
+void FreeLevelImage(C2D_Image *img);
+
 
 //update one tile in the baked texture.
 void updateBakedTile(int roomX, int roomY, int tileX, int tileY, u32 newColor, C3D_RenderTarget **target);

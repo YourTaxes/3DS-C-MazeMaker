@@ -1,5 +1,5 @@
 #include "utils/graphics.h"
-#include "utils/debug.h"
+
 
 
 _Static_assert(BAKED_LEVEL_IMG_WIDTH  <= BAKED_LEVEL_TEX_WIDTH,  "baked level is wider than its texture");
@@ -24,6 +24,16 @@ void MakeColors(void){
     Colors[CLR_WHITE] = C2D_Color32(255, 255, 255, 255);
     Colors[CLR_PINK] = C2D_Color32(255, 175, 175, 255);
 }
+
+//this const contains all of the information for the static texture.
+static const Tex3DS_SubTexture BAKED_LEVEL_SUBTEX = {
+    .width = BAKED_LEVEL_IMG_WIDTH,
+    .height = BAKED_LEVEL_IMG_HEIGHT,
+    .left = 0.0f,
+    .top = 1.0f,
+    .right = (float)BAKED_LEVEL_IMG_WIDTH / (float)BAKED_LEVEL_TEX_WIDTH,
+    .bottom = 1.0f - ((float)BAKED_LEVEL_IMG_HEIGHT / (float)BAKED_LEVEL_IMG_WIDTH),
+};
 
 
 void DrawRect(const Rect* rect){
@@ -71,42 +81,44 @@ void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 col
     DrawTextCentered(text, rect->x + rect->width / 2.0f, rect->y + rect->height / 2.0f, scale, scale, color);
 }
 
-bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Tex3DS_SubTexture *levelSubTex, Raw_Level *cur_level, C2D_Image *out){
-    //nothing for the caller to free unless both allocations below succeed
-    *levelTarget = NULL;
-    *out = (C2D_Image){0};
+bool BakeLevelTexture(C2D_Image *curImage, Raw_Level *cur_level, bool emptyShowNoneImage){
+    if (emptyShowNoneImage && cur_level->empty){
+        //put the no level guy image into *out
+
+        return true;
+    }
+    curImage->tex = malloc(sizeof(C3D_Tex));
+    if (curImage->tex == NULL) return false;
 
     //actually init the texture and render target.
     //512 x 256 RGBA8 is half a megabyte of VRAM and there is one of these per save
     //slot, so this really can run out. a failed texture has no backing store, and a
     //render target built over one draws into nowhere, so stop here instead.
-    if (!C3D_TexInitVRAM(level_Texture, BAKED_LEVEL_TEX_WIDTH, BAKED_LEVEL_TEX_HEIGHT, GPU_RGBA8)){
+    if (!C3D_TexInitVRAM(curImage->tex, BAKED_LEVEL_TEX_WIDTH, BAKED_LEVEL_TEX_HEIGHT, GPU_RGBA8)){
+        free(curImage->tex);
+        curImage->tex = NULL;
         printConsole("BakeLevelTexture: out of VRAM for a %d x %d texture",
                      BAKED_LEVEL_TEX_WIDTH, BAKED_LEVEL_TEX_HEIGHT);
         return false;
     }
 
     //use nearest to ensure smearing does not happen
-    C3D_TexSetFilter(level_Texture, GPU_NEAREST, GPU_NEAREST);
+    C3D_TexSetFilter(curImage->tex, GPU_NEAREST, GPU_NEAREST);
 
-    *levelTarget = C3D_RenderTargetCreateFromTex(level_Texture, GPU_TEXFACE_2D, 0, -1);
-    if (*levelTarget == NULL){
+    C3D_RenderTarget *curRenderTarget;
+    curRenderTarget = C3D_RenderTargetCreateFromTex(curImage->tex, GPU_TEXFACE_2D, 0, -1);
+    if (curRenderTarget == NULL){
         printConsole("BakeLevelTexture: could not make a render target for the level texture");
-        C3D_TexDelete(level_Texture);
+        C3D_TexDelete(curImage->tex);
+        free(curImage->tex);
+        curImage->tex = NULL;
         return false;
     }
 
-    //map the viewport constraints to the layout size
-    (*levelSubTex).width = BAKED_LEVEL_IMG_WIDTH;
-    (*levelSubTex).height = BAKED_LEVEL_IMG_HEIGHT;
-    (*levelSubTex).left = 0.0f;
-    (*levelSubTex).top = 1.0f;
-    (*levelSubTex).right = (float)BAKED_LEVEL_IMG_WIDTH / (float)BAKED_LEVEL_TEX_WIDTH;
-    (*levelSubTex).bottom = 1.0f - ((float)BAKED_LEVEL_IMG_HEIGHT / (float)BAKED_LEVEL_TEX_HEIGHT);
 
     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-    C2D_TargetClear(*levelTarget, Colors[CLR_WHITE]);
-    C2D_SceneBegin(*levelTarget);
+    C2D_TargetClear(curRenderTarget, Colors[CLR_WHITE]);
+    C2D_SceneBegin(curRenderTarget);
 
     for (int curScreenY = 0; curScreenY < SCREENS_VERT; curScreenY++){
         for (int curScreenX = 0; curScreenX < SCREENS_HORIZ; curScreenX++){
@@ -161,9 +173,17 @@ bool BakeLevelTexture(C3D_Tex *level_Texture, C3D_RenderTarget **levelTarget, Te
     }
     C2D_Flush();
     C3D_FrameEnd(0);
-    out->subtex = levelSubTex;
-    out->tex = level_Texture;
+
+    curImage->subtex = &BAKED_LEVEL_SUBTEX;
+    C3D_RenderTargetDelete(curRenderTarget);
     return true;
+}
+
+void FreeLevelImage(C2D_Image *img){
+    if(img->tex == NULL) return;
+    C3D_TexDelete(img->tex); //release the vram
+    free(img->tex); //release the tex struct
+    *img = (C2D_Image){0};
 }
 
 void updateBakedTile(int roomX, int roomY, int tileX, int tileY, u32 newColor, C3D_RenderTarget **target){

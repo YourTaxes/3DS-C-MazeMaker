@@ -129,9 +129,9 @@ typedef struct{
     C2D_TextBuf nameBuf; //just the four level names, reparsed on a rename
     C2D_TextBuf timeBuf; //just the eight best times, reparsed when a time is cleared
 
-    C3D_Tex fullLevelTextures[SLOT_COUNT];
-    C3D_RenderTarget *fullLevelTarget[SLOT_COUNT];
-    Tex3DS_SubTexture fullLevelSubTex[SLOT_COUNT];
+    //C3D_Tex fullLevelTextures[SLOT_COUNT];
+    //C3D_RenderTarget *fullLevelTarget[SLOT_COUNT];
+    //Tex3DS_SubTexture fullLevelSubTex[SLOT_COUNT];
     C2D_Image fullLevelImages[SLOT_COUNT];
 
     
@@ -283,7 +283,7 @@ void LevelSelect_Init(GameContext* ctx){
     //create all 4 level textures here, one per save slot.
     if (lsstate->savfle != NULL){
         for (int i = 0; i < SLOT_COUNT; i++){
-            if (!BakeLevelTexture(&lsstate->fullLevelTextures[i], &lsstate->fullLevelTarget[i], &lsstate->fullLevelSubTex[i], &lsstate->savfle->Levels[i], &lsstate->fullLevelImages[i])){
+            if (!BakeLevelTexture(&lsstate->fullLevelImages[i], &lsstate->savfle->Levels[i], true)){//BakeLevelTexture(&lsstate->fullLevelTarget[i], &lsstate->fullLevelSubTex[i], &lsstate->savfle->Levels[i], &lsstate->fullLevelImages[i], true)){
                 printConsole("LevelSelect_Init: slot %d did not bake", i);
             }
         }
@@ -508,10 +508,7 @@ void LevelSelect_End(void){
 
     //free all four, skipping any slot that never baked
     for (int i = 0; i < SLOT_COUNT; i++){
-        if (lsstate->fullLevelTarget[i] == NULL) continue;
-        C3D_RenderTargetDelete(lsstate->fullLevelTarget[i]);
-        lsstate->fullLevelTarget[i] = NULL;
-        C3D_TexDelete(&lsstate->fullLevelTextures[i]);
+        FreeLevelImage(&lsstate->fullLevelImages[i]);
     }
     C2D_TextBufDelete(lsstate->textBuf);
     C2D_TextBufDelete(lsstate->nameBuf);
