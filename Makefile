@@ -50,11 +50,24 @@ APP_AUTHOR	:= Finnegan McDevitt
 APP_DESCRIPTION	:= Full game engine with player and editor for simple
 
 #---------------------------------------------------------------------------------
+# DEBUG=1 (or `make debug`) disables compiler optimizations and defines DEBUG.
+# Both modes build into $(BUILD); switching between them wipes the objects first
+# (see the checkmode target) so nothing is left over from the other mode.
+#---------------------------------------------------------------------------------
+DEBUG		?=	0
+
+ifeq ($(DEBUG),0)
+OPTIMIZE	:=	-O2
+else
+OPTIMIZE	:=	-O0 -DDEBUG
+endif
+
+#---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
-CFLAGS	:=	-g -Wall -O2 -mword-relocations \
+CFLAGS	:=	-g -Wall $(OPTIMIZE) -mword-relocations \
 			-ffunction-sections \
 			$(ARCH)
 
@@ -166,11 +179,28 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean
+.PHONY: all clean debug checkmode
 
 #---------------------------------------------------------------------------------
-all: $(BUILD) $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
+all: $(BUILD) checkmode $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+#---------------------------------------------------------------------------------
+# unoptimized build (-O0), easier to step through in a debugger
+#---------------------------------------------------------------------------------
+debug:
+	@$(MAKE) --no-print-directory DEBUG=1 all
+
+#---------------------------------------------------------------------------------
+# drop the objects if the last build used the other DEBUG setting, so everything
+# gets recompiled with the new flags instead of mixing the two
+#---------------------------------------------------------------------------------
+checkmode: $(BUILD)
+	@if [ "$$(cat $(BUILD)/.buildmode 2>/dev/null)" != "$(DEBUG)" ]; then \
+		echo "DEBUG=$(DEBUG), rebuilding ..."; \
+		rm -f $(BUILD)/*.o $(BUILD)/*.d $(OUTPUT).elf; \
+		echo $(DEBUG) > $(BUILD)/.buildmode; \
+	fi
 
 $(BUILD):
 	@mkdir -p $@

@@ -401,7 +401,7 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 
     //only allow one action per frame. if both happen, then screen touch takes priority
     int pressed = -1;
-    for (int i = RECT_LVL1; i <= RECT_DELETE; i++){
+    for (int i = RECT_LVL1; i <= RECT_DELETE; i++){ // later add the AYS window and buttons conditionally
         if (Rect_Tapped(&lsstate->bottomRects[i], in)){
             pressed = i;
             break;
@@ -434,22 +434,66 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
             printConsole("player is going back to main menu from level select");
             return STATE_MAIN_MENU;
 
-        case RECT_RENAME:      lsstate->curAction = ACTION_RENAME;      break;
-        case RECT_COPY:        lsstate->curAction = ACTION_COPY;        break;
-        case RECT_CLEAR_TIMES: lsstate->curAction = ACTION_CLEAR_TIMES; break;
-        case RECT_DELETE:      lsstate->curAction = ACTION_DELETE;      break;
+        case RECT_RENAME:      
+            if (pressed == RECT_RENAME){
+                if (lsstate->curAction == ACTION_RENAME){
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    printConsole("action num set to %d", lsstate->curAction);
+                    break;
+                }
+                lsstate->curAction = ACTION_RENAME;
+            }
+        case RECT_COPY:        
+            if (pressed == RECT_COPY){
+                if (lsstate->curAction == ACTION_COPY){
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    printConsole("action num set to %d", lsstate->curAction);
+                    break;
+                }
+                lsstate->curAction = ACTION_COPY;
+            }
+        case RECT_CLEAR_TIMES: 
+            if (pressed == RECT_CLEAR_TIMES){
+                if (lsstate->curAction == ACTION_CLEAR_TIMES){
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    printConsole("action num set to %d", lsstate->curAction);
+                    break;
+                }
+                lsstate->curAction = ACTION_CLEAR_TIMES;
+            }
+        case RECT_DELETE:      
+            if (pressed == RECT_DELETE){
+                if (lsstate->curAction == ACTION_DELETE){
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    printConsole("action num set to %d", lsstate->curAction);
+                    break;
+                }
+                lsstate->curAction = ACTION_DELETE;
+            }
+            //do this last thing for all of the action buttons
+            ResetActionColors();
+            if (lsstate->curAction != ACTION_LOAD){
+                printConsole("action set to \"%s\"", ACTION_BUTTONS[pressed - RECT_MAINMENU].name);
+                lsstate->bottomRects[pressed].Color = Colors[CLR_ORANGE];
+            }
+            printConsole("action num set to %d", lsstate->curAction);
+            break;
 
         default: break; //-1, nothing was pressed this frame
     }
     //check if the player pressed the action buttons
-    if (pressed >= RECT_RENAME && pressed <= RECT_DELETE){
-        printConsole("action set to \"%s\"", ACTION_BUTTONS[pressed - RECT_MAINMENU].name);
-        lsstate->curAction = pressed - 4; //move enum value to range of LoadAction
-        ResetActionColors();
-        lsstate->bottomRects[pressed].Color = Colors[CLR_ORANGE];
-        printConsole("cur action is %d", lsstate->curAction);
+    // if (pressed >= RECT_RENAME && pressed <= RECT_DELETE){
+    //     printConsole("action set to \"%s\"", ACTION_BUTTONS[pressed - RECT_MAINMENU].name);
+    //     lsstate->curAction = pressed - 4; //move enum value to range of LoadAction
+    //     ResetActionColors();
+    //     lsstate->bottomRects[pressed].Color = Colors[CLR_ORANGE];
+    //     printConsole("cur action is %d", lsstate->curAction);
 
-    }
+    // }
 
     //do state exit logic (only way to leave is to go back to main menu)
     //if player pressed b or touched Main Menu button or clicked on it, return STATE_MAINMENU
