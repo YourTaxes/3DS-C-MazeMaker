@@ -259,6 +259,13 @@ static void CursorToRect(int rectID){
     }
 }
 
+//reset all of the action buttons to their standard color
+static void ResetActionColors(){
+    for (int i = RECT_RENAME; i < RECT_AYS_WINDOW; i++){
+        lsstate->bottomRects[i].Color = Colors[CLR_DK_GRAY];
+    }
+}
+
 
 void LevelSelect_Init(GameContext* ctx){
     printConsole("init Level Select, %u bytes", (unsigned)sizeof(LevelSelectState));
@@ -434,15 +441,26 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 
         default: break; //-1, nothing was pressed this frame
     }
+    //check if the player pressed the action buttons
     if (pressed >= RECT_RENAME && pressed <= RECT_DELETE){
         printConsole("action set to \"%s\"", ACTION_BUTTONS[pressed - RECT_MAINMENU].name);
+        lsstate->curAction = pressed - 4; //move enum value to range of LoadAction
+        ResetActionColors();
+        lsstate->bottomRects[pressed].Color = Colors[CLR_ORANGE];
+        printConsole("cur action is %d", lsstate->curAction);
+
     }
 
     //do state exit logic (only way to leave is to go back to main menu)
     //if player pressed b or touched Main Menu button or clicked on it, return STATE_MAINMENU
     if (in->kDown & KEY_B){
-        printConsole("player is going back to main menu from level select");
-        return STATE_MAIN_MENU;
+        if (lsstate->curAction == 0){
+            printConsole("player is going back to main menu from level select");
+            return STATE_MAIN_MENU;
+        }
+        lsstate->curAction = 0;
+        printConsole("cur action is %d", lsstate->curAction);
+        ResetActionColors();
     }
     return STATE_NONE;
 }
