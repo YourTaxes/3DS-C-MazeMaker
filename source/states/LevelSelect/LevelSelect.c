@@ -439,10 +439,10 @@ void LevelSelect_Init(GameContext* ctx){
 
     //these are at depth LAYER POPUP so that they are above the rest.
     lsstate->bottomRects[RECT_AYS_WINDOW] = (Rect){
-        .x = 80,
+        .x = 50,
         .y = 45,
         .z = LAYER_POPUP,
-        .width = 160,
+        .width = 220,
         .height = 130,
         .Color = Colors[CLR_LT_GRAY],
     };
@@ -465,8 +465,8 @@ void LevelSelect_Init(GameContext* ctx){
     
 
     RebuildAYSLabels(ACTION_LOAD, AYS_NONE, 0, 0);
-    MakeText("Yes", &lsstate->AYSLabels[AYS_YES], lsstate->textBuf);
-    MakeText("No", &lsstate->AYSLabels[AYS_NO], lsstate->textBuf);
+    MakeText("A: Yes", &lsstate->AYSLabels[AYS_YES], lsstate->textBuf);
+    MakeText("B: No", &lsstate->AYSLabels[AYS_NO], lsstate->textBuf);
     
 
     
@@ -575,9 +575,11 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                     break;
                 case ACTION_COPY:
                     if (lsstate->activeSlot == pressed) break;
-                    //activate ARE YOU SURE SCREEN HERE
-                    lsstate->AYS_Status = AYS_SURE;
-                    RebuildAYSLabels(ACTION_COPY, AYS_SURE, pressed, lsstate->activeSlot);
+                    if (!lsstate->savfle->Levels[pressed].empty){
+                        //activate ARE YOU SURE SCREEN HERE
+                        lsstate->AYS_Status = AYS_SURE;
+                        RebuildAYSLabels(ACTION_COPY, AYS_SURE, pressed, lsstate->activeSlot);
+                    }
 
                     printConsole("Copied slot %d into %d", lsstate->activeSlot + 1, pressed + 1);
                     lsstate->curAction = ACTION_LOAD;
@@ -590,7 +592,7 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                     }
                     //activate are you sure screen here.
                     lsstate->AYS_Status = AYS_SURE;
-                    RebuildAYSLabels(ACTION_CLEAR_TIMES, AYS_SURE, pressed, 0);
+                    RebuildAYSLabels(ACTION_CLEAR_TIMES, AYS_REALLY_SURE, pressed, 0);
 
                     printConsole("Cleared times from slot %d", pressed + 1);
                     lsstate->curAction = ACTION_LOAD;
@@ -602,7 +604,7 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                         break;
                     }
                     lsstate->AYS_Status = AYS_SURE;
-                    RebuildAYSLabels(ACTION_DELETE, AYS_SURE, pressed, 0);
+                    RebuildAYSLabels(ACTION_DELETE, AYS_ABSOLUTELY_SURE, pressed, 0);
 
                     //activate are you sure screen here.
                     printConsole("deleted slot %d", pressed + 1);
@@ -681,17 +683,17 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
     //do state exit logic (only way to leave is to go back to main menu)
     //if player pressed b or touched Main Menu button or clicked on it, return STATE_MAINMENU
     if (in->kDown & KEY_B){
-        if (lsstate->curAction == 0){
-            printConsole("player is going back to main menu from level select");
-            return STATE_MAIN_MENU;
-        }
         if (lsstate->AYS_Status != AYS_NONE){
             lsstate->AYS_Status = AYS_NONE;
-        } else {
+        } else if (lsstate->curAction != 0){
             lsstate->curAction = 0;
             printConsole("cur action is %d", lsstate->curAction);
             ResetActionColors();
+        } else {
+            printConsole("player is going back to main menu from level select");
+            return STATE_MAIN_MENU;
         }
+        
     }
     return STATE_NONE;
 }
