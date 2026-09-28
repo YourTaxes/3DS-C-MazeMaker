@@ -5,11 +5,11 @@
 //these actions are somewhat like substates of the level select,
 //as they change what happens when the player clicks on a level.
 typedef enum{
-    ACTION_LOAD,
+    ACTION_LOAD, 
     ACTION_RENAME,
-    ACTION_COPY,
-    ACTION_CLEAR_TIMES,
-    ACTION_DELETE
+    ACTION_COPY, // to copy slot x into slot y? - 28
+    ACTION_CLEAR_TIMES, // to clear slot x's best times? - 30
+    ACTION_DELETE // to delete slot x? - 18
 } Load_Action;
 
 typedef enum{
@@ -23,9 +23,22 @@ typedef enum{
     RECT_CLEAR_TIMES,
     RECT_DELETE,
     RECT_AYS_WINDOW,
-    RECT_AYS_NO,
-    RECT_AYS_YES
+    RECT_AYS_YES,
+    RECT_AYS_NO
 } RectIDs;
+
+typedef enum{
+    AYS_HEAD,
+    AYS_YES,
+    AYS_NO
+} AYS_Label_IDS;
+
+typedef enum{
+    AYS_NONE,
+    AYS_SURE, //"Are you sure you want" - 21
+    AYS_REALLY_SURE, //"Are you really sure you want" - 28
+    AYS_ABSOLUTELY_SURE //"Are you ABSOLUTELY sure you want" - 32
+} AYS_Status;
 
 
 void LevelSelect_Init(GameContext* ctx);

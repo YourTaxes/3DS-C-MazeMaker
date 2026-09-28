@@ -65,6 +65,8 @@
 #define LEVEL_SELECT_NAME_GLYPHS (SLOT_COUNT * NAME_LINE_MAX)
 #define LEVEL_SELECT_TIME_GLYPHS (SLOT_COUNT * 2 * TIME_LINE_MAX)
 
+#define LEVEL_SELECT_AYS_GLYPHS 64 //32 for first half, 32 for second half
+
 
 
 //structs
@@ -89,6 +91,10 @@ static const struct {
 #define ACTION_BUTTON_COUNT (sizeof(ACTION_BUTTONS) / sizeof(ACTION_BUTTONS[0]))
 _Static_assert(ACTION_BUTTON_COUNT == RECT_DELETE - RECT_MAINMENU + 1,
                "ACTION_BUTTONS must cover RECT_MAINMENU through RECT_DELETE");
+
+#define AYS_BUTTON_COUNT 2
+#define AYS_LABLE_COUNT 5
+
 
 
 #define CURSOR_ROW_COUNT 3
@@ -128,6 +134,7 @@ typedef struct{
     C2D_TextBuf textBuf; //the static text, parsed once in _Init
     C2D_TextBuf nameBuf; //just the four level names, reparsed on a rename
     C2D_TextBuf timeBuf; //just the eight best times, reparsed when a time is cleared
+    C2D_TextBuf AysWindowBuf; //the buffer for the text shown in the are you sure window, not the buttons.
 
     //one preview per save slot, each carrying whether its texture is ours to free, so a
     //borrowed gui image can sit in a slot without being deleted out from under graphics.c.
@@ -143,6 +150,7 @@ typedef struct{
     //one label per button, parallel to the rects above
     C2D_Text slotLabels[SLOT_COUNT];
     C2D_Text actionLabels[ACTION_BUTTON_COUNT];
+    C2D_Text AYSLabels[AYS_LABLE_COUNT];
 
     //the name of the level in each slot, drawn above that slot's preview on the top
     //screen. these live in nameBuf, so they all go stale together whenever
@@ -245,6 +253,62 @@ static void RebuildTimeLabels(void){
 }
 
 
+//rebuilds the text buff for the are you sure window depending on what stage and action is selected
+//action is the current action being done
+//status is how far in the chain
+//pressed is what number slot to use
+//dest is only used copy, and is what file will is being copied, and therefore unaffected
+static void RebuildAYSLabels(Load_Action action, AYS_Status status, u8 pressed, u8 source){
+    C2D_TextBufClear(lsstate->AysWindowBuf);
+
+    if(action == ACTION_LOAD || action == ACTION_RENAME){
+        printConsole("rebuilding with no AYS action, empty buffer");
+        return;
+    }
+    if(status == AYS_NONE){
+        printConsole("rebuilding with no ays status, empty buffer");
+        return;
+    }
+
+    char actionbuf[32];
+    char statusbuf[32];
+    char fullbuf[64];
+
+    switch(action){
+        case ACTION_LOAD:
+        case ACTION_RENAME: //neither of these use the AYS Screen
+            return;
+            break;
+        case ACTION_COPY:
+            snprintf(actionbuf, sizeof(actionbuf), "\nto copy slot %d into slot %d?", source, pressed);
+            break;
+        case ACTION_CLEAR_TIMES:
+            snprintf(actionbuf, sizeof(actionbuf), "\nto clear slot %d's best times?", pressed);
+            break;
+        case ACTION_DELETE:
+            snprintf(actionbuf, sizeof(actionbuf), "\nto delete slot %d?", pressed);
+            break;
+    }
+
+    switch(status){
+        case AYS_NONE:
+            return;
+            break;
+        case AYS_SURE:
+            snprintf(statusbuf, sizeof(statusbuf), "Are you sure you want");
+            break;
+        case AYS_REALLY_SURE:
+            snprintf(statusbuf, sizeof(statusbuf), "Are you Really sure you want");
+            break;
+        case AYS_ABSOLUTELY_SURE:
+            snprintf(statusbuf, sizeof(statusbuf), "Are you ABSOLUTELY sure you want");
+    }
+
+    snprintf(fullbuf, sizeof(fullbuf), "%s%s", statusbuf, actionbuf);
+    printConsole("full buff is \"%s\"", fullbuf);
+    MakeText(fullbuf, &lsstate->AYSLabels[AYS_HEAD], lsstate->AysWindowBuf);
+}
+
 //put the cursor on the button the player just touched, so the highlight does not sit
 //somewhere else after a tap. a rect that is not on the grid leaves the cursor alone.
 static void CursorToRect(int rectID){
@@ -323,6 +387,7 @@ void LevelSelect_Init(GameContext* ctx){
     lsstate->textBuf = C2D_TextBufNew(LEVEL_SELECT_MAX_GLYPHS);
     lsstate->nameBuf = C2D_TextBufNew(LEVEL_SELECT_NAME_GLYPHS);
     lsstate->timeBuf = C2D_TextBufNew(LEVEL_SELECT_TIME_GLYPHS);
+    lsstate->AysWindowBuf = C2D_TextBufNew(LEVEL_SELECT_AYS_GLYPHS);
 
     //which slot the game is on right now. green on the bottom screen, and the only
     //thing this state reads off the context.
@@ -359,6 +424,34 @@ void LevelSelect_Init(GameContext* ctx){
         };
         MakeText(ACTION_BUTTONS[i].label, &lsstate->actionLabels[i], lsstate->textBuf);
     }
+
+    lsstate->bottomRects[RECT_AYS_WINDOW] = (Rect){
+        .x = 80,
+        .y = 45,
+        .width = 160,
+        .height = 130,
+        .Color = Colors[CLR_LT_GRAY],
+    };
+    lsstate->bottomRects[RECT_AYS_YES] = (Rect){
+        .x = 170,
+        .y = 140,
+        .width = 50,
+        .height = 30,
+        .Color = Colors[CLR_DK_GRAY]
+    };
+    lsstate->bottomRects[RECT_AYS_NO] = (Rect){
+        .x = 100,
+        .y = 140,
+        .width = 50,
+        .height = 30,
+        .Color = Colors[CLR_DK_GRAY]
+    };
+    
+
+    RebuildAYSLabels(ACTION_LOAD, AYS_NONE, 0, 0);
+    MakeText("Yes", &lsstate->AYSLabels[AYS_YES], lsstate->textBuf);
+    MakeText("No", &lsstate->AYSLabels[AYS_NO], lsstate->textBuf);
+    
 
     
     //the cursor needs no init, the calloc already puts it on row 0 column 0, slot 1
@@ -467,7 +560,9 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                 case ACTION_COPY:
                     if (lsstate->activeSlot == pressed) break;
                     //activate ARE YOU SURE SCREEN HERE
-                    //make sceen say "copy slot (loaded slot) into (pressed slot)?"
+                    lsstate->AYS_Status = AYS_SURE;
+                    RebuildAYSLabels(ACTION_COPY, AYS_SURE, pressed, lsstate->activeSlot);
+
                     printConsole("Copied slot %d into %d", lsstate->activeSlot + 1, pressed + 1);
                     lsstate->curAction = ACTION_LOAD;
                     ResetActionColors();
@@ -478,6 +573,9 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                         break;
                     }
                     //activate are you sure screen here.
+                    lsstate->AYS_Status = AYS_SURE;
+                    RebuildAYSLabels(ACTION_CLEAR_TIMES, AYS_SURE, pressed, 0);
+
                     printConsole("Cleared times from slot %d", pressed + 1);
                     lsstate->curAction = ACTION_LOAD;
                     ResetActionColors();
@@ -487,6 +585,9 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                         printConsole("cannot delete empty level");
                         break;
                     }
+                    lsstate->AYS_Status = AYS_SURE;
+                    RebuildAYSLabels(ACTION_DELETE, AYS_SURE, pressed, 0);
+
                     //activate are you sure screen here.
                     printConsole("deleted slot %d", pressed + 1);
                     lsstate->curAction = ACTION_LOAD;
@@ -568,9 +669,13 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
             printConsole("player is going back to main menu from level select");
             return STATE_MAIN_MENU;
         }
-        lsstate->curAction = 0;
-        printConsole("cur action is %d", lsstate->curAction);
-        ResetActionColors();
+        if (lsstate->AYS_Status != AYS_NONE){
+            lsstate->AYS_Status = AYS_NONE;
+        } else {
+            lsstate->curAction = 0;
+            printConsole("cur action is %d", lsstate->curAction);
+            ResetActionColors();
+        }
     }
     return STATE_NONE;
 }
@@ -632,6 +737,16 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
         DrawTextInRect(&lsstate->actionLabels[i], &lsstate->bottomRects[RECT_MAINMENU + i],
                        ACTION_TEXT_SCALE, Colors[CLR_WHITE]);
     }
+    if (lsstate->AYS_Status > AYS_NONE){
+        for (int i = 0; i < AYS_LABLE_COUNT; i++){
+            //draw AYS rects
+            DrawRect(&lsstate->bottomRects[RECT_AYS_WINDOW + i]);
+            //draw text in ays rects
+            DrawTextInRect(&lsstate->AYSLabels[i], &lsstate->bottomRects[RECT_AYS_WINDOW + i],
+                            ACTION_TEXT_SCALE, Colors[CLR_WHITE]);
+        }
+    }
+    
 }
 
 
