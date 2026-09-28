@@ -266,6 +266,27 @@ static void ResetActionColors(){
     }
 }
 
+//renames the current level slot, and saves it. 
+//brings up the software keyboard for input.
+//returns true if the player selects ok,
+//false if the player selects cancel.
+static bool RenameLevel(u8 pressed){
+    if (lsstate->savfle->Levels[pressed].empty){
+        printConsole("Cannot rename an empty level");
+        return false;
+    }
+    char hint[LEVEL_NAME_MAX_LEN]; // 32
+    snprintf(hint, sizeof(hint), "Enter level name for slot %d", pressed + 1);
+    if (!GetKeyboard(lsstate->savfle->Levels[pressed].levelName, LEVEL_NAME_MAX_LEN, hint, SWKBD_TYPE_NORMAL)){
+        return false;
+    }
+    RebuildNameLabels();
+    SaveFile_WriteSlot(pressed, &lsstate->savfle->Levels[pressed]);
+    printConsole("renamed slot %d to %s", pressed + 1, lsstate->savfle->Levels[pressed].levelName);
+    return true;
+
+}
+
 
 void LevelSelect_Init(GameContext* ctx){
     printConsole("init Level Select, %u bytes", (unsigned)sizeof(LevelSelectState));
@@ -419,15 +440,60 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
     if (hovered < SLOT_COUNT) lsstate->curSlotImage = hovered; //RECT_LVL1..4 lead the enum
 
     switch (pressed){
-        case RECT_LVL1: case RECT_LVL2: case RECT_LVL3: case RECT_LVL4:
+        case RECT_LVL1:
+        case RECT_LVL2:
+        case RECT_LVL3:
+        case RECT_LVL4:
             printConsole("player selected slot %d", pressed + 1);
-            //copy in the loaded save file and set it to the active one
-            lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_DK_GRAY];
-            *ctx->rawLvl = lsstate->savfle->Levels[pressed];
-            ctx->rebuildLevel = true;
-            ctx->curSlot = pressed;
-            lsstate->activeSlot = pressed;
-            lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_GREEN];
+            switch(lsstate->curAction){
+                case ACTION_LOAD:
+                    //copy in the loaded save file and set it to the active one
+                    lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_DK_GRAY];
+                    *ctx->rawLvl = lsstate->savfle->Levels[pressed];
+                    ctx->rebuildLevel = true;
+                    ctx->curSlot = pressed;
+                    lsstate->activeSlot = pressed;
+                    lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_GREEN];
+                    printConsole("Loaded slot %d", pressed + 1);
+                    break;
+                case ACTION_RENAME:
+                    if (!RenameLevel(pressed)){
+                        printConsole("did not rename slot %d", pressed + 1);
+                        break;
+                    }
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    break;
+                case ACTION_COPY:
+                    if (lsstate->activeSlot == pressed) break;
+                    //activate ARE YOU SURE SCREEN HERE
+                    //make sceen say "copy slot (loaded slot) into (pressed slot)?"
+                    printConsole("Copied slot %d into %d", lsstate->activeSlot + 1, pressed + 1);
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    break;
+                case ACTION_CLEAR_TIMES:
+                    if (lsstate->savfle->Levels[pressed].empty){
+                        printConsole("cannot clear times on empty level");
+                        break;
+                    }
+                    //activate are you sure screen here.
+                    printConsole("Cleared times from slot %d", pressed + 1);
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    break;
+                case ACTION_DELETE:
+                    if (lsstate->savfle->Levels[pressed].empty){
+                        printConsole("cannot delete empty level");
+                        break;
+                    }
+                    //activate are you sure screen here.
+                    printConsole("deleted slot %d", pressed + 1);
+                    lsstate->curAction = ACTION_LOAD;
+                    ResetActionColors();
+                    break;
+            }
+            
             break;
 
         case RECT_MAINMENU:
