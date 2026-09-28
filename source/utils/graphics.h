@@ -16,6 +16,24 @@
 #define BOTTOM_SCREEN_WIDTH 320
 #define BOTTOM_SCREEN_HIGHT 240
 
+/*
+* the depth citro2d draws at. C2D_Prepare turns the depth test on as GPU_GEQUAL, so a
+* higher z wins over a lower one no matter what order the two were drawn in, and two
+* things at the SAME z fall back to draw order, with the later one on top.
+*
+* that makes z a layer number, not a per draw tweak: everything belonging to one layer
+* shares its z and is ordered inside the layer by the order _Draw issues it in, and a
+* whole layer is lifted above another by giving it a higher z.
+*
+* the reason it cannot simply be left at 0 everywhere is that a glyph quad writes depth
+* across the whole quad, transparent texels included. a rect drawn later at a LOWER z
+* then fails the test over that quad and comes out with rectangular holes punched in it
+* where the text underneath used to be. keeping a popup and its labels on one raised
+* layer keeps every one of those comparisons inside a single z.
+*/
+#define LAYER_BASE  0.0f //the screen itself: buttons, their labels, the cursor highlight
+#define LAYER_POPUP 0.5f //a window drawn over that screen, and anything inside it
+
 //one room's footprint in the baked level texture, in pixels
 #define BAKED_ROOM_WIDTH (TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
 #define BAKED_ROOM_HIGHT (TILES_VERT * BAKED_LEVEL_TILE_SIZE)
@@ -85,10 +103,11 @@ void MakeText(const char* str, C2D_Text* result, C2D_TextBuf buf);
 /*
 * Draws Text to the screen with it's center at the point given.
 */
-void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float scaleX, float scaleY, u32 color);
+void DrawTextCentered(const C2D_Text* text, float centerX, float centerY, float z, float scaleX, float scaleY, u32 color);
 
 /*
-* Draws Text centered inside the rectangle (e.g. a button's label).
+* Draws Text centered inside the rectangle (e.g. a button's label). the label takes the
+* rect's own z, so a button and its text always travel together between layers.
 */
 void DrawTextInRect(const C2D_Text* text, const Rect* rect, float scale, u32 color);
 

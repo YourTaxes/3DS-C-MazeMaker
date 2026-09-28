@@ -93,7 +93,18 @@ _Static_assert(ACTION_BUTTON_COUNT == RECT_DELETE - RECT_MAINMENU + 1,
                "ACTION_BUTTONS must cover RECT_MAINMENU through RECT_DELETE");
 
 #define AYS_BUTTON_COUNT 2
-#define AYS_LABLE_COUNT 5
+
+/*
+* the window, its Yes and its No: three rects and three labels, which is also
+* AYS_HEAD through AYS_NO and RECT_AYS_WINDOW through RECT_AYS_NO. _Draw walks the two
+* arrays together off this one count, so it has to match both or the loop reads past the
+* end of bottomRects and AYSLabels into whatever the struct holds next.
+*/
+#define AYS_LABLE_COUNT 3
+_Static_assert(AYS_LABLE_COUNT == RECT_AYS_NO - RECT_AYS_WINDOW + 1,
+               "AYS_LABLE_COUNT must cover RECT_AYS_WINDOW through RECT_AYS_NO");
+_Static_assert(RECT_AYS_NO == BOTTOM_RECT_COUNT - 1,
+               "the AYS rects must be the last RectIDs, and BOTTOM_RECT_COUNT must cover them");
 
 
 
@@ -255,9 +266,10 @@ static void RebuildTimeLabels(void){
 
 //rebuilds the text buff for the are you sure window depending on what stage and action is selected
 //action is the current action being done
-//status is how far in the chain
-//pressed is what number slot to use
-//dest is only used copy, and is what file will is being copied, and therefore unaffected
+//status is how far in the chain the current action is.
+//pressed is the slot the action lands on, 0 indexed
+//source is only used by copy, and is the slot being copied FROM, which is left unaffected
+//both are 0 indexed on the way in and printed 1 indexed
 static void RebuildAYSLabels(Load_Action action, AYS_Status status, u8 pressed, u8 source){
     C2D_TextBufClear(lsstate->AysWindowBuf);
 
@@ -271,7 +283,7 @@ static void RebuildAYSLabels(Load_Action action, AYS_Status status, u8 pressed, 
     }
 
     char actionbuf[32];
-    char statusbuf[32];
+    char *statusbuf;
     char fullbuf[64];
 
     switch(action){
@@ -280,13 +292,13 @@ static void RebuildAYSLabels(Load_Action action, AYS_Status status, u8 pressed, 
             return;
             break;
         case ACTION_COPY:
-            snprintf(actionbuf, sizeof(actionbuf), "\nto copy slot %d into slot %d?", source, pressed);
+            snprintf(actionbuf, sizeof(actionbuf), "\nto copy slot %d into slot %d?", (source + 1) & 0x4, (pressed + 1) & 0x4);
             break;
         case ACTION_CLEAR_TIMES:
-            snprintf(actionbuf, sizeof(actionbuf), "\nto clear slot %d's best times?", pressed);
+            snprintf(actionbuf, sizeof(actionbuf), "\nto clear slot %d's best times?", (pressed + 1) & 0x4);
             break;
         case ACTION_DELETE:
-            snprintf(actionbuf, sizeof(actionbuf), "\nto delete slot %d?", pressed);
+            snprintf(actionbuf, sizeof(actionbuf), "\nto delete slot %d?", pressed + 1);
             break;
     }
 
@@ -295,13 +307,13 @@ static void RebuildAYSLabels(Load_Action action, AYS_Status status, u8 pressed, 
             return;
             break;
         case AYS_SURE:
-            snprintf(statusbuf, sizeof(statusbuf), "Are you sure you want");
+            statusbuf = "Are you sure you want";
             break;
         case AYS_REALLY_SURE:
-            snprintf(statusbuf, sizeof(statusbuf), "Are you Really sure you want");
+            statusbuf = "Are you Really sure you want";
             break;
         case AYS_ABSOLUTELY_SURE:
-            snprintf(statusbuf, sizeof(statusbuf), "Are you ABSOLUTELY sure you want");
+            statusbuf = "Are you ABSOLUTELY sure you want";
     }
 
     snprintf(fullbuf, sizeof(fullbuf), "%s%s", statusbuf, actionbuf);
@@ -425,9 +437,11 @@ void LevelSelect_Init(GameContext* ctx){
         MakeText(ACTION_BUTTONS[i].label, &lsstate->actionLabels[i], lsstate->textBuf);
     }
 
+    //these are at depth LAYER POPUP so that they are above the rest.
     lsstate->bottomRects[RECT_AYS_WINDOW] = (Rect){
         .x = 80,
         .y = 45,
+        .z = LAYER_POPUP,
         .width = 160,
         .height = 130,
         .Color = Colors[CLR_LT_GRAY],
@@ -435,6 +449,7 @@ void LevelSelect_Init(GameContext* ctx){
     lsstate->bottomRects[RECT_AYS_YES] = (Rect){
         .x = 170,
         .y = 140,
+        .z = LAYER_POPUP,
         .width = 50,
         .height = 30,
         .Color = Colors[CLR_DK_GRAY]
@@ -442,6 +457,7 @@ void LevelSelect_Init(GameContext* ctx){
     lsstate->bottomRects[RECT_AYS_NO] = (Rect){
         .x = 100,
         .y = 140,
+        .z = LAYER_POPUP,
         .width = 50,
         .height = 30,
         .Color = Colors[CLR_DK_GRAY]
@@ -700,15 +716,15 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     //the hovered slot's level name, in the strip above the preview
     DrawTextCentered(&lsstate->slotNameLabels[lsstate->curSlotImage],
                      TOP_SCREEN_WIDTH / 2.0f, NAME_Y,
-                     NAME_TEXT_SCALE, NAME_TEXT_SCALE, Colors[CLR_BLACK]);
+                     LAYER_BASE, NAME_TEXT_SCALE, NAME_TEXT_SCALE, Colors[CLR_BLACK]);
 
     //its two best times, side by side in the strip below the preview
     DrawTextCentered(&lsstate->slotStandardLabels[lsstate->curSlotImage],
                      TIME_STANDARD_X, TIME_Y,
-                     TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
+                     LAYER_BASE, TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
     DrawTextCentered(&lsstate->slotHardLabels[lsstate->curSlotImage],
                      TIME_HARD_X, TIME_Y,
-                     TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
+                     LAYER_BASE, TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
 
     //draw rest of top screen
 

@@ -179,8 +179,8 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     C2D_TargetClear(top, Colors[CLR_WHITE]);
     C2D_SceneBegin(top);
 
-    DrawTextCentered(&mmstate->titleText, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HIGHT / 4, 2, 2, Colors[CLR_BLACK]);
-    DrawTextCentered(&mmstate->bylineText, TOP_SCREEN_WIDTH / 2, 19 * (TOP_SCREEN_HIGHT / 20), 1, 1, Colors[CLR_BLACK]);
+    DrawTextCentered(&mmstate->titleText, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HIGHT / 4, LAYER_BASE, 2, 2, Colors[CLR_BLACK]);
+    DrawTextCentered(&mmstate->bylineText, TOP_SCREEN_WIDTH / 2, 19 * (TOP_SCREEN_HIGHT / 20), LAYER_BASE, 1, 1, Colors[CLR_BLACK]);
 
     //the slot info block: slot and name, a gap, then the two best times
     const C2D_Text* infoLines[] = {
@@ -194,7 +194,7 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     for (int i = 0; i < infoCount; i++) {
         float y = INFO_Y0 + i * INFO_LINE_SPACING + (i >= 2 ? INFO_GROUP_GAP : 0);
         DrawTextCentered(infoLines[i], TOP_SCREEN_WIDTH / 2, y,
-                         INFO_TEXT_SCALE, INFO_TEXT_SCALE, Colors[CLR_BLACK]);
+                         LAYER_BASE, INFO_TEXT_SCALE, INFO_TEXT_SCALE, Colors[CLR_BLACK]);
     }
 
     //draw the bottom screen
