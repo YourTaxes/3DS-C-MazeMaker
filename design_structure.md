@@ -196,3 +196,5 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
     * in Draw, check each of these individually, and if one is true, clear and 
 
 * Automatically save the raw level when the player leaves the Maker
+
+* press x in the maker, and the the keyboard comes up and the player can enter the name for their level. it is only written to the level in memory, not in storage.

@@ -68,7 +68,7 @@ bool GetKeyboard(char* buff, int maxlen, const char* hint, SwkbdType type)
 	SwkbdButton button = SWKBD_BUTTON_NONE;
 	
 	//init the keyboard info
-	swkbdInit(&swkbd, type, 2, maxlen);
+	swkbdInit(&swkbd, type, 2, maxlen - 1);
 	swkbdSetHintText(&swkbd, hint);
 	swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, 0);
 	
