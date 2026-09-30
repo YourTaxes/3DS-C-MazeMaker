@@ -11,6 +11,8 @@ Game_State Debug_logic(const FrameInput* in, GameContext* ctx);
 
 void Debug_Init(GameContext* ctx);
 
-void Debug_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
+void Debug_DrawTop(C3D_RenderTarget* target, float eyeOffset);
+
+void Debug_DrawBottom(C3D_RenderTarget* target);
 
 void Debug_end(void);

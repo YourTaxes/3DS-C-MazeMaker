@@ -9,6 +9,8 @@ void MainMenu_Init(GameContext* ctx);
 */
 Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx);
 
-void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
+void MainMenu_DrawTop(C3D_RenderTarget* target, float eyeOffset);
+
+void MainMenu_DrawBottom(C3D_RenderTarget* target);
 
 void MainMenu_End(void);

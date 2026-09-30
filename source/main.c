@@ -10,6 +10,7 @@
 #include "states/MainMenu/MainMenu.h"
 #include "states/Debug/Debug_state.h"
 #include "states/LevelSelect/LevelSelect.h"
+#include "states/forgotten/forgotten.h"
 
 
 //global variables
@@ -19,9 +20,11 @@ Built_Level builtLvl;
 //the level starts out needing a build, since nothing has been compiled yet.
 //the game boots on save slot 0.
 GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = true, .curSlot = 0 };
-
-C3D_RenderTarget* top;
+C3D_RenderTarget* top_left;
 C3D_RenderTarget* bottom;
+C3D_RenderTarget* top_right;
+
+
 
 /*
 * one entry per Game_State. to add a state, write its four functions and add a line here.
@@ -31,12 +34,13 @@ C3D_RenderTarget* bottom;
 * STATE_MAZE_MAKER  - edit the raw level on the bottom screen.
 * STATE_SAVE_SELECT - pick which of the save slots is the current level.
 * STATE_OOB         - out of bounds screen, A returns to the main menu.
-* STATE_you_recieved_the_egg - him.
+* STATE_you_recieved_the_egg - him
 */
 static const StateFns STATES[STATE_COUNT] = {
-	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_Draw, MainMenu_End },
-	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_Draw,    Debug_end    },
-	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_Draw, LevelSelect_End	}
+	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_DrawTop, MainMenu_DrawBottom, MainMenu_End },
+	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_DrawTop,    Debug_DrawBottom,    Debug_end    },
+	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_DrawTop, LevelSelect_DrawBottom, LevelSelect_End	},
+	[STATE_you_recieved_the_egg] = { forgotten_Init, forgotten_Logic, forgotten_DrawTop, forgotten_DrawBottom, forgotten_End}
 };
 
 
@@ -44,6 +48,9 @@ int main(int argc, char **argv)
 {
 	// Initialize services
 	gfxInitDefault();
+
+	//Enables 3d, so that right and left top screens are drawn to.
+	gfxSet3D(true);
 
 	// no on-screen console (both screens are used for rendering), so route
 	// stderr to the attached debugger (GDB / Azahar log) via svcOutputDebugString
@@ -55,7 +62,8 @@ int main(int argc, char **argv)
 
 	romfsInit();
 
-	top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+	top_left = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+	top_right = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
 	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 
 	MakeColors();
@@ -134,9 +142,19 @@ int main(int argc, char **argv)
 		Game_State next = STATES[State].logic(&in, &ctx);
 		if (in.kDown & KEY_START) next = STATE_QUIT; // START always quits, from any state
 
-		//Render the scene
+
+
+		//Render the scene. the top screen is drawn once per eye, shifted in opposite
+		//directions, and each state spends that shift on its own depth layers.
 		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-		STATES[State].draw(top, bottom);
+		STATES[State].drawTop(top_left, in.screenDepth);
+		//with less than half a pixel different, then nothing changes, so 3d is off.
+		if (in.screenDepth >= MIN_PARALLAX){
+			STATES[State].drawTop(top_right, -in.screenDepth);
+		}
+		//drawTop left the model matrix shifted, and the bottom screen has only one eye
+		C2D_ViewReset();
+		STATES[State].drawBottom(bottom);
 		//End the frame after every screen has been drawn
 		C3D_FrameEnd(0);
 
@@ -167,7 +185,8 @@ int main(int argc, char **argv)
 	FreeImages();
 
 	// Exit services
-	C3D_RenderTargetDelete(top);
+	C3D_RenderTargetDelete(top_left);
+	C3D_RenderTargetDelete(top_right);
 	C3D_RenderTargetDelete(bottom);
 	C2D_Fini();
 	C3D_Fini();

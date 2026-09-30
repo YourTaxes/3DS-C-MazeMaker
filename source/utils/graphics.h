@@ -34,6 +34,22 @@
 #define LAYER_BASE  0.0f //the screen itself: buttons, their labels, the cursor highlight
 #define LAYER_POPUP 0.5f //a window drawn over that screen, and anything inside it
 
+/*
+* stereoscopic depth, which is a different axis from the LAYER_* z above: z decides what
+* covers what on one screen, these decide how far from the glass a layer appears on the
+* top screen. one pairs with each LAYER_*, as a multiple of the eye's parallax.
+*
+* the SIGN picks the side of the glass. negative recedes into the console, which is the
+* comfortable direction and where ordinary ui belongs. positive floats in front of it,
+* which reads as more dramatic but tires the eyes and clips at the bezel, so it is worth
+* spending on one thing at a time.
+*
+* the magnitudes are subject to change with testing.
+*/
+#define DEPTH_BASE  -1.0f //the screen itself. spends all of SCALE_3D
+#define DEPTH_INSET -0.4f //still behind the glass, but nearer it than the base
+#define DEPTH_POPUP  0.6f //a window over the screen, forward of the glass. no user yet
+
 //one room's footprint in the baked level texture, in pixels
 #define BAKED_ROOM_WIDTH (TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
 #define BAKED_ROOM_HIGHT (TILES_VERT * BAKED_LEVEL_TILE_SIZE)
@@ -71,13 +87,27 @@ bool LoadImages(void);
 void FreeImages(void);
 
 /*
-* the image for one ImageSet, borrowed from the sheet graphics.c holds for the whole run.
+* the image for one ImageSet borrowed from the sheet graphics.c holds for the whole run.
 *
 * returns by value because a C2D_Image is only two pointers, and copying one makes it plain
 * that the caller is borrowing rather than taking: do not free what comes back. an out of
 * range value, or one whose load failed, comes back zeroed and draws nothing.
 */
 C2D_Image GetImage(ImageSet curImage);
+
+
+/*
+* moves the stereoscopic plane for everything drawn after it, on the top screen only.
+*
+* call it inside a state's _DrawTop, once before each group of elements sharing a LAYER_* z,
+* passing that group's matching DEPTH_* factor and the eyeOffset the state was handed. every
+* draw between one call and the next lands on that plane, so coordinates stay written as if
+* there were no 3D at all - nothing needs a per element offset.
+*
+* only meaningful on the top screen, since the bottom has one eye. main resets the shift
+* before the bottom screen is drawn, so a state never has to undo this.
+*/
+void SetDepthLayer(float eyeOffset, float depthFactor);
 
 
 void DrawRect(const Rect* rect);

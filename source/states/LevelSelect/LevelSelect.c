@@ -690,14 +690,14 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
     return STATE_NONE;
 }
 
-
-
-
-void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
+void LevelSelect_DrawTop(C3D_RenderTarget* target, float eyeOffset){
     if (lsstate == NULL) return;
 
-    C2D_TargetClear(top, Colors[CLR_WHITE]);
-    C2D_SceneBegin(top);
+    C2D_TargetClear(target, Colors[CLR_WHITE]);
+    C2D_SceneBegin(target);
+
+    //the preview sits furthest back, so the labels around it read as floating in front
+    SetDepthLayer(eyeOffset, DEPTH_BASE);
 
     //a baked preview is exactly BAKED_LEVEL_IMG_WIDTH x _HEIGHT, so it lands at scale 1 in
     //the same place it always has. the borrowed gui image an empty slot gets is a different
@@ -706,6 +706,8 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     DrawImageFitCentered(lsstate->fullLevelPreviews[lsstate->curSlotImage].img,
                          LEVEL_IMG_X, LEVEL_IMG_Y,
                          BAKED_LEVEL_IMG_WIDTH, BAKED_LEVEL_IMG_HEIGHT);
+
+    SetDepthLayer(eyeOffset, DEPTH_INSET);
 
     //the hovered slot's level name, in the strip above the preview
     DrawTextCentered(&lsstate->slotNameLabels[lsstate->curSlotImage],
@@ -721,10 +723,16 @@ void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
                      LAYER_BASE, TIME_TEXT_SCALE, TIME_TEXT_SCALE, Colors[CLR_BLACK]);
 
     //draw rest of top screen
+}
 
 
-    C2D_TargetClear(bottom, Colors[CLR_WHITE]);
-    C2D_SceneBegin(bottom);
+
+
+void LevelSelect_DrawBottom(C3D_RenderTarget* target){
+    if (lsstate == NULL) return;
+
+    C2D_TargetClear(target, Colors[CLR_WHITE]);
+    C2D_SceneBegin(target);
 
     //highlight: the cursor's rect, grown by the pad, drawn first so it sits underneath
     Rect highlight = lsstate->bottomRects[CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol]];

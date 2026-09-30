@@ -198,3 +198,24 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 * Automatically save the raw level when the player leaves the Maker
 
 * press x in the maker, and the the keyboard comes up and the player can enter the name for their level. it is only written to the level in memory, not in storage.
+
+
+
+
+
+
+
+
+## Forgotten 
+* when the player enters this state, the player spawns on the bottom screen, and is rendered as the same 2d sprite as always. 
+* on the top screen is the 3d model of the tree, split into the trunk and it's top. the top sways from left to right, and has a texture of the tree top.
+* the player is expected to move to the top of the bottom screen, and go accross the barrier between screens.
+* when the player is on the top screen, they are rendered as a 3d cube. 
+* the boarder of the top screen (asside from the seam between top and bottom) should have invisible walls, preventing the player from leaving. the bounding walls should extend to cover both screens, and there should be walls where the bottom screen is. 
+* the actual code for moving the player should be the same on both screens, but just have the player sprite be replaced by a 3d cube.
+* have the tree be layered above the player.
+* if the player is FULLY off screen on either screen, then don't draw them on the respective screen. if they are between, then render them on both. 
+* have an invisible hitbox behind the tree, and if the player touches it, then they lose controll of the player, and a text box appears, and follows the same logic as the Are you sure screen, but there is no exiting, only continuing. 
+* when the text finishes, then the screen should fade to CLR_CLEAR, then switch to the main menu
+
+* i need to make a cover of the egg room theme, and play it here

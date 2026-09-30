@@ -113,6 +113,11 @@ static const Tex3DS_SubTexture BAKED_LEVEL_SUBTEX = {
 };
 
 
+void SetDepthLayer(float eyeOffset, float depthFactor){
+    C2D_ViewReset(); //ViewTranslate multiplies in, so without this the layers would compound
+    C2D_ViewTranslate(eyeOffset * depthFactor, 0.0f);
+}
+
 void DrawRect(const Rect* rect){
     C2D_DrawRectSolid(rect->x, rect->y, rect->z, rect->width, rect->height, rect->Color);
 }

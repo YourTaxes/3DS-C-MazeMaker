@@ -37,17 +37,21 @@ typedef struct {
     int curSlot;           //which save slot rawLvl came from, so the maker and the game know where to write back
 } GameContext;
 
+
+
 /*
-* the four functions every state file provides. main keeps one of these per
+* the five functions every state file provides. main keeps one of these per
 * Game_State and calls through it, so it never needs to know which state it is on.
 *   init  - allocate everything the state needs. runs once, right before its first logic call
 *   logic - one frame of input handling. returns the state to switch to, STATE_NONE to stay, or STATE_QUIT
-*   draw  - render both screens
+*   drawTop  - render top screen taking into account the paralax
+*   drawBottom  - draw the bottom screen regularly
 *   end   - free everything init allocated. runs once, after the state's last draw
 */
 typedef struct {
     void (*init)(GameContext* ctx);
     Game_State (*logic)(const FrameInput* in, GameContext* ctx);
-    void (*draw)(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
+    void (*drawTop)(C3D_RenderTarget* target, float eyeOffset);
+    void (*drawBottom)(C3D_RenderTarget* target);
     void (*end)(void);
 } StateFns;

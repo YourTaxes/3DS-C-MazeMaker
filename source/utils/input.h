@@ -14,7 +14,15 @@
 #define KEY_DEBUG  BIT(12)
 #define KEY_GPIO14 BIT(13)
 
-#define SCALE_3D 3.0f
+/*
+* the 3D slider at full tilt, in pixels of parallax per eye. the DEPTH_* factors in
+* graphics.h scale this per layer, and DEPTH_BASE spends all of it, so this is the widest
+* shift any element gets. 6px each way is 12px of total disparity on a 400px screen.
+*/
+#define SCALE_3D 6.0f
+
+//under half a pixel both eyes draw the same image, so main skips the second pass
+#define MIN_PARALLAX 0.5f
 
 /*
 * everything the player did this frame. filled once per frame by Input_Read
@@ -27,7 +35,7 @@ typedef struct {
     touchPosition touch; //px, py are 0,0 when the screen is not touched
     float cpadX; //circle pad, -1.0 to 1.0, 0 inside the deadzone
     float cpadY;
-    float screenDepth; //between 0 and MAX_POPOUT
+    float screenDepth; //3D slider, in pixels of parallax: 0 to SCALE_3D
 } FrameInput;
 
 /*

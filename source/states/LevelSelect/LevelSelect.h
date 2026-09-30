@@ -45,6 +45,8 @@ void LevelSelect_Init(GameContext* ctx);
 
 Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx);
 
-void LevelSelect_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom);
+void LevelSelect_DrawTop(C3D_RenderTarget* target, float eyeOffset);
+
+void LevelSelect_DrawBottom(C3D_RenderTarget* target);
 
 void LevelSelect_End(void);

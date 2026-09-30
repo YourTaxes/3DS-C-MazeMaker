@@ -38,14 +38,17 @@ Game_State Debug_logic(const FrameInput* in, GameContext* ctx){
     return STATE_NONE;
 }
 
-void Debug_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
-    C2D_TargetClear(top, Colors[CLR_WHITE]);
-    C2D_SceneBegin(top);
+void Debug_DrawTop(C3D_RenderTarget* target, float eyeOffset){
+    C2D_TargetClear(target, Colors[CLR_WHITE]);
+    C2D_SceneBegin(target);
 
+    SetDepthLayer(eyeOffset, DEPTH_BASE);
     DrawTextCentered(&s->topText, TOP_SCREEN_WIDTH/2, TOP_SCREEN_HIGHT/2, LAYER_BASE, 1.0f, 1.0f, Colors[CLR_BLACK]);
+}
 
-    C2D_TargetClear(bottom, Colors[CLR_WHITE]);
-    C2D_SceneBegin(bottom);
+void Debug_DrawBottom(C3D_RenderTarget* target){
+    C2D_TargetClear(target, Colors[CLR_WHITE]);
+    C2D_SceneBegin(target);
 
     DrawTextCentered(&s->bottomText, BOTTOM_SCREEN_WIDTH/2, BOTTOM_SCREEN_HIGHT/2, LAYER_BASE, 1.0f, 1.0f, Colors[CLR_BLACK]);
 }

@@ -36,7 +36,8 @@ BUILD		:=	build
 SOURCES		:=	source source/datatypes source/utils source/states \
 			source/states/Debug source/states/LevelSelect \
 			source/states/MainMenu source/states/Maker \
-			source/states/Maze
+			source/states/Maze \
+			source/states/forgotten
 DATA		:=	data
 INCLUDES	:=	source
 GRAPHICS	:=	gfx

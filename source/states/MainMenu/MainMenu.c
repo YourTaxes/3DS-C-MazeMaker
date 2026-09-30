@@ -148,6 +148,12 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
         return STATE_DEBUG; //THIS IS DEBUG AND WILL BE CHANGED LATER
     }
 
+    if (in->kDown & KEY_R)
+    {
+        printConsole("R pressed on Main Menu state");
+        return STATE_you_recieved_the_egg; //will be changed later, so that this happens randomly when the player goes out of bounds.
+    }
+
     //move the highlight, wrapping at both ends
     if (in->kDown & (KEY_UP | KEY_CPAD_UP))
     {
@@ -173,12 +179,12 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
     return STATE_NONE;
 }
 
+void MainMenu_DrawTop(C3D_RenderTarget* target, float eyeOffset){
+    C2D_TargetClear(target, Colors[CLR_WHITE]);
+    C2D_SceneBegin(target);
 
-void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
-    //draw the top screen
-    C2D_TargetClear(top, Colors[CLR_WHITE]);
-    C2D_SceneBegin(top);
-
+    //the title pair sits nearer the glass than the slot info behind it
+    SetDepthLayer(eyeOffset, DEPTH_INSET);
     DrawTextCentered(&mmstate->titleText, TOP_SCREEN_WIDTH / 2, TOP_SCREEN_HIGHT / 4, LAYER_BASE, 2, 2, Colors[CLR_BLACK]);
     DrawTextCentered(&mmstate->bylineText, TOP_SCREEN_WIDTH / 2, 19 * (TOP_SCREEN_HIGHT / 20), LAYER_BASE, 1, 1, Colors[CLR_BLACK]);
 
@@ -191,15 +197,17 @@ void MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom){
     };
     int infoCount = mmstate->drawHardTime ? 4 : 3; //an empty slot has no hard time line
 
+    SetDepthLayer(eyeOffset, DEPTH_BASE);
     for (int i = 0; i < infoCount; i++) {
         float y = INFO_Y0 + i * INFO_LINE_SPACING + (i >= 2 ? INFO_GROUP_GAP : 0);
         DrawTextCentered(infoLines[i], TOP_SCREEN_WIDTH / 2, y,
                          LAYER_BASE, INFO_TEXT_SCALE, INFO_TEXT_SCALE, Colors[CLR_BLACK]);
     }
+}
 
-    //draw the bottom screen
-    C2D_TargetClear(bottom, Colors[CLR_WHITE]);
-    C2D_SceneBegin(bottom);
+void MainMenu_DrawBottom(C3D_RenderTarget* target){
+    C2D_TargetClear(target, Colors[CLR_WHITE]);
+    C2D_SceneBegin(target);
 
     //highlight: the selected button's rect, grown by the pad, drawn underneath it
     Rect highlight = mmstate->rects[mmstate->highlight_index];
