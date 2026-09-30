@@ -128,16 +128,6 @@ int main(int argc, char **argv)
 			printConsole("vram free:   %lu", (unsigned long)vramSpaceFree());
 		}
 
-		//keyboard test demo
-		if(in.kDown & KEY_X)
-		{
-			char buff[20];
-
-			if (GetKeyboard(buff, 20, "Testing Keyboard", SWKBD_TYPE_NORMAL)){
-				printConsole("%s", buff);
-			}
-		}
-
 		//do frame logic
 		Game_State next = STATES[State].logic(&in, &ctx);
 		if (in.kDown & KEY_START) next = STATE_QUIT; // START always quits, from any state
