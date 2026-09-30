@@ -272,8 +272,11 @@ bool BakeLevelTexture(LevelPreview *out, C3D_RenderTarget **target,
                         case PINK_WALL:
                             curRect.Color = Colors[CLR_PINK];
                             break;
-                        case PORTAL:
-                            curRect.Color = Colors[CLR_BLUE];
+                        case PORTAL1:
+                            curRect.Color = Colors[CLR_CYAN];
+                            break;
+                        case PORTAL2:
+                            curRect.Color = Colors[CLR_ORANGE];
                             break;
                         default:
                             curRect.Color = Colors[CLR_BLACK];

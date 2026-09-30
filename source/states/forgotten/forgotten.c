@@ -1,5 +1,6 @@
 #include "states/forgotten/forgotten.h"
 #include "utils/graphics.h"
+#include "game_logic/player.h"
 
 
 
@@ -12,6 +13,7 @@
 
 
 //init the 3d screen.
+//start the music here
 void forgotten_Init(GameContext* ctx){
 
 }
@@ -40,6 +42,8 @@ void forgotten_DrawBottom(C3D_RenderTarget* target){
     C2D_SceneBegin(target);
 }
 
+//tear down the 3d scene
+//stop the music.
 void forgotten_End(void){
 
 }

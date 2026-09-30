@@ -19,7 +19,7 @@ Raw_Level rawLvl;
 Built_Level builtLvl;
 //the level starts out needing a build, since nothing has been compiled yet.
 //the game boots on save slot 0.
-GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = true, .curSlot = 0 };
+GameContext ctx = { .rawLvl = &rawLvl, .builtLvl = &builtLvl, .rebuildLevel = true, .curSlot = 0, .cur_time = 0 };
 C3D_RenderTarget* top_left;
 C3D_RenderTarget* bottom;
 C3D_RenderTarget* top_right;
@@ -40,7 +40,7 @@ static const StateFns STATES[STATE_COUNT] = {
 	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_DrawTop, MainMenu_DrawBottom, MainMenu_End },
 	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_DrawTop,    Debug_DrawBottom,    Debug_end    },
 	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_DrawTop, LevelSelect_DrawBottom, LevelSelect_End	},
-	[STATE_you_recieved_the_egg] = { forgotten_Init, forgotten_Logic, forgotten_DrawTop, forgotten_DrawBottom, forgotten_End}
+	[STATE_you_recieved_the_egg] = { forgotten_Init, forgotten_Logic, forgotten_DrawTop, forgotten_DrawBottom, forgotten_End	}
 };
 
 

@@ -11,6 +11,7 @@ typedef enum{
     STATE_MAZE_MAKER,
     STATE_SAVE_SELECT,
     STATE_OOB, //out of bounds
+    STATE_COMPLETE, //the win screen that displays the players time and the best time.
     //STATE_there_is_a_man_here,
     //STATE_he_is_behind_the_tree,
     //STATE_he_offers_you_something,
@@ -19,7 +20,7 @@ typedef enum{
     //STATE_the_man_smiles,
     //STATE_there_is_no_longer_a_man_behind_the_tree,
     STATE_DEBUG,
-
+    
     //non switching status identifiers
     STATE_COUNT, //number of real states above
     STATE_NONE,  //stay in the current state
@@ -33,8 +34,12 @@ typedef enum{
 typedef struct {
     Raw_Level* rawLvl;     //the editable grid for the current save slot
     Built_Level* builtLvl; //the playable version compiled from rawLvl
-    bool rebuildLevel;     //rawLvl changed, so builtLvl is stale and must be recompiled
+    double cur_time;       //what the current player's time in the level is
     int curSlot;           //which save slot rawLvl came from, so the maker and the game know where to write back
+    bool hard_mode;        //is hard mode is on
+    bool rebuildLevel;     //rawLvl changed, so builtLvl is stale and must be recompiled
+    
+    
 } GameContext;
 
 

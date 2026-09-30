@@ -45,13 +45,17 @@ typedef enum {
     PINK_KEY,
     START,
     FINISH,
-    PORTAL
+    PORTAL1,
+    PORTAL2
 } Tile_Type;
 
 typedef struct{
     //holds Tile_Type values. u8 because it's smaller.
     u8 tiles[TILES_VERT][TILES_HORIZ];
 } Raw_Screen;
+
+//int a = sizeof(Raw_Screen);
+//int b = sizeof(double);
 
 typedef struct{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
@@ -64,6 +68,8 @@ typedef struct{
     bool hardTimeValid;
     
 } Raw_Level;
+
+//int c = sizeof(Raw_Level);
 
 //The structure for the save file.
 //this is the the struct that is written to the save file.
@@ -81,26 +87,42 @@ typedef struct {
     u8 lastSlot;
 } Save_File;
 
+//int d = sizeof(Save_File);
 
 typedef struct{
     Rect rect;
     Tile_Type type;
-    bool interactable;
-} Wall_Rect;
+} Game_Rect;
 
 
 typedef struct {
-    Wall_Rect walls[TILES_VERT][TILES_HORIZ];
-    bool isStart;
-    bool isFinish;
-    bool isPortal;
-
-    
+    Game_Rect walls[TILES_VERT][TILES_HORIZ];
+    //bool isStart;
+    //bool isFinish;
+    //bool isPortal;
 } Room_Data;
+
+typedef struct {
+    u8 screenX;
+    u8 screenY;
+    u8 tileX;
+    u8 tileY;
+} UniqueTilePos;
 
 //the structure for the level data.
 typedef struct {
-    Room_Data Rooms[ROOMS_PER_LEVEL];
-    int startScreen[2]; //coordinate position of the screen with the start 
+    Room_Data Rooms[SCREENS_VERT][SCREENS_HORIZ];
+    UniqueTilePos start; //cordinate position of the start tile
+    //u8 startScreen[2]; //coordinate position of the screen with the start 
+    //u8 startTile[2];
+    UniqueTilePos blue_portal1;
+    UniqueTilePos blue_portal2; //NEEDS TO BE MALLOCED, AND NEEDS TO BE FREED WHEN OVERWRITTEN
+    //is a pointer to the list of portals other than the first one, 
+    //only applicable if the player placed more than 2 blue portals.
+    //list length should be stored in blue_portal_count
+    UniqueTilePos orange_portal1;
+    UniqueTilePos orange_portal2; //NEEDS TO BE MALLOCED AT CREATION, AND NEEDS TO BE FREED WHEN OVERWRITTEN
+    //is a pointer to the list of portals other than the first one, 
+    //only applicable if the player placed more than 2 blue portals.
+    //list length should be stored in blue_portal_count
 } Built_Level;
-

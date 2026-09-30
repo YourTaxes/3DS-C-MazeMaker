@@ -179,9 +179,13 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
     * if player is in [1, 1], check colision with [0,0], [1,0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 1]. 
     * keep track of what cordanate grid space the player is in by dividing their cordinates by the length of a tile. 
     * using this strategy, it may not be needed to compile the levels in the way specified before, as all of the blocks could then be drawn regularly, as the 3ds can handle a lot of blocks. 
-    * the compilation would still need to define some specific things though, such as the start location, and the locations of the portals. 
+    * the compilation would still need to define some specific things though, such as the start location, and the locations of the portals.
 
 * automatically save the times if they are new bests when the player reaches the victory screen.
+
+* there should be 2 portal types, the blue and orange ones.
+    * if more than 2 are placed, then the one closer in the linear list to the front should be the main, which all others go to, and the 
+    * if there is only one portal in a set, then it doesn't do anything.
 
 
 
@@ -199,7 +203,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 * press x in the maker, and the the keyboard comes up and the player can enter the name for their level. it is only written to the level in memory, not in storage.
 
-
+* there needs to be a system to make sure that the player does not place more than 2 of each type of portal.
 
 
 
@@ -215,7 +219,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 * the actual code for moving the player should be the same on both screens, but just have the player sprite be replaced by a 3d cube.
 * have the tree be layered above the player.
 * if the player is FULLY off screen on either screen, then don't draw them on the respective screen. if they are between, then render them on both. 
-* have an invisible hitbox behind the tree, and if the player touches it, then they lose controll of the player, and a text box appears, and follows the same logic as the Are you sure screen, but there is no exiting, only continuing. 
+* have an invisible hitbox behind the tree, and if the player touches it, then they lose controll of the player, and a text box appears, and follows the same logic as the Are you sure screen, but on the top screen and there is no exiting, only continuing. 
 * when the text finishes, then the screen should fade to CLR_CLEAR, then switch to the main menu
 
 * i need to make a cover of the egg room theme, and play it here

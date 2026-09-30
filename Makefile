@@ -33,7 +33,8 @@ include $(DEVKITARM)/3ds_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source source/datatypes source/utils source/states \
+SOURCES		:=	source source/datatypes source/utils source/game_logic \
+			source/states \
 			source/states/Debug source/states/LevelSelect \
 			source/states/MainMenu source/states/Maker \
 			source/states/Maze \
