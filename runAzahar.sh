@@ -39,7 +39,7 @@ fi
 
 # find the Azahar bundle
 if [ -z "$AZAHAR_APP" ]; then
-	for candidate in "/Applications/Azahar.app" "$HOME/Downloads/azahar-macos-universal-2126.1.1/Azahar.app"; do
+	for candidate in "/Applications/Azahar.app" "$HOME/Downloads/azahar-macos-universal-2126.1.2/Azahar.app" "$HOME/Downloads/azahar-macos-universal-2126.1.1/Azahar.app"; do
 		if [ -d "$candidate" ]; then
 			AZAHAR_APP="$candidate"
 			break
