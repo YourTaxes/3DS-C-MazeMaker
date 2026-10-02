@@ -2,7 +2,7 @@
 
 #include <citro2d.h>
 #include <3ds.h>
-#include <stdlib.h>
+
 #include "utils/input.h" //Rect_Tapped reads the frame's touch
 #include "datatypes/graphics_types.h" //Rect, Colors
 #include "datatypes/level_file.h"

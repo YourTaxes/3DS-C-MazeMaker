@@ -1,6 +1,5 @@
 #pragma once
 
-#include <3ds.h>
 #include "datatypes/graphics_types.h" //Rect
 
 #define TILE_SIZE 20 //pixels. 20 x 12 tiles fills the 400 x 240 top screen
@@ -58,7 +57,7 @@ typedef struct{
 //int a = sizeof(Raw_Screen);
 //int b = sizeof(double);
 
-typedef struct{
+typedef struct Raw_Level{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
     //make these values adjacent to make write slot time only one write
@@ -81,7 +80,7 @@ typedef struct{
 #define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
 #define SAVE_VERSION 3
 
-typedef struct {
+typedef struct Save_File{
     u32 magic;   //always SAVE_MAGIC
     u32 version; //SAVE_VERSION of the build that wrote the file
     Raw_Level Levels[LEVEL_SLOT_CNT];

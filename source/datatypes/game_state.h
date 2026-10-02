@@ -1,7 +1,7 @@
 #pragma once
 
-#include <citro2d.h> //C3D_RenderTarget
-#include <3ds.h>
+//#include <citro2d.h> //C3D_RenderTarget
+//#include <3ds.h>
 #include "utils/input.h"
 #include "datatypes/level_file.h"
 

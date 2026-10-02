@@ -1,6 +1,5 @@
 #pragma once
 
-#include <3ds.h>
 #include "datatypes/level_file.h"
 
 //need to figure out good size of the player.

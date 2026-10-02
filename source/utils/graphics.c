@@ -1,5 +1,6 @@
 #include "utils/graphics.h"
 #include <math.h> //fminf, for fitting an image into a box
+#include <stdlib.h>
 
 
 

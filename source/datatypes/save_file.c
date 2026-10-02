@@ -1,4 +1,6 @@
 #include "datatypes/save_file.h"
+#include <3ds.h>
+#include "datatypes/level_file.h"
 #include "utils/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
