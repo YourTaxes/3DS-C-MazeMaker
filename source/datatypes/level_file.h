@@ -1,5 +1,6 @@
 #pragma once
 
+#include <3ds/types.h> //u8, u32
 #include "datatypes/graphics_types.h" //Rect
 
 #define TILE_SIZE 20 //pixels. 20 x 12 tiles fills the 400 x 240 top screen
@@ -17,6 +18,11 @@
 //400 x 240 top screen when drawn at (50, 30).
 #define BAKED_LEVEL_IMG_WIDTH  (SCREENS_HORIZ * TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
 #define BAKED_LEVEL_IMG_HEIGHT (SCREENS_VERT * TILES_VERT * BAKED_LEVEL_TILE_SIZE)
+
+//one room's footprint in that image, in pixels. lives here rather than in graphics.h
+//so it sits with the TILES_* and BAKED_* values it is built from.
+#define BAKED_ROOM_WIDTH (TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
+#define BAKED_ROOM_HIGHT (TILES_VERT * BAKED_LEVEL_TILE_SIZE)
 
 //the texture the level is baked into. the GPU only takes power of two sizes, so
 //this is the smallest pair that holds BAKED_LEVEL_IMG_WIDTH x _HEIGHT. the image

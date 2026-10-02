@@ -1,9 +1,8 @@
 #pragma once
 
-//#include <citro2d.h> //C3D_RenderTarget
-//#include <3ds.h>
-#include "utils/input.h"
-#include "datatypes/level_file.h"
+#include <citro3d.h> //C3D_RenderTarget, in the StateFns draw pointers below
+#include "utils/input.h" //FrameInput, in StateFns.logic
+#include "datatypes/level_file.h" //Raw_Level, Built_Level, in GameContext
 
 typedef enum{
     STATE_MAIN_MENU,

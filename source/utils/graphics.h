@@ -1,14 +1,14 @@
 #pragma once
 
 #include <citro2d.h>
-#include <3ds.h>
+#include <3ds/types.h> //u32, in the text and tile signatures below
 
 #include "utils/input.h" //Rect_Tapped reads the frame's touch
 #include "datatypes/graphics_types.h" //Rect, Colors
-#include "datatypes/level_file.h"
-#include "utils/debug.h"
 
-
+//only ever used by pointer below, so the full level_file.h is not needed here.
+//graphics.c includes it for the complete type.
+typedef struct Raw_Level Raw_Level;
 
 #define TOP_SCREEN_WIDTH 400
 #define TOP_SCREEN_HIGHT 240
@@ -49,10 +49,6 @@
 #define DEPTH_BASE  -1.0f //the screen itself. spends all of SCALE_3D
 #define DEPTH_INSET -0.4f //still behind the glass, but nearer it than the base
 #define DEPTH_POPUP  0.6f //a window over the screen, forward of the glass. no user yet
-
-//one room's footprint in the baked level texture, in pixels
-#define BAKED_ROOM_WIDTH (TILES_HORIZ * BAKED_LEVEL_TILE_SIZE)
-#define BAKED_ROOM_HIGHT (TILES_VERT * BAKED_LEVEL_TILE_SIZE)
 
 /*
 * loads one ImageSet's t3x out of romfs and hands back both halves of it.

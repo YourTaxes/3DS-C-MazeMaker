@@ -1,6 +1,8 @@
 #include "utils/graphics.h"
+#include "utils/debug.h"
 #include <math.h> //fminf, for fitting an image into a box
 #include <stdlib.h>
+#include "datatypes/level_file.h" //the complete Raw_Level, and the BAKED_* geometry
 
 
 

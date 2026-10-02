@@ -1,7 +1,7 @@
 #pragma once
 
-#include <3ds.h>
-#include <citro2d.h>
+#include <3ds/types.h> //u32, for Colors and Rect.Color
+#include <citro2d.h> //C2D_Image, in LevelPreview
 
 /*
 * the plain drawing types: a rectangle and the color palette.

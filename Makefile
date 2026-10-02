@@ -71,7 +71,7 @@ ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
 CFLAGS	:=	-g -Wall $(OPTIMIZE) -mword-relocations \
 			-ffunction-sections \
-			$(ARCH)
+			$(ARCH) -std=gnu23
 
 CFLAGS	+=	$(INCLUDE) -D__3DS__
 

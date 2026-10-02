@@ -1,6 +1,6 @@
 #pragma once
 
-#include <3ds.h>
+#include <3ds/types.h> //u32, for ToBinary. the full <3ds.h> is not needed here.
 
 /*
 * printf a debug line to the debugger (stderr). Everything is passed
