@@ -98,7 +98,7 @@ PlayerTile get_player_tile();
 * colissionInfo should report the direction off the screen the player went,
 * and and the calling state should react accordingly. 
 */
-colisionInfo move_player(Game_Rect *surroundingRects[9]);
+void move_player(Game_Rect *surroundingRects[9], colisionInfo* colInfo);
 
 //get the rect out of the player, for drawing. 
 Rect playerRect();

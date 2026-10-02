@@ -67,9 +67,8 @@ static TouchedWall collidingRect(Game_Rect* curRect){
 
 
 
-colisionInfo move_player(Game_Rect *surroundingRects[9]){
-    colisionInfo colInfo;
-    colInfo.touched_portal = 0;
+void move_player(Game_Rect *surroundingRects[9], colisionInfo* colInfo){
+    colInfo->touched_portal = 0;
 
     //EVERYTHING IN THIS FUNCTION IS TERRIBLE.
     //DO NOT USE ANY OF THIS
@@ -79,12 +78,15 @@ colisionInfo move_player(Game_Rect *surroundingRects[9]){
 
     for (int i = 0; i < 9; i++){
         if (collidingRect(surroundingRects[i]) != WALL_NONE){
+            colInfo->colidedRect[i] = surroundingRects[i];
             pVals->rect.x -= pVals->speedX;
             pVals->rect.y -= pVals->speedY;
+        } else {
+            colInfo->colidedRect[i] = NULL;
         }
     }
 
-    return colInfo;
+    return;
 }
 
 
