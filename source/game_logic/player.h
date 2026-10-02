@@ -37,14 +37,7 @@ typedef enum{
     TILE_ABOVE_LEFT
 } TilePositions;
 
-typedef struct {
-    Rect rect;
-    float speedY;
-    float speedX;
-    float x;
-    float y;
-    bool standard_tile_grid;
-} PlayerVals;
+
 
 typedef struct {
     u8 tileX;
