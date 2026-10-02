@@ -46,7 +46,8 @@ typedef enum {
     START,
     FINISH,
     PORTAL1,
-    PORTAL2
+    PORTAL2, 
+    Grandfather
 } Tile_Type;
 
 typedef struct{

@@ -4,7 +4,7 @@
 #include "datatypes/level_file.h"
 
 //need to figure out good size of the player.
-//#define PLAYER_SIZE
+#define PLAYER_SIZE 20
 //#define PLAYER_BASE_SPEED
 //#define PLAYER_HARD_SPEED
 
@@ -65,7 +65,7 @@ typedef struct {
     //u8 keys[9]; //NULL will indicate the end of list. when reach NULL, break out of reading loop, or stop continuing when reach 9th slot
     u8 screenLeaveDirection; //use the TouchedWall enunm for this. WALL_NONE means it did not leave the level.
     u8 touched_portal; // if the player touched a portal, return it's index in tiles, which should be PORTAL1 or PORTAL2, or EMPTY if none.
-    bool touched_finish; //if the player touched the finish, means the level complete state should be activated. 
+    //bool touched_finish; //if the player touched the finish, means the level complete state should be activated. 
 } colisionInfo;
 
 //initalizes the player's data.
@@ -87,7 +87,8 @@ PlayerTile get_player_tile();
 //static touchedWall collidingRect(gameRect* curRect);
 
 /*
-* moves the player based on their speed, and if they collide with any of the surrounding rects, 
+* moves the player based on their speed, (may need to multiply by delta time to find this using osGetTime)
+* and if they collide with any of the surrounding rects, 
 *
 * to check for colision, loop through the surrounding Rects, and run collidingRect on them.
 * 
