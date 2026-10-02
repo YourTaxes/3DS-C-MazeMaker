@@ -1,6 +1,13 @@
 #include "states/forgotten/forgotten.h"
 #include "utils/graphics.h"
-#include "game_logic/player.h"
+#include "game_logic/player.h" //used for player logic
+#include "utils/debug.h"
+#include <citro3d.h>
+#include <stdlib.h>
+#include <string.h> //used for memcpy
+#include <math.h> //used for floorf, powf, sinf
+#include "scene3d_shbin.h" //the shader, which is in the build directory because it is generated from the scene3d.v.pica file.
+
 
 
 

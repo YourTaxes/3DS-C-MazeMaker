@@ -1,7 +1,6 @@
 #pragma once
 
 //includes
-#include "utils/input.h"
 #include "datatypes/game_state.h"
 
 void forgotten_Init(GameContext* ctx);
