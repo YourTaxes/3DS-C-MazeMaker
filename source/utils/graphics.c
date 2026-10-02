@@ -229,7 +229,7 @@ bool BakeLevelTexture(LevelPreview *out, C3D_RenderTarget **target,
     }
 
 
-    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    C3D_FrameBegin(0);
     C2D_TargetClear(*target, Colors[CLR_WHITE]);
     C2D_SceneBegin(*target);
 
