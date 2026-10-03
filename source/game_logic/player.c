@@ -1,5 +1,6 @@
 #include "player.h"
 #include "stdlib.h"
+#include "utils/input.h"
 
 
 
@@ -23,11 +24,23 @@ void init_player(bool standard_tile_grid){
     pVals->rect.width = PLAYER_SIZE;
 }
 
+//NEED TO NORMALIZE DPAD INPUT LATER
+void setSpeed(const FrameInput* in, float speedMult){
+    if (in->kHeld & KEY_DLEFT){
+        pVals->speedX = -speedMult;
+    } else if (in->kHeld & KEY_DRIGHT){
+        pVals->speedX = speedMult;
+    } else {
+        pVals->speedX = in->cpadX * speedMult;
+    }
 
-
-void setSpeed(float x, float y){
-    pVals->speedX = x;
-    pVals->speedY = y;
+    if (in->kHeld & KEY_DUP){
+        pVals->speedY = -speedMult;
+    } else if (in->kHeld & KEY_DDOWN){
+        pVals->speedY = speedMult;
+    } else {
+        pVals->speedY = in->cpadY * -speedMult;
+    }
 }
 
 

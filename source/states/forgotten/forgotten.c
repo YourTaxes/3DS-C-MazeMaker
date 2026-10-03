@@ -103,8 +103,6 @@ void forgotten_Init(GameContext* ctx){
 
     //set the player's starting position
     setPosition(PLAYER_START_X, PLAYER_START_Y);
-    //set the player's speed
-    setSpeed(0.0f, 0.0f);
 }
 
 
@@ -120,7 +118,7 @@ Game_State forgotten_Logic(const FrameInput* in, GameContext* ctx){
     fgstate->swayAngle += SWAY_SPEED;
 
     //set the player's speed based on the circle pad
-    setSpeed(in->cpadX * PLAYER_BASE_SPEED, -in->cpadY * PLAYER_BASE_SPEED);
+    setSpeed(in, PLAYER_BASE_SPEED);
 
     //move the player, and get back info on what they hit.
     colisionInfo hit;

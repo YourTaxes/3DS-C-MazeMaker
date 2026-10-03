@@ -226,3 +226,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 * look into the stensil buffer to get the effect of the tree being outlined red.
 
 * i need to make a cover of the egg room theme, and play it here
+
+
+
+* EXTREMELY IMPORTANT - NEED TO NORMALIZE THE DPAD INPUT

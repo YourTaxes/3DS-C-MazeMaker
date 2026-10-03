@@ -4,8 +4,10 @@
 
 //need to figure out good size of the player.
 #define PLAYER_SIZE 20
-#define PLAYER_BASE_SPEED 1
-#define PLAYER_HARD_SPEED 1.5
+#define PLAYER_BASE_SPEED 3
+#define PLAYER_HARD_SPEED 4.5
+
+typedef struct FrameInput FrameInput;
 
 typedef enum{
     GAME_KEY_RED,
@@ -67,7 +69,8 @@ typedef struct {
 void init_player(bool standard_tile_grid);
 
 //sets the speed X and speed Y
-void setSpeed(float x, float y);
+//void setSpeed(float x, float y);
+void setSpeed(const FrameInput* in, float speedMult);
 
 void setPosition(float x, float y);
 

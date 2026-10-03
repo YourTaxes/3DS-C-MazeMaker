@@ -28,7 +28,7 @@
 * everything the player did this frame. filled once per frame by Input_Read
 * in main and passed to the current state's _Logic.
 */
-typedef struct {
+typedef struct FrameInput{
     u32 kDown; //buttons pressed this frame
     u32 kHeld; //buttons currently down
     u32 kUp;   //buttons released this frame

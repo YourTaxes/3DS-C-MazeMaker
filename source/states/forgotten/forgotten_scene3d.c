@@ -47,6 +47,33 @@ static const ScenePart PARTS[PART_COUNT] = {
 };
 
 
+//the struct for the 3d scene
+typedef struct {
+    DVLB_s* dvlb;
+    shaderProgram_s program;
+    int uLoc_projection;
+    int uLoc_modelView;
+    C3D_AttrInfo attrInfo;
+    C3D_BufInfo bufInfo;
+    void* vbo; //needs to be linear allocd
+    //holds the pointers into light and luts
+    C3D_LightEnv lightEnv;
+    C3D_Light light;
+    C3D_LightLut lutToon;
+    C3D_LightLut lutSpec;
+
+    C3D_Mtx view; //the camera never moves, so it is only built once.
+    //the camera up vector in world space
+    float upY;
+    float upZ;
+} Scene3D;
+
+static Scene3D* scn; //NULL when the scene is not loaded.
+
+//helper functions
+
+
+
 
 
 
