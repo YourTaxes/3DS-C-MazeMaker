@@ -74,11 +74,27 @@ static Scene3D* scn; //NULL when the scene is not loaded.
 
 
 
+//the toon ramps, both quantize smooth lighting term into a few flat bands.
+static float toon_diffuse(float x, float arg){
+    (void) arg;
+    const float factor = NUM_DIFFUSE_TONES - 1;
+    return floorf(0.5f + x * factor) / factor;
+}
 
+static float toon_specular(float x, float shininess){
+    const float factor = NUM_SPECULAR_TONES - 1;
+    return floorf(0.5f + powf(x, shininess) * factor) / factor;
+}
 
+//these functions translate the 2d player world pixels to 3d world pixels.
+static inline float WorldX(float px){ return (px - TOP_SCREEN_WIDTH / 2.0f) * WORLD_PER_PX; }
+static inline float WorldY(float py){ return -(py - TOP_SCREEN_HIGHT / 2.0f) * WORLD_PER_PX; }
 
-
-
+//translate the eye offset to Iod
+static inline float EyeOffsetToIod(float eyeOffset)
+{
+    return -eyeOffset / (SCALE_3D * 3.0f);
+}
 
 
 
