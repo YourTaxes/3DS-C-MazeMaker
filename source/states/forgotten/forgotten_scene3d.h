@@ -18,4 +18,4 @@ bool scene3d_init();
 void scene3d_render(float eyeOffset, float sway, const Rect* player);
 
 //the free function for the 3d scene, frees everything
-void scene3d_free(void);
+void scene3d_free();

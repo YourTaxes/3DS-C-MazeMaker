@@ -4,8 +4,8 @@
 
 //need to figure out good size of the player.
 #define PLAYER_SIZE 20
-//#define PLAYER_BASE_SPEED
-//#define PLAYER_HARD_SPEED
+#define PLAYER_BASE_SPEED 1
+#define PLAYER_HARD_SPEED 1.5
 
 typedef enum{
     GAME_KEY_RED,
@@ -57,7 +57,7 @@ typedef struct {
     //u8 keys[9]; //NULL will indicate the end of list. when reach NULL, break out of reading loop, or stop continuing when reach 9th slot
     u8 screenLeaveDirection; //use the TouchedWall enunm for this. WALL_NONE means it did not leave the level.
     u8 touched_portal; // if the player touched a portal, return it's index in tiles, which should be PORTAL1 or PORTAL2, or EMPTY if none.
-    //bool touched_finish; //if the player touched the finish, means the level complete state should be activated. 
+    bool touched_somehting; // the caller should only loop through the collided rects if this is true.
 } colisionInfo;
 
 //initalizes the player's data.

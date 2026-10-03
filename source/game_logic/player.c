@@ -1,8 +1,7 @@
 #include "player.h"
 #include "stdlib.h"
 
-#define PLAYER_BASE_SPEED 1
-#define PLAYER_HARD_SPEED 1.5
+
 
 
 
@@ -20,6 +19,8 @@ static PlayerVals* pVals;
 //init function
 void init_player(bool standard_tile_grid){
     pVals = malloc(sizeof(PlayerVals));
+    pVals->rect.height = PLAYER_SIZE;
+    pVals->rect.width = PLAYER_SIZE;
 }
 
 
@@ -69,6 +70,9 @@ static TouchedWall collidingRect(Game_Rect* curRect){
 
 void move_player(Game_Rect *surroundingRects[9], colisionInfo* colInfo){
     colInfo->touched_portal = 0;
+    colInfo->screenLeaveDirection = 0;
+    colInfo->touched_somehting = false;
+    
 
     //EVERYTHING IN THIS FUNCTION IS TERRIBLE.
     //DO NOT USE ANY OF THIS
@@ -77,13 +81,15 @@ void move_player(Game_Rect *surroundingRects[9], colisionInfo* colInfo){
     pVals->rect.y += pVals->speedY;
 
     for (int i = 0; i < 9; i++){
+        colInfo->colidedRect[i] = NULL;
+        if (surroundingRects[i] == NULL){
+            continue;
+        }
         if (collidingRect(surroundingRects[i]) != WALL_NONE){
             colInfo->colidedRect[i] = surroundingRects[i];
             pVals->rect.x -= pVals->speedX;
             pVals->rect.y -= pVals->speedY;
-        } else {
-            colInfo->colidedRect[i] = NULL;
-        }
+        } 
     }
 
     return;
