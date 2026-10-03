@@ -222,4 +222,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 * have an invisible hitbox behind the tree, and if the player touches it, then they lose controll of the player, and a text box appears, and follows the same logic as the Are you sure screen, but on the top screen and there is no exiting, only continuing. 
 * when the text finishes, then the screen should fade to CLR_CLEAR, then switch to the main menu
 
+
+* look into the stensil buffer to get the effect of the tree being outlined red.
+
 * i need to make a cover of the egg room theme, and play it here
