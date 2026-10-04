@@ -187,6 +187,7 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
     * if more than 2 are placed, then the one closer in the linear list to the front should be the main, which all others go to, and the 
     * if there is only one portal in a set, then it doesn't do anything.
 
+* when a key has been collected for a door, then do not pass that door's rect into the SURROUNDING list for moving the player.
 
 
 

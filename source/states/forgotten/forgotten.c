@@ -118,7 +118,7 @@ Game_State forgotten_Logic(const FrameInput* in, GameContext* ctx){
     fgstate->swayAngle += SWAY_SPEED;
 
     //set the player's speed based on the circle pad
-    setSpeed(in, PLAYER_BASE_SPEED);
+    setSpeed(in, false);
 
     //move the player, and get back info on what they hit.
     colisionInfo hit;
