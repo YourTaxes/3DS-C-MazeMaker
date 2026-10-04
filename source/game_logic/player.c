@@ -78,8 +78,8 @@ void setSpeed(const FrameInput* in, bool hardMode){
         x /= mag;
         y /= mag;
     }
-    x *= hardMode ? PLAYER_BASE_SPEED : PLAYER_HARD_SPEED;
-    y *= hardMode ? PLAYER_BASE_SPEED : PLAYER_HARD_SPEED;
+    x *= !pVals->standard_tile_grid ? PLAYER_ABNORMAL_SPEED : hardMode ? PLAYER_HARD_SPEED : PLAYER_BASE_SPEED;
+    y *= !pVals->standard_tile_grid ? PLAYER_ABNORMAL_SPEED : hardMode ?  PLAYER_HARD_SPEED : PLAYER_BASE_SPEED;
     pVals->speed[AXIS_X] = x;
     pVals->speed[AXIS_Y] = y;
 }

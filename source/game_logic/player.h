@@ -19,6 +19,7 @@
 */
 #define PLAYER_BASE_SPEED 4
 #define PLAYER_HARD_SPEED 6
+#define PLAYER_ABNORMAL_SPEED 1
 
 typedef struct FrameInput FrameInput;
 
