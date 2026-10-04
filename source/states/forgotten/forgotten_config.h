@@ -54,18 +54,18 @@
 */
 
 //height above the ground the camera should be. this entirely depends on the final size of the model, but 8 is a good start
-#define CAM_HEIGHT 8.0f
+#define CAM_HEIGHT 6.93f //4*cos(30)/(1-sin(30))
 //the camera's downward tilt from horizontal. probably should stay between 30 and 60
 #define CAM_PITCH_DEG 30.0f
 
 //field of view of the camera
-#define CAM_FOV_DEG 40.0f
+#define CAM_FOV_DEG 60.0f //90 - pitch
 #define SCENE_NEAR 1.0f
 #define SCENE_FAR 60.0f
 
 //this is the world distance that appears to sit exactly in line with the screen in 3d mode.
 //I want the scene to be somewhat inset, so it will be about halfway to the tree, or less
-#define CAM_FOCAL 5.0f
+#define CAM_FOCAL CAM_HEIGHT
 
 //where the light is in the world, in world cordinates.
 #define LIGHT_X -6.0f

@@ -193,7 +193,7 @@ bool scene3d_init(){
     //and the horizontal setback is whatever puts the cenre of the play area under it's crosshair.
     //a ray leaving at that angle from that height meets the ground CAM_HEIGHT/tan(pitch) ahead. 
     //negative because the camera sits on the near side of the floor, looking along +Y
-    const float camY = -CAM_HEIGHT / tanf(pitch);
+    const float camY = -8.0f;//-CAM_HEIGHT / tanf(pitch);
 
     Mtx_Identity(&scn->view);
 
