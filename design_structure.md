@@ -189,6 +189,13 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 * when a key has been collected for a door, then do not pass that door's rect into the SURROUNDING list for moving the player.
 
+* NEW IDEA - Platformer mode 
+    * have the player affected by gravity.
+    * have this be a toggle in the save file
+    * only possible with standard tile grid, check if colliding with any of the 3 bottom tiles.
+    * every frame, decrease the downward velocity by a set amount.
+    * if on ground, then set ground velocity to 0
+    * if press A on ground, set ground velocity to a large number. 
 
 
 
