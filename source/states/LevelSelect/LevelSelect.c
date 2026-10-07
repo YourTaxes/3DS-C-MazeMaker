@@ -3,6 +3,7 @@
 #include "utils/debug.h"
 #include "datatypes/save_file.h"
 #include "utils/format.h" //FormatTime, for the best time lines
+#include "utils/popup.h"
 #include <stdlib.h>
 #include <stdio.h> //snprintf, for the slot number labels
 #include <string.h> //memset, to blank a slot on delete
@@ -10,7 +11,9 @@
 
 //defines
 #define SLOT_COUNT 4
-#define BOTTOM_RECT_COUNT 12
+#define BOTTOM_RECT_COUNT 9
+_Static_assert(RECT_DELETE == BOTTOM_RECT_COUNT - 1,
+               "the action rects must end RectIDs, and BOTTOM_RECT_COUNT must cover them");
 
 //where the baked level image sits on the top screen.
 #define LEVEL_IMG_X ((TOP_SCREEN_WIDTH - BAKED_LEVEL_IMG_WIDTH) / 2)
@@ -45,8 +48,6 @@
 #define ACTION_Y 200
 #define ACTION_TEXT_SCALE 0.45f
 
-#define AYS_HEAD_TEXT_SCALE 0.4f
-
 //how far the highlight sticks out past the selected button, same idea as MainMenu.
 #define HIGHLIGHT_PAD 5
 
@@ -68,9 +69,15 @@
 #define LEVEL_SELECT_NAME_GLYPHS (SLOT_COUNT * NAME_LINE_MAX)
 #define LEVEL_SELECT_TIME_GLYPHS (SLOT_COUNT * 2 * TIME_LINE_MAX)
 
-#define LEVEL_SELECT_AYS_GLYPHS 64 //32 for first half, 32 for second half
+#define LEVEL_SELECT_AYS_GLYPHS 256 //holds all 3 stages at once.
 
+#define AYS_WINDOW_COUNT 3
 
+static const char* const AYS_HEADS[AYS_WINDOW_COUNT] = {
+    "Are you sure\nyou want",
+    "Are you Really sure\nyou want",
+    "Are you ABSOLUTELY\nsure you want"
+};
 
 //structs
 
@@ -94,20 +101,6 @@ static const struct {
 #define ACTION_BUTTON_COUNT (sizeof(ACTION_BUTTONS) / sizeof(ACTION_BUTTONS[0]))
 _Static_assert(ACTION_BUTTON_COUNT == RECT_DELETE - RECT_MAINMENU + 1,
                "ACTION_BUTTONS must cover RECT_MAINMENU through RECT_DELETE");
-
-#define AYS_BUTTON_COUNT 2
-
-/*
-* the window, its Yes and its No: three rects and three labels, which is also
-* AYS_HEAD through AYS_NO and RECT_AYS_WINDOW through RECT_AYS_NO. _Draw walks the two
-* arrays together off this one count, so it has to match both or the loop reads past the
-* end of bottomRects and AYSLabels into whatever the struct holds next.
-*/
-#define AYS_LABLE_COUNT 3
-_Static_assert(AYS_LABLE_COUNT == RECT_AYS_NO - RECT_AYS_WINDOW + 1,
-               "AYS_LABLE_COUNT must cover RECT_AYS_WINDOW through RECT_AYS_NO");
-_Static_assert(RECT_AYS_NO == BOTTOM_RECT_COUNT - 1,
-               "the AYS rects must be the last RectIDs, and BOTTOM_RECT_COUNT must cover them");
 
 
 
@@ -164,7 +157,7 @@ typedef struct{
     //one label per button, parallel to the rects above
     C2D_Text slotLabels[SLOT_COUNT];
     C2D_Text actionLabels[ACTION_BUTTON_COUNT];
-    C2D_Text AYSLabels[AYS_LABLE_COUNT];
+    C2D_Text aysText[AYS_WINDOW_COUNT];
 
     //the name of the level in each slot, drawn above that slot's preview on the top
     //screen. these live in nameBuf, so they all go stale together whenever
@@ -189,9 +182,11 @@ typedef struct{
     //it is on the heap because a Save_File is far too big to sit in a stack frame.
     Save_File *savfle;
 
+    //holds the pointer to the main game context, which is what holds the currently loaded save files.
+    GameContext* ctx;
+
 
     u8 curAction;    //Load_Action values, cast to u8 to save space
-    u8 AYS_Status;   //where in the Are You Sure chain the player is. AYS_NONE means no window is up
     u8 pendingSlot;  //the slot curAction lands on, captured when interacting with the slot.
 
     //this value holds the most recent hovered or tapped save slot,
@@ -257,46 +252,30 @@ static void RebuildTimeLabels(void){
 }
 
 
-//rebuilds the text buff for the are you sure window depending on what stage and action is selected
+//rebuilds the text buff for the are you sure window and builds all of the 3 stages
 //both are 0 indexed on the way in and printed 1 indexed
-static void RebuildAYSLabels(){
+static void BuildConfirmText(){
     C2D_TextBufClear(lsstate->AysWindowBuf);
 
-    if (lsstate->AYS_Status == AYS_NONE) return; //nothing is being asked
-
-    char actionbuf[40];
-    char* statusbuf;
-    char fullbuf[80];
-
+    char action[40];
     switch (lsstate->curAction){
         case ACTION_COPY:
-            snprintf(actionbuf, sizeof(actionbuf), "\nto copy slot %d\ninto slot %d?", lsstate->activeSlot + 1, lsstate->pendingSlot + 1);
+            snprintf(action, sizeof(action), "\nto copy slot %d\ninto slot %d?", lsstate->activeSlot + 1, lsstate->pendingSlot + 1);
             break;
         case ACTION_CLEAR_TIMES:
-            snprintf(actionbuf, sizeof(actionbuf), "\nto clear slot %d's\nbest times?", lsstate->pendingSlot + 1);
+            snprintf(action, sizeof(action), "\nto clear slot %d's\nbest times?", lsstate->pendingSlot + 1);
             break;
         case ACTION_DELETE:
-            snprintf(actionbuf, sizeof actionbuf, "\nto delete slot %d?", lsstate->pendingSlot + 1);
-            break;
-        //case ACTION_LOAD:
-        //case ACTION_RENAME:
-        default:
-            return; //load and rename do not raise the window
-    }
-
-    switch (lsstate->AYS_Status){
-        case AYS_REALLY_SURE: 
-            statusbuf = "Are you Really sure\nyou want";
-            break;
-        case AYS_ABSOLUTELY_SURE:
-            statusbuf = "Are you ABSOLUTELY\nsure you want";
+            snprintf(action, sizeof(action), "\nto delete slot %d?", lsstate->pendingSlot + 1);
             break;
         default:
-            statusbuf = "Are you sure\nyou want";
+            return;
     }
-
-    snprintf(fullbuf, sizeof(fullbuf), "%s%s", statusbuf, actionbuf);
-    MakeText(fullbuf, &lsstate->AYSLabels[AYS_HEAD], lsstate->AysWindowBuf);
+    char full[80];
+    for (int i = 0; i < AYS_WINDOW_COUNT; i++) {
+        snprintf(full, sizeof(full), "%s%s", AYS_HEADS[i], action);
+        MakeText(full, &lsstate->aysText[i], lsstate->AysWindowBuf);
+    }
 }
 
 //put the cursor on the button the player just touched, so the highlight does not sit
@@ -315,7 +294,7 @@ static void CursorToRect(int rectID){
 
 //reset all of the action buttons to their standard color
 static void ResetActionColors(){
-    for (int i = RECT_RENAME; i < RECT_AYS_WINDOW; i++){
+    for (int i = RECT_RENAME; i <= RECT_DELETE; i++){
         lsstate->bottomRects[i].Color = Colors[CLR_DK_GRAY];
     }
 }
@@ -366,13 +345,11 @@ static bool RenameLevel(){
 }
 
 
-//the last AYS_Status the player has to say yes to before curAction is executed on the slot
-//AYS none means the action asks nothing and executes on the press itself
-static u8 AYSDepth(u8 slot){
-    if (lsstate->curAction <= ACTION_RENAME) return AYS_NONE; //neither one uses the window
-    //copying into a slot with nothing in it destroys nothing, so it is not worth asking
-    if (lsstate->curAction == ACTION_COPY && lsstate->savfle->Levels[slot].empty) return AYS_NONE;
-    return AYS_ABSOLUTELY_SURE;
+//checks if the action needs to ask for confirmation before it happens
+static bool ActionNeedsConfirm(u8 slot){
+    if(lsstate->curAction <= ACTION_RENAME) return false;
+    if (lsstate->curAction == ACTION_COPY && lsstate->savfle->Levels[slot].empty) return false;
+    return true;
 }
 
 
@@ -380,15 +357,15 @@ static u8 AYSDepth(u8 slot){
 //this is the only place an action lands. this is called from tapping the slot, or from the last AYS
 //the tail runs once per completed action instead of once per case.
 
-static void CommitAction(GameContext* ctx){
+static void CommitAction(){
     Raw_Level* lvl = &lsstate->savfle->Levels[lsstate->pendingSlot];
 
     switch (lsstate->curAction){
         case ACTION_LOAD:
             lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_DK_GRAY];
-            *ctx->rawLvl = *lvl;
-            ctx->rebuildLevel = true;
-            ctx->curSlot = lsstate->pendingSlot;
+            *lsstate->ctx->rawLvl = *lvl;
+            lsstate->ctx->rebuildLevel = true;
+            lsstate->ctx->curSlot = lsstate->pendingSlot;
             lsstate->activeSlot = lsstate->pendingSlot;
             lsstate->bottomRects[lsstate->activeSlot].Color = Colors[CLR_GREEN];
             printConsole("loaded slot %d", lsstate->pendingSlot + 1);
@@ -430,13 +407,22 @@ static void CommitAction(GameContext* ctx){
     //if the slot that just changed is the one the game has loaded, the copy in ctx is now
     //stale: its name, times and tiles are all from the old contents. MainMenu reads that
     //copy rather than the save file, so without this a deleted level keeps its name there.
-    if (lsstate->pendingSlot == ctx->curSlot){
-        *ctx->rawLvl = *lvl;
-        ctx->rebuildLevel = true;
+    if (lsstate->pendingSlot == lsstate->ctx->curSlot){
+        *lsstate->ctx->rawLvl = *lvl;
+        lsstate->ctx->rebuildLevel = true;
     }
 
     lsstate->curAction = ACTION_LOAD;
-    lsstate->AYS_Status = AYS_NONE;
+    ResetActionColors();
+}
+
+
+
+
+//the callback for the popup for when it is canceled,
+static void CanceledAction(){
+    printConsole("action %d canceled", lsstate->curAction);
+    lsstate->curAction = ACTION_LOAD;
     ResetActionColors();
 }
 
@@ -455,6 +441,9 @@ void LevelSelect_Init(GameContext* ctx){
         printConsole("LevelSelect_Init: out of memory for the state");
         return;
     }
+
+    //set the gamecontext so that commit action can use it.
+    lsstate->ctx = ctx;
 
 
     lsstate->savfle = malloc(sizeof(Save_File));
@@ -515,35 +504,9 @@ void LevelSelect_Init(GameContext* ctx){
         MakeText(ACTION_BUTTONS[i].label, &lsstate->actionLabels[i], lsstate->textBuf);
     }
 
-    //these are at depth LAYER POPUP so that they are above the rest.
-    lsstate->bottomRects[RECT_AYS_WINDOW] = (Rect){
-        .x = 50,
-        .y = 45,
-        .z = LAYER_POPUP,
-        .width = 220,
-        .height = 130,
-        .Color = Colors[CLR_LT_GRAY],
-    };
-    lsstate->bottomRects[RECT_AYS_YES] = (Rect){
-        .x = 170,
-        .y = 140,
-        .z = LAYER_POPUP,
-        .width = 50,
-        .height = 30,
-        .Color = Colors[CLR_DK_GRAY]
-    };
-    lsstate->bottomRects[RECT_AYS_NO] = (Rect){
-        .x = 100,
-        .y = 140,
-        .z = LAYER_POPUP,
-        .width = 50,
-        .height = 30,
-        .Color = Colors[CLR_DK_GRAY]
-    };
-    
-
-    MakeText("A: Yes", &lsstate->AYSLabels[AYS_YES], lsstate->textBuf);
-    MakeText("B: No", &lsstate->AYSLabels[AYS_NO], lsstate->textBuf);
+    //init the are you sure popup
+    const Rect aysBox = {.x = 50, .y = 45, .width = 220, .height = 130, .Color = Colors[CLR_LT_GRAY]};
+    popup_init(aysBox, AYS_WINDOW_COUNT, true, true, 0.0f, CommitAction, CanceledAction);
     
 
     
@@ -582,20 +545,8 @@ void LevelSelect_Init(GameContext* ctx){
 Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
     if (lsstate == NULL) return STATE_MAIN_MENU; //_Init ran out of memory, do not stay here
 
-    //do this on frams where the AYS dialog is open
-    if (lsstate->AYS_Status != AYS_NONE){
-        if ((in->kDown & KEY_A) || Rect_Tapped(&lsstate->bottomRects[RECT_AYS_YES], in)){
-            if (lsstate->AYS_Status >= AYSDepth(lsstate->pendingSlot)) CommitAction(ctx); //player finished last AYS scren, do the designated action
-            else {
-                lsstate->AYS_Status++; //player advances to the next AYS stage
-                RebuildAYSLabels();
-            }
-        } else if ((in->kDown & KEY_B) || Rect_Tapped(&lsstate->bottomRects[RECT_AYS_NO], in) || ((in->kDown & KEY_TOUCH) && !Rect_Contains(&lsstate->bottomRects[RECT_AYS_WINDOW], in->touch.px, in->touch.py))){
-            printConsole("action %d cancelled", lsstate->curAction);
-            lsstate->curAction = ACTION_LOAD;
-            lsstate->AYS_Status = AYS_NONE;
-            ResetActionColors();
-        }
+    if (popup_status()){
+        popup_logic(in);
         return STATE_NONE;
     }
 
@@ -627,7 +578,7 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 
     //only allow one action per frame. if both happen, then screen touch takes priority
     int pressed = -1;
-    for (int i = RECT_LVL1; i <= RECT_DELETE; i++){ // later add the AYS window and buttons conditionally
+    for (int i = RECT_LVL1; i <= RECT_DELETE; i++){
         if (Rect_Tapped(&lsstate->bottomRects[i], in)){
             pressed = i;
             break;
@@ -656,10 +607,13 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
                 printConsole("slot %d is empty, nothing to do", pressed + 1);
                 break;
             }
-            if (AYSDepth(pressed) == AYS_NONE) CommitAction(ctx); //if action is one that is done immedietly, then do it here
-            else {
-                lsstate->AYS_Status = AYS_SURE;
-                RebuildAYSLabels();
+            //check if the action requires an are you sure
+            if (!ActionNeedsConfirm(pressed)){
+                CommitAction();
+            } else {
+                //starts the are you sure
+                BuildConfirmText();
+                popup_start(lsstate->aysText);
             }
             break;
         case RECT_MAINMENU:
@@ -755,16 +709,8 @@ void LevelSelect_DrawBottom(C3D_RenderTarget* target){
         DrawTextInRect(&lsstate->actionLabels[i], &lsstate->bottomRects[RECT_MAINMENU + i],
                        ACTION_TEXT_SCALE, Colors[CLR_WHITE]);
     }
-    if (lsstate->AYS_Status > AYS_NONE){
-        for (int i = 0; i < AYS_LABLE_COUNT; i++){
-            //draw AYS rects
-            DrawRect(&lsstate->bottomRects[RECT_AYS_WINDOW + i]);
-            //draw text in ays rects
-            DrawTextInRect(&lsstate->AYSLabels[i], &lsstate->bottomRects[RECT_AYS_WINDOW + i],
-                            i == AYS_HEAD ? AYS_HEAD_TEXT_SCALE : ACTION_TEXT_SCALE, Colors[i == AYS_HEAD ? CLR_BLACK : CLR_WHITE]);
-        }
-    }
-    
+
+    popup_draw(target);    
 }
 
 
@@ -783,6 +729,10 @@ void LevelSelect_End(void){
         }
         FreeLevelImage(&lsstate->fullLevelPreviews[i]);
     }
+
+    //free the popup
+    popup_free();
+
     C2D_TextBufDelete(lsstate->textBuf);
     C2D_TextBufDelete(lsstate->nameBuf);
     C2D_TextBufDelete(lsstate->timeBuf);

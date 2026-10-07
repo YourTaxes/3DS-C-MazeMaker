@@ -22,23 +22,7 @@ typedef enum{
     RECT_COPY,
     RECT_CLEAR_TIMES,
     RECT_DELETE,
-    RECT_AYS_WINDOW,
-    RECT_AYS_YES,
-    RECT_AYS_NO
 } RectIDs;
-
-typedef enum{
-    AYS_HEAD,
-    AYS_YES,
-    AYS_NO
-} AYS_Label_IDS;
-
-typedef enum{
-    AYS_NONE,
-    AYS_SURE, //"Are you sure you want" - 21
-    AYS_REALLY_SURE, //"Are you really sure you want" - 28
-    AYS_ABSOLUTELY_SURE //"Are you ABSOLUTELY sure you want" - 32
-} AYS_Status;
 
 
 void LevelSelect_Init(GameContext* ctx);

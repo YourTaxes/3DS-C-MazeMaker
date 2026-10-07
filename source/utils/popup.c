@@ -28,8 +28,8 @@ typedef struct{
     C2D_TextBuf btnBuf; //just the button captions, the body text belongs to the caller
     C2D_Text btnText[2]; //[0] confirm, [1] cancel (only used when canQuit)
     const C2D_Text* text; //borrowed from caller, one entry per window, NULL means no window is up.
-    void (*end)(GameContext*); //the function to call when the sequence finishes
-    GameContext* ctx; //pointer to main's game context.
+    void (*end)(void); //the function to call when the sequence finishes
+    void (*cancel)(void); //the callback that happens when the popup is canceled. can be null if canQuit is false, but has to have something otherwise
     float wrapWidth; //0 means do not wrap
     u8 windowCount;
     u8 cur;
@@ -40,7 +40,7 @@ typedef struct{
 static PopupState* pop; 
 
 
-void popup_init(Rect window, int windowCount, bool canQuit, bool bottomScreen, float wrapWidth, void (*end)(GameContext* ctx), GameContext* ctx){
+void popup_init(Rect window, int windowCount, bool canQuit, bool bottomScreen, float wrapWidth, void (*end)(void), void (*cancel)(void)){
     //I do this so that a second init cannot leak the first one's text buffer.
     //popup_free is safe to do on an already freed popup, so this is safe.
     popup_free(); 
@@ -71,7 +71,7 @@ void popup_init(Rect window, int windowCount, bool canQuit, bool bottomScreen, f
     pop->bottomScreen = bottomScreen;
     pop->wrapWidth = wrapWidth;
     pop->end = end;
-    pop->ctx = ctx;
+    pop->cancel = cancel;
 
     //the caller's geometry, but with the layer changed back to the base. 
     window.z = LAYER_POPUP;
@@ -113,10 +113,9 @@ void popup_start(const C2D_Text* text){
     //a 0 page sequence means that the sequence is already finished, so it completes instead of doing anything.
     //this also happens if the content that the pages come from fail to load, which can happen, so it prevents a softlock.
     if (pop->windowCount == 0) {
-        void (*end)(GameContext*) = pop->end;
-        GameContext* ctx = pop->ctx;
+        void (*end)(void) = pop->end;
         printConsole("popup_start: no pages, complete immedietly");
-        if (end) end(ctx);
+        if (end) end();
         return;
     }
 
@@ -141,9 +140,8 @@ void popup_logic(const FrameInput* in)
         if (++pop->cur >= pop->windowCount){
             //close this instance before end(), so that the callback is able to start another popup.
             pop->text = NULL;
-            void (*end)(GameContext*) = pop->end;
-            GameContext* ctx = pop->ctx;
-            if (end) end(ctx);
+            void (*end)(void) = pop->end;
+            if (end) end();
         }
         return;
     }
@@ -151,6 +149,8 @@ void popup_logic(const FrameInput* in)
     //b, the no button, or a tap anywhere outside the window.
     if (pop->canQuit && ((in->kDown & KEY_B) || (touch && Rect_Tapped(&pop->rect[P_NO], in)) || (touch && ((in->kDown & KEY_TOUCH) && !Rect_Contains(&pop->rect[P_WINDOW], in->touch.px, in->touch.py))))){
         pop->text = NULL;
+        void (*cancel)(void) = pop->cancel;
+        if (cancel) cancel();
     }
 }
 

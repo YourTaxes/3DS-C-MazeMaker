@@ -12,9 +12,9 @@
 //window count - the amount of screens that the session goes through
 //canQuit - if this is true, the there is an no button, and tapping outside dismisses without running end. false is continue only
 //wrapWidth - greater than 0 wraps the body text to that many pixes. 0 turns wrapping off. 
-//end - the function to run when the session ends
-//cts - the pointer to the current game context, passed to the end function.
-void popup_init(Rect window, int windowCount, bool canQuit, bool bottomScreen, float wrapWidth, void (*end)(GameContext* ctx), GameContext* ctx);
+//end - the function to run when the session ends. can be null if there isn't one.
+//cancel - the function pointer for the function to be called on success. can be null if there isn't one
+void popup_init(Rect window, int windowCount, bool canQuit, bool bottomScreen, float wrapWidth, void (*end)(void), void (*cancel)(void));
 
 //raises the window on the first screen 
 //text - an array of windowCount C2D_Text, one per screen, and it must stay alive and the text buf must not be cleared until the popup closes.
@@ -22,7 +22,6 @@ void popup_start(const C2D_Text* text);
 
 //returns if the window is currently up.
 //if it is, then the state should skip it's own logic and only call popup_logic.
-//there is no cancel callback, may be added later, but right now just check for when this goes from true to false.
 bool popup_status();
 
 
