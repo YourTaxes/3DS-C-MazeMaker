@@ -48,8 +48,10 @@ typedef struct{
 */
 typedef enum{
     IMAGE_OHWELLGUY,
-    IMAGE_KEY,
-    IMAGE_MAKERKEY,
+    IMAGE_REDKEY,
+    IMAGE_GREENKEY,
+    IMAGE_BLUEKEY,
+    IMAGE_PINKKEY,
     IMAGE_MAKERLOCK,
     IMAGE_SKLUMBO,
     IMAGE_COUNT

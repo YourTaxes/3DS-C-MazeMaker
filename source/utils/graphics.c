@@ -33,12 +33,14 @@ void MakeColors(void){
 //of step with the enum's order
 static const char* const IMAGE_PATHS[IMAGE_COUNT] = {
     [IMAGE_OHWELLGUY] = "romfs:/gfx/ohwell.t3x",
-    [IMAGE_KEY]       = "romfs:/gfx/key.t3x",
-    [IMAGE_MAKERKEY]  = "romfs:/gfx/makerKey.t3x",
+    [IMAGE_REDKEY] = "romfs:/gfx/RedKey.t3x",
+    [IMAGE_GREENKEY] = "romfs:/gfx/GreenKey.t3x",
+    [IMAGE_BLUEKEY] = "romfs:/gfx/BlueKey.t3x",
+    [IMAGE_PINKKEY] = "romfs:/gfx/PinkKey.t3x",
     [IMAGE_MAKERLOCK] = "romfs:/gfx/makerLock.t3x",
     [IMAGE_SKLUMBO]   = "romfs:/gfx/sklumbo.t3x",
 };
-_Static_assert(IMAGE_COUNT == 5, "every ImageSet value needs a row in IMAGE_PATHS");
+_Static_assert(IMAGE_COUNT == 7, "every ImageSet value needs a row in IMAGE_PATHS");
 
 //the loaded art, filled once by LoadImages and good for the rest of the run. each SHEET
 //owns its texture and its subtexture table; the matching C2D_Image is only two pointers
