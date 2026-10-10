@@ -93,3 +93,32 @@
 //the fadeout that happens at the end of the scene, it's speed is determined by how many frames it goes for
 #define FADE_FRAMES 150.0f
 #define FADE_SPEED (1.0f / FADE_FRAMES)
+
+
+
+
+/*
+* The text box ====================================================
+*/
+
+//the file path to the dialouge
+#define HIS_LINES_PATH "romfs:/his_lines.egg"
+
+//the maximum amount of pages that can be in the dialouge
+//current version has 28 lines, but 32 is the closest power of 2 so I am using that
+#define HIS_LINES_MAX_PAGES 32
+
+//the maximum file size for the file itself
+//again, extended to the closest power of 2
+#define HIS_LINES_MAX_BYTES 2048
+
+//the amount of glyphs used in the lines, about the same as the amount of bytes
+//char being a byte and all
+#define HIS_LINES_BOX_GLYPHS 2048
+
+//the text box geometry ------------------
+#define BOX_X 20.0f
+#define BOX_Y 130.0f
+#define BOX_W 360.0f
+#define BOX_H 100.0f
+#define BOX_PAD 12.0f //the inset from the window edge to the text on both sides.
