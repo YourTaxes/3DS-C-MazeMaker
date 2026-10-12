@@ -3,6 +3,7 @@
 #include <math.h> //fminf, for fitting an image into a box
 #include <stdlib.h>
 #include "datatypes/level_file.h" //the complete Raw_Level, and the BAKED_* geometry
+#include "utils/loader.h"
 
 
 
@@ -29,59 +30,18 @@ void MakeColors(void){
     Colors[CLR_PINK] = C2D_Color32(255, 175, 175, 255);
 }
 
-//where each ImageSet lives in romfs. designated initializers so the table cannot drift out
-//of step with the enum's order
-static const char* const IMAGE_PATHS[IMAGE_COUNT] = {
-    [IMAGE_OHWELLGUY] = "romfs:/gfx/ohwell.t3x",
-    [IMAGE_REDKEY] = "romfs:/gfx/RedKey.t3x",
-    [IMAGE_GREENKEY] = "romfs:/gfx/GreenKey.t3x",
-    [IMAGE_BLUEKEY] = "romfs:/gfx/BlueKey.t3x",
-    [IMAGE_PINKKEY] = "romfs:/gfx/PinkKey.t3x",
-    [IMAGE_MAKERLOCK] = "romfs:/gfx/makerLock.t3x",
-    [IMAGE_SKLUMBO]   = "romfs:/gfx/sklumbo.t3x",
-};
-_Static_assert(IMAGE_COUNT == 7, "every ImageSet value needs a row in IMAGE_PATHS");
-
 //the loaded art, filled once by LoadImages and good for the rest of the run. each SHEET
 //owns its texture and its subtexture table; the matching C2D_Image is only two pointers
 //into that sheet, so whoever borrows one must never C3D_TexDelete or free it.
 static C2D_SpriteSheet imageSheets[IMAGE_COUNT];
 static C2D_Image       loadedImages[IMAGE_COUNT];
 
-bool getImage(ImageSet curImage, C2D_SpriteSheet* outLevelSheet, C2D_Image* outImage){
-    //start from nothing, so a failure leaves behind nothing that looks freeable
-    *outLevelSheet = NULL;
-    *outImage = (C2D_Image){0};
-
-    if (curImage < 0 || curImage >= IMAGE_COUNT){
-        printConsole("getImage: %d is not an ImageSet", (int)curImage);
-        return false;
-    }
-
-    C2D_SpriteSheet sheet = C2D_SpriteSheetLoad(IMAGE_PATHS[curImage]);
-    if (sheet == NULL){
-        printConsole("getImage: could not load %s", IMAGE_PATHS[curImage]);
-        return false;
-    }
-
-    //a sheet with no images would hand back a C2D_Image full of garbage below
-    if (C2D_SpriteSheetCount(sheet) == 0){
-        printConsole("getImage: %s holds no images", IMAGE_PATHS[curImage]);
-        C2D_SpriteSheetFree(sheet);
-        return false;
-    }
-
-    *outLevelSheet = sheet;
-    *outImage = C2D_SpriteSheetGetImage(sheet, 0); //one image per t3x, so always index 0
-    return true;
-}
-
 bool LoadImages(void){
     bool allLoaded = true;
     for (int i = 0; i < IMAGE_COUNT; i++){
         //keep going past a failure: one missing file should not hide the others, and
-        //getImage already zeroed the slot it could not fill
-        if (!getImage((ImageSet)i, &imageSheets[i], &loadedImages[i])) allLoaded = false;
+        //Image_Load already zeroed the slot it could not fill
+        if (!Image_Load((ImageSet)i, &imageSheets[i], &loadedImages[i])) allLoaded = false;
     }
     return allLoaded;
 }

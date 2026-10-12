@@ -51,22 +51,6 @@ typedef struct Raw_Level Raw_Level;
 #define DEPTH_POPUP  0.6f //a window over the screen, forward of the glass. no user yet
 
 /*
-* loads one ImageSet's t3x out of romfs and hands back both halves of it.
-*
-* *outLevelSheet is the SHEET, which owns the texture and the subtexture table. *outImage is
-* only two pointers into that sheet, so it is valid exactly as long as the sheet is, and it
-* must never be C3D_TexDelete'd or freed.
-*
-* the caller owns *outLevelSheet and has to give it back with C2D_SpriteSheetFree once,
-* after the last draw that touches *outImage. LoadImages is that caller for every image the
-* game ships; this is exposed so a state that wants something big for its own lifetime only
-* can load and free it itself.
-*
-* both outputs are zeroed at entry, so on false there is nothing to free.
-*/
-bool getImage(ImageSet curImage, C2D_SpriteSheet* outLevelSheet, C2D_Image* outImage);
-
-/*
 * loads every ImageSet, once, into graphics.c's globals. call it after romfsInit, since it
 * reads romfs:/gfx, and before any state can draw.
 *
