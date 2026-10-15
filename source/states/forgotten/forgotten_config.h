@@ -13,8 +13,10 @@
 */
 
 #define WORLD_SEAM_Y ((float)TOP_SCREEN_HIGHT) //240, the y value where the screens meet
+#define SCREEN_OVERLAP_DEPTH -10.0f //the amount of space that the 2 screens overlap
 #define WORLD_PX_W ((float)TOP_SCREEN_WIDTH) //400
-#define WORLD_PX_H (WORLD_SEAM_Y * 2.0f) //480, height of both screens
+#define WORLD_PX_H ((float)TOP_SCREEN_HIGHT + (float)BOTTOM_SCREEN_HIGHT - SCREEN_OVERLAP_DEPTH) //470, both screen's hight minus the overlap section
+#define WORLD_BOT_TOP_Y (WORLD_PX_H - (float)BOTTOM_SCREEN_HIGHT) // 230, the world y of the bottom screen's top row
 //the lower screen is 320 wide, and the top is 400, so there is a wall placed on either side of the bottom screen which is 40 px wide.
 #define BOT_INSET (((float)TOP_SCREEN_WIDTH - (float)BOTTOM_SCREEN_WIDTH) / 2.0f)
 #define WALL_T 20.0f //how thick the bounding walls are. 

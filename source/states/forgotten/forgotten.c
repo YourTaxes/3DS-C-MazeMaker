@@ -34,17 +34,17 @@ static Game_Rect SCENE_RECTS[SCENE_RECT_COUNT] = {
         .rect = {.x = -WALL_T, .y = -WALL_T, .width = WORLD_PX_W + 2 * WALL_T, .height = WALL_T},
         .type = WALL },
     [SCENE_RECT_BOUND_LEFT_TOP] = {
-        .rect = {.x = -WALL_T, .y = 0.0f, .width = WALL_T, .height = WORLD_SEAM_Y},
+        .rect = {.x = -WALL_T, .y = 0.0f, .width = WALL_T, .height = WORLD_BOT_TOP_Y},
         .type = WALL },
     [SCENE_RECT_BOUND_RIGHT_TOP] = {
-        .rect = { .x = WORLD_PX_W, .y = 0.0f, .width = WALL_T, .height = WORLD_SEAM_Y},
+        .rect = { .x = WORLD_PX_W, .y = 0.0f, .width = WALL_T, .height = WORLD_BOT_TOP_Y},
         .type = WALL},
     //the bottom screen bounding walls
     [SCENE_RECT_BOUND_LEFT_BOT] = {
-        .rect = { .x = -WALL_T, .y = WORLD_SEAM_Y, .width = BOT_INSET + WALL_T, .height = WORLD_SEAM_Y},
+        .rect = { .x = -WALL_T, .y = WORLD_BOT_TOP_Y, .width = BOT_INSET + WALL_T, .height = WORLD_PX_H - WORLD_BOT_TOP_Y},
         .type = WALL},
     [SCENE_RECT_BOUND_RIGHT_BOT] = {
-        .rect = { .x = WORLD_PX_W - BOT_INSET, .y = WORLD_SEAM_Y, .width = BOT_INSET + WALL_T, .height = WORLD_SEAM_Y},
+        .rect = { .x = WORLD_PX_W - BOT_INSET, .y = WORLD_BOT_TOP_Y, .width = BOT_INSET + WALL_T, .height = WORLD_PX_H - WORLD_BOT_TOP_Y},
         .type = WALL},
     [SCENE_RECT_BOUND_BOTTOM] = {
         .rect = { .x = -WALL_T, .y = WORLD_PX_H, .width = WORLD_PX_W + 2*WALL_T, .height = WALL_T}, 
@@ -72,7 +72,7 @@ static ForgottenState* fgstate;
 
 static inline bool PlayerOnTopScreen(){
     Rect p = playerRect();
-    return p.y + p.height > 0.0f && p.y < WORLD_SEAM_Y;
+    return p.y + p.height > 0.0f && p.y < WORLD_SEAM_Y - SCREEN_OVERLAP_DEPTH;
 }
 
 
@@ -160,10 +160,10 @@ void forgotten_DrawBottom(C3D_RenderTarget* target){
 
     //draw the player, but only if any of the player is lower than the bottom of the top screen
     Rect p = playerRect();
-    if (p.y + p.height > WORLD_SEAM_Y){
+    if (p.y + p.height > WORLD_BOT_TOP_Y){
         //shift the player position from the world space to the screen coordinates
         p.x -= BOT_INSET;
-        p.y -= WORLD_SEAM_Y;
+        p.y -= WORLD_BOT_TOP_Y;
         p.z = LAYER_BASE;
         p.Color = Colors[CLR_LT_GRAY];
         DrawRect(&p);
