@@ -356,7 +356,6 @@ static bool ActionNeedsConfirm(u8 slot){
 //execute curAction on the pending slot, then go back to load action and take down the window
 //this is the only place an action lands. this is called from tapping the slot, or from the last AYS
 //the tail runs once per completed action instead of once per case.
-
 static void CommitAction(){
     Raw_Level* lvl = &lsstate->savfle->Levels[lsstate->pendingSlot];
 
@@ -419,7 +418,7 @@ static void CommitAction(){
 
 
 
-//the callback for the popup for when it is canceled,
+//the callback for the popup for when it is canceled
 static void CanceledAction(){
     printConsole("action %d canceled", lsstate->curAction);
     lsstate->curAction = ACTION_LOAD;
