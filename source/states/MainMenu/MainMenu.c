@@ -155,11 +155,11 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
     }
 
     //move the highlight, wrapping at both ends
-    if (in->kDown & (KEY_UP | KEY_CPAD_UP))
+    if (in->kDown & KEY_UP)
     {
         mmstate->highlight_index = (mmstate->highlight_index + MENU_BUTTON_COUNT - 1) % MENU_BUTTON_COUNT;
     }
-    if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
+    if (in->kDown & KEY_DOWN)
     {
         mmstate->highlight_index = (mmstate->highlight_index + 1) % MENU_BUTTON_COUNT;
     }

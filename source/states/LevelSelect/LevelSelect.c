@@ -553,17 +553,17 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
 
     //left and right walk the row the player is on, wrapping at both ends
     const u8 rowLen = CURSOR_GRID[lsstate->cursorRow].count;
-    if (in->kDown & (KEY_LEFT | KEY_CPAD_LEFT))
+    if (in->kDown & KEY_LEFT)
         lsstate->cursorCol = (lsstate->cursorCol + rowLen - 1) % rowLen;
-    if (in->kDown & (KEY_RIGHT | KEY_CPAD_RIGHT))
+    if (in->kDown & KEY_RIGHT)
         lsstate->cursorCol = (lsstate->cursorCol + 1) % rowLen;
 
     //up and down wrap too, but crossing into or out of the five wide action row has to
     //translate the column, or the cursor would not land under where it started
     u8 newRow = lsstate->cursorRow;
-    if (in->kDown & (KEY_UP | KEY_CPAD_UP))
+    if (in->kDown & KEY_UP)
         newRow = (newRow + CURSOR_ROW_COUNT - 1) % CURSOR_ROW_COUNT;
-    if (in->kDown & (KEY_DOWN | KEY_CPAD_DOWN))
+    if (in->kDown & KEY_DOWN)
         newRow = (newRow + 1) % CURSOR_ROW_COUNT;
 
     if (newRow != lsstate->cursorRow){

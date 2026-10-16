@@ -29,7 +29,7 @@ extern u32 Colors[12];
 */
 void MakeColors(void);
 
-typedef struct{
+typedef struct Rect{
     u32 Color;
     float x;
     float y;

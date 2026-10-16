@@ -1,8 +1,8 @@
 #pragma once
 
-typedef struct {} Rect;
-typedef struct {} FrameInput;
-typedef struct {} C3D_RenderTarget;
+#include "datatypes/game_state.h"
+
+typedef struct Rect Rect;
 
 //this class will be used to define a struct for the menu buttons, 
 //and they will act as a psudo linked list, 
@@ -24,10 +24,12 @@ typedef struct MenuButton{
     //if either of these function pointers are null, then calling them is skipped
     //function pointer to function to call when the button is pressed
     //passes a reference to the current menu button that was clicked, so that it can change itself in it's logic
-    void (clicked_button)(struct MenuButton* self);
+    void (*clicked_button)(struct MenuButton* self);
     //function pointer to function to call when the button is highlighted. 
     //not used in level select or main menu yet, but could be.
-    void (cursor_highlighted)(struct MenuButton* self);
+    void (*cursor_highlighted)(struct MenuButton* self);
+    bool touchable;
+    bool menuable;
 }MenuButton;
 
 //in c file, have a static struct pointer that will hold all of the stuff for this logic.
@@ -45,9 +47,11 @@ typedef struct MenuButton{
 //initalizes the struct that holds all of the info for the menu
 //then, mallocs the list of buttons to the length provided,
 //then, copies everything from the provided list of menuButtons to the newly malloced one
+//IMPORTANT - the menu button's rects should be the rects from the regular rect array used to draw to the scene.
 //then sets the current highlited button to the one that is passed in. 
+//init_selected needs to be a button existing in the init list
 //return true if successfull, return false if anything fails.
-bool menu_nav_init(MenuButton* init_list, int list_len, MenuButton* init_selected);
+bool menu_nav_init(MenuButton* init_list, int list_len, MenuButton* init_selected, bool touch);
 
 
 
@@ -70,7 +74,7 @@ MenuButton* menu_nav_get_highlighted();
 //takes in pointer to said menu button, so it can call cursor highlighted.
 //calls it's cursor_highlighted function, if it has one.
 //also moves the highlight rect to the button, and sizes it correctly.
-void menu_nav_set_selected(MenuButton*);
+//static void menu_nav_set_selected(MenuButton*);
 
 
 
@@ -108,7 +112,8 @@ bool menu_nav_logic(FrameInput* in);
 
 
 //draws the cursor. needs to be called before the actual buttons.
-void menu_nav_draw(C3D_RenderTarget* target);
+//assumes that gpu is setup for 2d
+void menu_nav_draw();
 
 //free function
 //frees the list of buttons, and then frees the struct.
