@@ -24,10 +24,11 @@ typedef struct MenuButton{
     //if either of these function pointers are null, then calling them is skipped
     //function pointer to function to call when the button is pressed
     //passes a reference to the current menu button that was clicked, so that it can change itself in it's logic
-    void (*clicked_button)(struct MenuButton* self);
+    void* (*clicked_button)(struct MenuButton* self);
     //function pointer to function to call when the button is highlighted. 
     //not used in level select or main menu yet, but could be.
     void (*cursor_highlighted)(struct MenuButton* self);
+    int buttonIndex;
     bool touchable;
     bool menuable;
 }MenuButton;
@@ -107,8 +108,11 @@ MenuButton* menu_nav_get_highlighted();
 //if immedieteClick is true or if the player pressed the A button this frame,
 //call the current selected button's clicked_button funciton.
 
-//return true if the menu button changed, and false if it didn't
-bool menu_nav_logic(FrameInput* in);
+//instead of returning a standard value, all function callbacks need to malloc their 
+//return value, and return it as a void pointer, and this returns the pointer,
+//which the user needs to cast back to what it was.
+//IMPORTANT - IT IS THEN ON THE USER TO FREE THE POINTER TO THE RETURN
+void* menu_nav_logic(const FrameInput* in);
 
 
 //draws the cursor. needs to be called before the actual buttons.

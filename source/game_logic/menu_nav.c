@@ -36,7 +36,9 @@ static void set_selected(MenuButton* button){
     mnstate->highlightBox.y = button->curRect->y - HIGHLIGHT_PAD;
     mnstate->highlightBox.height = button->curRect->height + (2 * HIGHLIGHT_PAD);
     mnstate->highlightBox.width = button->curRect->width + (2 * HIGHLIGHT_PAD);
-    mnstate->highlightedButton->cursor_highlighted(mnstate->highlightedButton);
+    if (mnstate->highlightedButton->cursor_highlighted != NULL){
+        mnstate->highlightedButton->cursor_highlighted(mnstate->highlightedButton);
+    }
 }
 
 
@@ -56,11 +58,11 @@ bool menu_nav_init(MenuButton* init_list, int list_len, MenuButton* init_selecte
 
     //init the list of buttons
     mnstate->buttons = malloc(sizeof(MenuButton) * list_len);
-    if (mnstate == NULL){
+    if (mnstate->buttons == NULL){
         free(mnstate);
         return false;
     }
-    memcpy(mnstate->buttons, init_list, list_len);
+    memcpy(mnstate->buttons, init_list, list_len * sizeof(MenuButton));
     mnstate->buttons_length = list_len;
 
     mnstate->highlightBox.Color = Colors[CLR_YELLOW];
@@ -83,9 +85,10 @@ MenuButton* menu_nav_get_highlighted(){
 
 
 
-bool menu_nav_logic(FrameInput* in){
+void* menu_nav_logic(const FrameInput* in){
     MenuButton* nextButton = NULL;
     bool immedieteClick = false;
+    void* returnVal = NULL;
 
     //d and c pad movement 
     //left and right movement
@@ -119,11 +122,12 @@ bool menu_nav_logic(FrameInput* in){
         set_selected(nextButton);
     }
 
-    if (in->kDown & KEY_A || immedieteClick){
-        mnstate->highlightedButton->clicked_button(mnstate->highlightedButton);
+    if (mnstate->highlightedButton->menuable && (in->kDown & KEY_A || immedieteClick)){
+        if (mnstate->highlightedButton->clicked_button != NULL){
+            returnVal = mnstate->highlightedButton->clicked_button(mnstate->highlightedButton);
+        }
     }
-    
-    return nextButton != NULL;
+    return returnVal;
 }
 
 

@@ -2,6 +2,7 @@
 #include "utils/graphics.h"
 #include "utils/debug.h"
 #include "utils/format.h"
+#include "game_logic/menu_nav.h"
 #include <stdlib.h>
 #include <stdio.h> //snprintf, for the slot info lines
 
@@ -36,16 +37,25 @@
 * lives in the executable. It will be eventually loaded into memory, but in all honesty, this alone is fine.
 * it's either here or beind dynamically allocated.
 */
-static const struct {
-    const char* label;
-    Game_State target; //where the button takes you. STATE_QUIT leaves the game
-} MENU_ITEMS[] = {
-    { "Start Maze",   STATE_MAZE_GAME   },
-    { "Start Maker",  STATE_MAZE_MAKER  },
-    { "Save Menu", STATE_SAVE_SELECT },
-    { "Quit Game",    STATE_QUIT        },
+// static const struct {
+//     const char* label;
+//     Game_State target; //where the button takes you. STATE_QUIT leaves the game
+char* MENU_ITEMS[] = {
+    "Start Maze",
+    "Start Maker",
+    "Save Menu",
+    "Quit Game"
 };
-#define MENU_BUTTON_COUNT (sizeof(MENU_ITEMS) / sizeof(MENU_ITEMS[0]))
+
+//enum of button destinations
+typedef enum{
+    MAZE,
+    MAKER,
+    SAVE,
+    QUIT,
+    MENU_BUTTON_COUNT
+} MainMenuButtons;
+
 
 /*
 * everything this state owns while it is active. one allocation in _Init,
@@ -73,6 +83,65 @@ typedef struct {
 } MainMenuState;
 
 static MainMenuState* mmstate; //NULL whenever the state is not active
+
+
+//function for each of the buttons to call when clicked
+void* buttonPressed(MenuButton* self){
+    void* returnVal = malloc(sizeof(Game_State));
+    if (returnVal == NULL){
+        return NULL;
+    }
+    switch(self->buttonIndex){
+        case MAZE:
+            *(Game_State*)returnVal = STATE_MAZE_GAME;
+            break;
+        case MAKER:
+            *(Game_State*)returnVal = STATE_MAZE_MAKER;
+            break;
+        case SAVE:
+            *(Game_State*)returnVal = STATE_SAVE_SELECT;
+            break;
+        case QUIT:
+            *(Game_State*)returnVal = STATE_QUIT;
+            break;
+    }
+    return returnVal;
+}
+
+//create the buttons for the player to interact with
+//called in init to clean up the 
+static void make_buttons(){
+    MenuButton* buttons = calloc(4, sizeof(MenuButton));
+
+    //make the buttons
+    for (int i = 0; i < 4; i++){
+        buttons[i].touchable = true;
+        buttons[i].menuable = true;
+        buttons[i].buttonIndex = i;
+        buttons[i].curRect = &mmstate->rects[i];
+        buttons[i].clicked_button = buttonPressed;
+    }
+
+    //link Maze to it's other buttons
+    buttons[MAZE].up = &buttons[QUIT];
+    buttons[MAZE].down = &buttons[MAKER];
+
+    //link Maker to it's other buttons
+    buttons[MAKER].up = &buttons[MAZE];
+    buttons[MAKER].down = &buttons[SAVE];
+
+    //link Save to it's other buttons
+    buttons[SAVE].up = &buttons[MAKER];
+    buttons[SAVE].down = &buttons[QUIT];
+
+    //link quit to it's other buttons
+    buttons[QUIT].up = &buttons[SAVE];
+    buttons[QUIT].down = &buttons[MAZE];
+
+    menu_nav_init(buttons, 4, &buttons[MAZE], true);
+    free(buttons);
+}
+
 
 
 void MainMenu_Init(GameContext* ctx){
@@ -126,9 +195,13 @@ void MainMenu_Init(GameContext* ctx){
             .height = BUTTON_H,
             .Color = Colors[CLR_DK_GRAY],
         };
-        MakeText(MENU_ITEMS[i].label, &mmstate->menu_text[i], mmstate->textBuf);
+        MakeText(MENU_ITEMS[i], &mmstate->menu_text[i], mmstate->textBuf);
     }
-    mmstate->highlight_index = 0;
+
+    //initalize the buttons
+    make_buttons();
+    
+
 
     if (ctx->rebuildLevel) {
         printConsole("Coalesce the level here");
@@ -154,29 +227,15 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
         return STATE_you_recieved_the_egg; //will be changed later, so that this happens randomly when the player goes out of bounds.
     }
 
-    //move the highlight, wrapping at both ends
-    if (in->kDown & KEY_UP)
-    {
-        mmstate->highlight_index = (mmstate->highlight_index + MENU_BUTTON_COUNT - 1) % MENU_BUTTON_COUNT;
-    }
-    if (in->kDown & KEY_DOWN)
-    {
-        mmstate->highlight_index = (mmstate->highlight_index + 1) % MENU_BUTTON_COUNT;
-    }
-
     //only allow one action per frame. if both happen, then screen touch takes priority
-    for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
-        if (Rect_Tapped(&mmstate->rects[i], in)) {
-            printConsole("player touched \"%s\"", MENU_ITEMS[i].label);
-            return MENU_ITEMS[i].target;
-        }
+    Game_State* returnStatePtr = (Game_State*)menu_nav_logic(in);
+    if (returnStatePtr == NULL){
+        return STATE_NONE;
     }
-    if (in->kDown & KEY_A) {
-        printConsole("player pressed A on \"%s\"", MENU_ITEMS[mmstate->highlight_index].label);
-        return MENU_ITEMS[mmstate->highlight_index].target;
-    }
-
-    return STATE_NONE;
+    Game_State returnState = *returnStatePtr;
+    free(returnStatePtr);
+    
+    return returnState;
 }
 
 void MainMenu_DrawTop(C3D_RenderTarget* target, float eyeOffset){
@@ -209,14 +268,7 @@ void MainMenu_DrawBottom(C3D_RenderTarget* target){
     C2D_TargetClear(target, Colors[CLR_WHITE]);
     C2D_SceneBegin(target);
 
-    //highlight: the selected button's rect, grown by the pad, drawn underneath it
-    Rect highlight = mmstate->rects[mmstate->highlight_index];
-    highlight.x -= HIGHLIGHT_PAD;
-    highlight.y -= HIGHLIGHT_PAD;
-    highlight.width += 2 * HIGHLIGHT_PAD;
-    highlight.height += 2 * HIGHLIGHT_PAD;
-    highlight.Color = Colors[CLR_YELLOW];
-    DrawRect(&highlight);
+    menu_nav_draw();
 
     for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
         DrawRect(&mmstate->rects[i]);
@@ -226,6 +278,7 @@ void MainMenu_DrawBottom(C3D_RenderTarget* target){
 
 
 void MainMenu_End(void){
+    menu_nav_free();
     C2D_TextBufDelete(mmstate->textBuf);
     free(mmstate);
     mmstate = NULL;

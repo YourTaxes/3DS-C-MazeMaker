@@ -4,6 +4,7 @@
 #include "datatypes/save_file.h"
 #include "utils/format.h" //FormatTime, for the best time lines
 #include "utils/popup.h"
+#include "game_logic/menu_nav.h"
 #include <stdlib.h>
 #include <stdio.h> //snprintf, for the slot number labels
 #include <string.h> //memset, to blank a slot on delete
