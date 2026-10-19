@@ -31,6 +31,9 @@
 */
 #define MAIN_MENU_MAX_GLYPHS 256
 
+//forward declarations for function pointers
+static MenuEvent on_menu_button(int index, void* user);
+
 /*
 * the main menu buttons, in top to bottom order. this is the only place a button is
 * defined: init, logic and draw all loop over it. compile time data, so it
@@ -56,6 +59,13 @@ typedef enum{
     MENU_BUTTON_COUNT
 } MainMenuButtons;
 
+static const MenuDef MM_MENU[MENU_BUTTON_COUNT] = {
+    [MAZE] = MENU_BTN(MENU_NONE, MENU_NONE, QUIT, MAKER, on_menu_button),
+    [MAKER] = MENU_BTN(MENU_NONE, MENU_NONE, MAZE, SAVE, on_menu_button),
+    [SAVE] = MENU_BTN(MENU_NONE, MENU_NONE, MAKER, QUIT, on_menu_button),
+    [QUIT] = MENU_BTN(MENU_NONE, MENU_NONE, SAVE, MAZE, on_menu_button),    
+};
+
 
 /*
 * everything this state owns while it is active. one allocation in _Init,
@@ -79,67 +89,37 @@ typedef struct {
     //bottom screen
     C2D_Text menu_text[MENU_BUTTON_COUNT];
     Rect rects[MENU_BUTTON_COUNT];
-    int highlight_index; //index of the highlighted button
+    
+    //the struct that is used by menu_nav to keep track of the menu's state
+    MenuNav* menu;
 } MainMenuState;
 
 static MainMenuState* mmstate; //NULL whenever the state is not active
 
 
-//function for each of the buttons to call when clicked
-void* buttonPressed(MenuButton* self){
-    void* returnVal = malloc(sizeof(Game_State));
-    if (returnVal == NULL){
-        return NULL;
-    }
-    switch(self->buttonIndex){
+//the callback used when a button is pressed
+static MenuEvent on_menu_button(int index, void* user){
+    //cast the user value to the main menu state
+    //I know I could also access it through the global variable that is in this file,
+    //but I am doing it this way to show the features of the menu nav I made. 
+    //MainMenuState* mainMenuState = (MainMenuState*)user;
+    //because this is done, this function does not actually need to exist in this file,
+    //and could be moved to a 'callbacks' file instead
+
+    //however, dispite all my rambling above, it just isn't used anyway.
+    //so nevermind.
+    (void) user;
+    switch(index){
         case MAZE:
-            *(Game_State*)returnVal = STATE_MAZE_GAME;
-            break;
+            return menu_state(STATE_MAZE_GAME);
         case MAKER:
-            *(Game_State*)returnVal = STATE_MAZE_MAKER;
-            break;
+            return menu_state(STATE_MAZE_MAKER);
         case SAVE:
-            *(Game_State*)returnVal = STATE_SAVE_SELECT;
-            break;
+            return menu_state(STATE_SAVE_SELECT);
         case QUIT:
-            *(Game_State*)returnVal = STATE_QUIT;
-            break;
+        return menu_state(STATE_QUIT);
     }
-    return returnVal;
-}
-
-//create the buttons for the player to interact with
-//called in init to clean up the 
-static void make_buttons(){
-    MenuButton* buttons = calloc(4, sizeof(MenuButton));
-
-    //make the buttons
-    for (int i = 0; i < 4; i++){
-        buttons[i].touchable = true;
-        buttons[i].menuable = true;
-        buttons[i].buttonIndex = i;
-        buttons[i].curRect = &mmstate->rects[i];
-        buttons[i].clicked_button = buttonPressed;
-    }
-
-    //link Maze to it's other buttons
-    buttons[MAZE].up = &buttons[QUIT];
-    buttons[MAZE].down = &buttons[MAKER];
-
-    //link Maker to it's other buttons
-    buttons[MAKER].up = &buttons[MAZE];
-    buttons[MAKER].down = &buttons[SAVE];
-
-    //link Save to it's other buttons
-    buttons[SAVE].up = &buttons[MAKER];
-    buttons[SAVE].down = &buttons[QUIT];
-
-    //link quit to it's other buttons
-    buttons[QUIT].up = &buttons[SAVE];
-    buttons[QUIT].down = &buttons[MAZE];
-
-    menu_nav_init(buttons, 4, &buttons[MAZE], true);
-    free(buttons);
+    return menu_handled();
 }
 
 
@@ -199,7 +179,16 @@ void MainMenu_Init(GameContext* ctx){
     }
 
     //initalize the buttons
-    make_buttons();
+    mmstate->menu = menu_nav_init(&(MenuConfig){
+        .buttons = MM_MENU, 
+        .count = MENU_BUTTON_COUNT,
+        .rects = mmstate->rects,
+        .selected = MAZE,
+        .user = mmstate, 
+        .touch = true,
+        .highlightPad = 5.0f,
+        .highlightColor = Colors[CLR_YELLOW],
+    });
     
 
 
@@ -227,15 +216,13 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
         return STATE_you_recieved_the_egg; //will be changed later, so that this happens randomly when the player goes out of bounds.
     }
 
-    //only allow one action per frame. if both happen, then screen touch takes priority
-    Game_State* returnStatePtr = (Game_State*)menu_nav_logic(in);
-    if (returnStatePtr == NULL){
-        return STATE_NONE;
+    //check the menu nav for if the user pressed any buttons
+    //and react accordingly.
+    MenuEvent menu_event = menu_nav_logic(mmstate->menu, in);
+    if (menu_event.kind == MENU_EV_STATE){
+        return menu_event.state;
     }
-    Game_State returnState = *returnStatePtr;
-    free(returnStatePtr);
-    
-    return returnState;
+    return STATE_NONE;
 }
 
 void MainMenu_DrawTop(C3D_RenderTarget* target, float eyeOffset){
@@ -268,7 +255,7 @@ void MainMenu_DrawBottom(C3D_RenderTarget* target){
     C2D_TargetClear(target, Colors[CLR_WHITE]);
     C2D_SceneBegin(target);
 
-    menu_nav_draw();
+    menu_nav_draw(mmstate->menu);
 
     for (int i = 0; i < MENU_BUTTON_COUNT; i++) {
         DrawRect(&mmstate->rects[i]);
@@ -278,7 +265,7 @@ void MainMenu_DrawBottom(C3D_RenderTarget* target){
 
 
 void MainMenu_End(void){
-    menu_nav_free();
+    free(mmstate->menu);
     C2D_TextBufDelete(mmstate->textBuf);
     free(mmstate);
     mmstate = NULL;
