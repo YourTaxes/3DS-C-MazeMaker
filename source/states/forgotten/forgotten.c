@@ -4,6 +4,8 @@
 #include "game_logic/player.h" //init player, set speeed, move player, player rect, free player
 #include "utils/graphics.h"
 #include "utils/debug.h"
+#include "utils/popup.h"
+#include "utils/loader.h"
 #include <stdlib.h>
 
 
@@ -59,17 +61,42 @@ static Game_Rect SCENE_RECTS[SCENE_RECT_COUNT] = {
     };
 
 typedef struct {
+    C2D_TextBuf textBoxBuf;
+    C2D_Text textBoxText[HIS_LINES_MAX_PAGES];
     Game_Rect* SURROUNDING[9];
-    float swayAngle;
+    float swayAngle; 
+    float fadeAlpha; 
+    bool fading; //if the popup is done and the screen is ramping out.
 } ForgottenState;
 
 
 static ForgottenState* fgstate;
 
 
-//Helper functions
+//popup end callback, starts the fade out
+static void StartFade(void){
+    fgstate->fading = true;
+}
 
 
+//checks if the player touched the trigger tile
+static bool TouchedTrigger(const colisionInfo* hit){
+    for (int i = 0; i < 9; i++){
+        if (hit->colidedRect[i] == &SCENE_RECTS[SCENE_RECT_TRIGGER]){
+            return true;
+        }
+    }
+    return false;
+}
+
+//draws the fade to the screen
+static void DrawFade(float w, float h){
+    Rect fade = {.x = 0, .y = 0, .z = LAYER_POPUP, .width = w, .height = h, .Color = C2D_Color32(255, 255, 255, (u8)(fgstate->fadeAlpha * 255.0f))};
+    DrawRect(&fade);
+}
+
+
+//chacks if the player is on the top screen or not
 static inline bool PlayerOnTopScreen(){
     Rect p = playerRect();
     return p.y + p.height > 0.0f && p.y < WORLD_SEAM_Y - SCREEN_OVERLAP_DEPTH;
@@ -103,6 +130,16 @@ void forgotten_Init(GameContext* ctx){
 
     //set the player's starting position
     setPosition(PLAYER_START_X, PLAYER_START_Y);
+
+    //init the popup text
+    fgstate->textBoxBuf = C2D_TextBufNew(HIS_LINES_BOX_GLYPHS);
+    const int pages = Egg_Load(HIS_LINES_PATH, fgstate->textBoxText, HIS_LINES_MAX_PAGES, fgstate->textBoxBuf);
+
+    //init the popup rect
+    const Rect textBox = {.x = BOX_X, .y = BOX_Y, .width = BOX_W, .height = BOX_H, .Color = Colors[CLR_GRAY]};
+
+    //init the popup
+    popup_init(textBox, pages, false, false, BOX_WRAP_W, StartFade, NULL);
 }
 
 
@@ -117,6 +154,21 @@ Game_State forgotten_Logic(const FrameInput* in, GameContext* ctx){
     //update the sway angle, once every frame
     fgstate->swayAngle += SWAY_SPEED;
 
+    //if the popup is up, stop the logic here
+    if (popup_status()){
+        popup_logic(in);
+        return STATE_NONE;
+    }
+    
+    //do the logic for fading the screen after the last line is read
+    if (fgstate->fading){
+        fgstate->fadeAlpha += FADE_SPEED;
+        if (fgstate->fadeAlpha >= 1.0f){
+            return STATE_MAIN_MENU;
+        }
+        return STATE_NONE;
+    }
+
     //set the player's speed based on the circle pad
     setSpeed(in, false);
 
@@ -129,6 +181,10 @@ Game_State forgotten_Logic(const FrameInput* in, GameContext* ctx){
         printConsole("forgotten: player left the play area, direction %d", hit.screenLeaveDirection);
     }
 
+    //check if the player touched the trigger 
+    if (TouchedTrigger(&hit)){
+        popup_start(fgstate->textBoxText);
+    }
 
 
     return STATE_NONE;
@@ -146,8 +202,18 @@ void forgotten_DrawTop(C3D_RenderTarget* target, float eyeOffset){
     Rect p = playerRect();
     scene3d_render(eyeOffset, fgstate->swayAngle, PlayerOnTopScreen() ? &p : NULL);
 
-    //hand the gpu back to citro2d so the bottom screen can render
+    //hand the gpu back to citro2d so the fade and bottom screen can render
     C2D_Prepare();
+
+    //draw the fade
+    SetDepthLayer(eyeOffset, DEPTH_POPUP);
+    popup_draw(target);
+
+    if (fgstate->fading){
+        C2D_ViewReset();
+        DrawFade(TOP_SCREEN_WIDTH, TOP_SCREEN_HIGHT);
+    }
+    C2D_Flush();
 
 }
 
@@ -168,6 +234,11 @@ void forgotten_DrawBottom(C3D_RenderTarget* target){
         p.Color = Colors[CLR_LT_GRAY];
         DrawRect(&p);
     }
+
+    //draw the fade on top of the screen
+    if (fgstate->fading){
+        DrawFade(BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HIGHT);
+    }
 }
 
 //tear down the 3d scene
@@ -178,6 +249,8 @@ void forgotten_End(void){
     }
     free_player();
     scene3d_free();
+    popup_free();
+    C2D_TextBufDelete(fgstate->textBoxBuf);
 
     //do not free surrounding, it is a list of borrowed pointers
     free(fgstate);

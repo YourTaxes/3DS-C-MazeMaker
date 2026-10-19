@@ -124,3 +124,4 @@
 #define BOX_W 360.0f
 #define BOX_H 100.0f
 #define BOX_PAD 12.0f //the inset from the window edge to the text on both sides.
+#define BOX_WRAP_W (BOX_W - 2.0f * BOX_PAD)
