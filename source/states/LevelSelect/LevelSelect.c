@@ -74,6 +74,31 @@ _Static_assert(RECT_DELETE == BOTTOM_RECT_COUNT - 1,
 
 #define AYS_WINDOW_COUNT 3
 
+//forward definitions of functions
+static MenuEvent on_slot(int index, void* user);
+static MenuEvent on_action(int index, void* user);
+static MenuEvent on_back(int index, void* user);
+static void on_hover(int index, void* user);
+
+//the layout of the buttons in the menu
+static const MenuDef LS_MENU[BOTTOM_RECT_COUNT] = {
+    //save slot buttons
+    [RECT_LVL1] = MENU_BTN_FULL(RECT_LVL2, RECT_LVL2, RECT_RENAME, RECT_LVL3, on_slot, on_hover, 0),
+    [RECT_LVL2] = MENU_BTN_FULL(RECT_LVL1, RECT_LVL1, RECT_CLEAR_TIMES, RECT_LVL4, on_slot, on_hover, 0),
+    [RECT_LVL3] = MENU_BTN_FULL(RECT_LVL4, RECT_LVL4, RECT_LVL1, RECT_RENAME, on_slot, on_hover, 0),
+    [RECT_LVL4] = MENU_BTN_FULL(RECT_LVL3, RECT_LVL3, RECT_LVL2, RECT_CLEAR_TIMES, on_slot, on_hover, 0),
+
+    //action buttons
+    [RECT_MAINMENU] = MENU_BTN(RECT_DELETE, RECT_RENAME, RECT_LVL3, RECT_LVL1, on_back),
+    [RECT_RENAME] = MENU_BTN(RECT_MAINMENU, RECT_COPY, RECT_LVL3, RECT_LVL1, on_action),
+    [RECT_COPY] = MENU_BTN(RECT_RENAME, RECT_CLEAR_TIMES, RECT_LVL3, RECT_LVL1, on_action),
+    [RECT_CLEAR_TIMES] = MENU_BTN(RECT_COPY, RECT_DELETE, RECT_LVL4, RECT_LVL2, on_action),
+    [RECT_DELETE] = MENU_BTN(RECT_CLEAR_TIMES, RECT_MAINMENU, RECT_LVL4, RECT_LVL2, on_action),
+
+};
+
+
+
 static const char* const AYS_HEADS[AYS_WINDOW_COUNT] = {
     "Are you sure\nyou want",
     "Are you Really sure\nyou want",
@@ -90,50 +115,19 @@ static const char* const AYS_HEADS[AYS_WINDOW_COUNT] = {
 */
 static const struct {
     const char* label; //drawn on the button, so it carries its own line break
-    const char* name;  //the same button on one line, for the console
     float x;
 } ACTION_BUTTONS[] = {
-    { "Main\nMenu",    "Main Menu",    10 },
-    { "Rename",        "Rename",       70 },
-    { "Copy",          "Copy",        135 },
-    { "Clear\nTimes",  "Clear Times", 200 },
-    { "Delete",        "Delete",      260 },
+    { "Main\nMenu", 10 },
+    { "Rename", 70 },
+    { "Copy", 135 },
+    { "Clear\nTimes", 200 },
+    { "Delete", 260 },
 };
 #define ACTION_BUTTON_COUNT (sizeof(ACTION_BUTTONS) / sizeof(ACTION_BUTTONS[0]))
 _Static_assert(ACTION_BUTTON_COUNT == RECT_DELETE - RECT_MAINMENU + 1,
                "ACTION_BUTTONS must cover RECT_MAINMENU through RECT_DELETE");
 
 
-
-#define CURSOR_ROW_COUNT 3
-#define CURSOR_MAX_COLS 5
-#define ACTION_ROW 2 //special case, 5 buttons in this row
-
-/*
-* the d and circle pad navigation matrix. rows 0 and 1 are the save slots, row 2 is the
-* action row. entries are RectIDs, and count is how far right that row goes, since the
-* rows are not all the same length.
-*/
-static const struct {
-    u8 count;
-    u8 rects[CURSOR_MAX_COLS];
-} CURSOR_GRID[CURSOR_ROW_COUNT] = {
-    { 2, { RECT_LVL1, RECT_LVL2 } },
-    { 2, { RECT_LVL3, RECT_LVL4 } },
-    { 5, { RECT_MAINMENU, RECT_RENAME, RECT_COPY, RECT_CLEAR_TIMES, RECT_DELETE } },
-};
-_Static_assert(RECT_LVL1 == 0 && RECT_LVL4 == SLOT_COUNT - 1,
-               "the four slot rects must lead RectIDs for the hover check to work");
-
-/*
-* the slot rows are two wide and the action row is five, so a vertical move across them
-* translates the column instead of keeping it. the pairs are by what sits under what on
-* screen: slots 1 and 3 are above Rename, slots 2 and 4 are above Clear Times. going the
-* other way, Main Menu, Rename and Copy are all left of the gap between the slot columns,
-* Clear Times and Delete are right of it.
-*/
-static const u8 SLOT_COL_TO_ACTION_COL[2] = { 1, 3 }; //-> RECT_RENAME, RECT_CLEAR_TIMES
-static const u8 ACTION_COL_TO_SLOT_COL[CURSOR_MAX_COLS] = { 0, 0, 0, 1, 1 };
 
 
 
@@ -170,10 +164,6 @@ typedef struct{
     C2D_Text slotStandardLabels[SLOT_COUNT];
     C2D_Text slotHardLabels[SLOT_COUNT];
 
-    //the d pad cursor's place in CURSOR_GRID. starts on slot 1, which the calloc gives free.
-    u8 cursorRow;
-    u8 cursorCol;
-
     //the slot the game currently has loaded, copied off ctx in _Init because _Draw is
     //not handed a GameContext. 0 indexed, and its button is drawn green.
     u8 activeSlot;
@@ -185,6 +175,9 @@ typedef struct{
 
     //holds the pointer to the main game context, which is what holds the currently loaded save files.
     GameContext* ctx;
+
+    //the pointer to the menu navigation handler
+    MenuNav* menu;
 
 
     u8 curAction;    //Load_Action values, cast to u8 to save space
@@ -279,19 +272,7 @@ static void BuildConfirmText(){
     }
 }
 
-//put the cursor on the button the player just touched, so the highlight does not sit
-//somewhere else after a tap. a rect that is not on the grid leaves the cursor alone.
-static void CursorToRect(int rectID){
-    for (int r = 0; r < CURSOR_ROW_COUNT; r++){
-        for (int c = 0; c < CURSOR_GRID[r].count; c++){
-            if (CURSOR_GRID[r].rects[c] == rectID){
-                lsstate->cursorRow = (u8)r;
-                lsstate->cursorCol = (u8)c;
-                return;
-            }
-        }
-    }
-}
+
 
 //reset all of the action buttons to their standard color
 static void ResetActionColors(){
@@ -427,6 +408,58 @@ static void CanceledAction(){
 }
 
 
+//the callback funcitons for the buttons in menuNav
+static MenuEvent on_slot(int index, void* user){
+    //cast user to correct type
+    LevelSelectState* state = (LevelSelectState*)user;
+
+    state->pendingSlot = index; //RECT_LVL1 are in front, so the rect is in this slot
+    if (state->curAction == ACTION_COPY && state->activeSlot == index){
+        printConsole("attemted to copy self");
+        return menu_handled();
+    }
+    if (state->curAction > ACTION_LOAD && state->curAction != ACTION_COPY && state->savfle->Levels[index].empty){
+        printConsole("slot %d is empty, nothing to do", index + 1);
+        return menu_handled();
+    }
+    if (!ActionNeedsConfirm(index)){
+        CommitAction();
+    } else {
+        BuildConfirmText();
+        popup_start(state->aysText);
+    }
+    return menu_handled();
+}
+
+static MenuEvent on_action(int index, void* user){
+    //cast user to correct type
+    LevelSelectState* state = (LevelSelectState*)user;
+
+    //rect RENAME through DELETE run paralel to the action RENAME and DELETE
+    u8 act = index - RECT_MAINMENU; //which of the 4 actions were actually chosen
+    state->curAction = (state->curAction == act) ? ACTION_LOAD : act; // if the same action was chosen a second time, set it to load
+    ResetActionColors();
+    if (state->curAction != ACTION_LOAD){
+        state->bottomRects[index].Color = Colors[CLR_ORANGE];
+    }
+    printConsole("action is now %d", state->curAction);
+    return menu_handled();
+}
+
+static MenuEvent on_back(int index, void* user){
+    (void) index;
+    (void) user;
+    printConsole("Player is going back to main menu from level select");
+    return menu_state(STATE_MAIN_MENU);
+}
+
+static void on_hover(int index, void* user){
+    if (index < SLOT_COUNT){
+        ((LevelSelectState*)user)->curSlotImage = index;
+    }
+}
+
+
 
 void LevelSelect_Init(GameContext* ctx){
     printConsole("init Level Select, %u bytes", (unsigned)sizeof(LevelSelectState));
@@ -470,7 +503,9 @@ void LevelSelect_Init(GameContext* ctx){
 
     //which slot the game is on right now. green on the bottom screen, and the only
     //thing this state reads off the context.
-    lsstate->activeSlot = ctx->curSlot;
+    //first check that the slot is within range, juuuuust in case
+    const int initialSlot = (ctx->curSlot < 0 || ctx->curSlot >= SLOT_COUNT) ? 0 :ctx->curSlot;
+    lsstate->activeSlot = initialSlot;
 
     //the save slot buttons, a 2x2 grid.
     char label[8];
@@ -508,34 +543,49 @@ void LevelSelect_Init(GameContext* ctx){
     const Rect aysBox = {.x = 50, .y = 45, .width = 220, .height = 130, .Color = Colors[CLR_LT_GRAY]};
     popup_init(aysBox, AYS_WINDOW_COUNT, true, true, 0.0f, CommitAction, CanceledAction);
     
+    MenuConfig menu_nav_cfg;
+    menu_nav_cfg.rects = lsstate->bottomRects;
+    menu_nav_cfg.buttons = LS_MENU;
+    menu_nav_cfg.count = BOTTOM_RECT_COUNT;
+    menu_nav_cfg.touch = true;
+    menu_nav_cfg.user = lsstate;
+    menu_nav_cfg.activeKey = KEY_A;
+    menu_nav_cfg.selected = initialSlot;
+    menu_nav_cfg.highlightPad = 5.0f;
+    menu_nav_cfg.highlightColor = Colors[CLR_YELLOW];
+
+    lsstate->menu = menu_nav_init(&menu_nav_cfg);
+
+
 
     
     //the cursor needs no init, the calloc already puts it on row 0 column 0, slot 1
-    lsstate->curSlotImage = ctx->curSlot;
-    switch(ctx->curSlot){
-        case RECT_LVL1:
-            lsstate->cursorCol = 0;
-            lsstate->cursorRow = 0;
-            break;
-        case RECT_LVL2:
-            lsstate->cursorCol = 1;
-            lsstate->cursorRow = 0;
-            break;
-        case RECT_LVL3:
-            lsstate->cursorCol = 0;
-            lsstate->cursorRow = 1;
-            break;
-        case RECT_LVL4:
-            lsstate->cursorCol = 1;
-            lsstate->cursorRow = 1;
-            break;
-        default:
-            lsstate->cursorCol = 0;
-            lsstate->cursorRow = 0;
-            lsstate->curSlotImage = 0;
-            lsstate->activeSlot = 0;
-            break;
-    }
+    // lsstate->curSlotImage = ctx->curSlot;
+    // switch(ctx->curSlot){
+    //     case RECT_LVL1:
+    //         lsstate->cursorCol = 0;
+    //         lsstate->cursorRow = 0;
+    //         break;
+    //     case RECT_LVL2:
+    //         lsstate->cursorCol = 1;
+    //         lsstate->cursorRow = 0;
+    //         break;
+    //     case RECT_LVL3:
+    //         lsstate->cursorCol = 0;
+    //         lsstate->cursorRow = 1;
+    //         break;
+    //     case RECT_LVL4:
+    //         lsstate->cursorCol = 1;
+    //         lsstate->cursorRow = 1;
+    //         break;
+    //     default:
+    //         lsstate->cursorCol = 0;
+    //         lsstate->cursorRow = 0;
+    //         lsstate->curSlotImage = 0;
+    //         lsstate->activeSlot = 0;
+    //         break;
+    // }
+
 
     return;
 }
@@ -550,89 +600,13 @@ Game_State LevelSelect_Logic(const FrameInput* in, GameContext* ctx){
         return STATE_NONE;
     }
 
-
-
-    //left and right walk the row the player is on, wrapping at both ends
-    const u8 rowLen = CURSOR_GRID[lsstate->cursorRow].count;
-    if (in->kDown & KEY_LEFT)
-        lsstate->cursorCol = (lsstate->cursorCol + rowLen - 1) % rowLen;
-    if (in->kDown & KEY_RIGHT)
-        lsstate->cursorCol = (lsstate->cursorCol + 1) % rowLen;
-
-    //up and down wrap too, but crossing into or out of the five wide action row has to
-    //translate the column, or the cursor would not land under where it started
-    u8 newRow = lsstate->cursorRow;
-    if (in->kDown & KEY_UP)
-        newRow = (newRow + CURSOR_ROW_COUNT - 1) % CURSOR_ROW_COUNT;
-    if (in->kDown & KEY_DOWN)
-        newRow = (newRow + 1) % CURSOR_ROW_COUNT;
-
-    if (newRow != lsstate->cursorRow){
-        if (newRow == ACTION_ROW)
-            lsstate->cursorCol = SLOT_COL_TO_ACTION_COL[lsstate->cursorCol];
-        else if (lsstate->cursorRow == ACTION_ROW)
-            lsstate->cursorCol = ACTION_COL_TO_SLOT_COL[lsstate->cursorCol];
-        //slot row to slot row keeps the column, both of those rows are the same width
-        lsstate->cursorRow = newRow;
+    MenuEvent menu_event = menu_nav_logic(lsstate->menu, in);
+    //this should only happen when the main menu button is pressed.
+    if (menu_event.kind == MENU_EV_STATE){
+        return menu_event.state;
     }
 
-    //only allow one action per frame. if both happen, then screen touch takes priority
-    int pressed = -1;
-    for (int i = RECT_LVL1; i <= RECT_DELETE; i++){
-        if (Rect_Tapped(&lsstate->bottomRects[i], in)){
-            pressed = i;
-            break;
-        }
-    }
-    if (pressed >= 0){
-        CursorToRect(pressed); //the highlight follows the finger
-    } else if (in->kDown & KEY_A){
-        pressed = CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol];
-    }
-
-    //the top screen preview follows the cursor, so moving onto a slot with the d pad shows
-    //that slot's level. a tap lands here too, because CursorToRect just put the cursor on it.
-    u8 hovered = CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol];
-    if (hovered < SLOT_COUNT) lsstate->curSlotImage = hovered; //RECT_LVL1..4 lead the enum
-
-    switch (pressed){
-        case RECT_LVL1:
-        case RECT_LVL2:
-        case RECT_LVL3:
-        case RECT_LVL4:
-            lsstate->pendingSlot = pressed; //RECT_LVL1 - 4 are in front, so the rect is the slot.
-            if (lsstate->curAction == ACTION_COPY && lsstate->activeSlot == pressed)
-                break; //copying a slot onto itself
-            if (lsstate->curAction > ACTION_LOAD && lsstate->curAction != ACTION_COPY && lsstate->savfle->Levels[pressed].empty){
-                printConsole("slot %d is empty, nothing to do", pressed + 1);
-                break;
-            }
-            //check if the action requires an are you sure
-            if (!ActionNeedsConfirm(pressed)){
-                CommitAction();
-            } else {
-                //starts the are you sure
-                BuildConfirmText();
-                popup_start(lsstate->aysText);
-            }
-            break;
-        case RECT_MAINMENU:
-            printConsole("player is going back to main menu from level select");
-            return STATE_MAIN_MENU;
-
-        case RECT_RENAME:      
-        case RECT_COPY:
-        case RECT_CLEAR_TIMES:
-        case RECT_DELETE:
-            //Rect RENAME through DELETE runs paralel to the action RENAME and DELETE
-            u8 act = pressed - RECT_MAINMENU; // which of the 4 actions were actually chosen
-            lsstate->curAction = (lsstate->curAction == act) ? ACTION_LOAD : act; //if the same action was chosen again, then set it to load
-            ResetActionColors();
-            if (lsstate->curAction != ACTION_LOAD) lsstate->bottomRects[pressed].Color = Colors[CLR_ORANGE];
-            printConsole("action is now %d", lsstate->curAction);
-            break;
-        default: break; //-1, nothing was pressed this frame
-    }
+    
 
     //do state exit logic (only way to leave is to go back to main menu)
     //if player pressed b or touched Main Menu button or clicked on it, return STATE_MAINMENU
@@ -689,13 +663,8 @@ void LevelSelect_DrawBottom(C3D_RenderTarget* target){
     C2D_SceneBegin(target);
 
     //highlight: the cursor's rect, grown by the pad, drawn first so it sits underneath
-    Rect highlight = lsstate->bottomRects[CURSOR_GRID[lsstate->cursorRow].rects[lsstate->cursorCol]];
-    highlight.x -= HIGHLIGHT_PAD;
-    highlight.y -= HIGHLIGHT_PAD;
-    highlight.width += 2 * HIGHLIGHT_PAD;
-    highlight.height += 2 * HIGHLIGHT_PAD;
-    highlight.Color = Colors[CLR_YELLOW];
-    DrawRect(&highlight);
+    menu_nav_draw(lsstate->menu);
+
 
     //every rect carries its own fill color from _Init, so the active slot comes out
     //green here without a special case
@@ -732,6 +701,8 @@ void LevelSelect_End(void){
 
     //free the popup
     popup_free();
+
+    
 
     C2D_TextBufDelete(lsstate->textBuf);
     C2D_TextBufDelete(lsstate->nameBuf);

@@ -143,7 +143,7 @@ MenuNav* menu_nav_init(const MenuConfig* cfg){
     menu->buttons = cfg->buttons;
     menu->rects = cfg->rects;
     menu->user = cfg->user;
-    menu->highlightColor = cfg->highlightColor != 0 ? cfg->highlightColor : Colors[CLR_YELLOW];
+    menu->highlightColor = cfg->highlightColor; //required
     menu->highlightPad = cfg->highlightPad > 0.0f ? cfg->highlightPad : MENU_DEFAULT_PAD;
     menu->activeKey = cfg->activeKey != 0 ? cfg->activeKey : MENU_DEFAULT_ACTIVE_KEY;
     menu->count = cfg->count;
