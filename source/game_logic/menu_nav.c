@@ -8,11 +8,6 @@
 
 //defines 
 
-//highlight dimensions
-#define MENU_DEFAULT_PAD 5.0f
-
-#define MENU_MAX_BUTTON
-
 
 //MenuDir is used as an index into 3 things that have to agree,
 //DIR_KEYS below, MenuDef's link[], and MenuDef's named left/right/up/down.
@@ -42,6 +37,8 @@ struct MenuNav {
     void* user; //the pointer to the state struct or anything else the callbacks need
     u32 highlightColor;
     float highlightPad;
+    u32 disabledColor;
+    u32 standardColor;
     u32 activeKey; //the key mask that will register a click
     int count; //the amount of buttons
     int selected; //the index of the currently selected button
@@ -94,16 +91,7 @@ static int step(const MenuNav* menu, int from, MenuDir dir){
     return from;
 }
 
-//moves the highliht to the given button
-static void select_index(MenuNav* menu, int index){
-    menu->selected = index;
-    const MenuHighlight hover = menu->buttons[index].on_highlight;
-    //check if the on highlight exists before calling it
-    if (hover != NULL){
-        hover(index, menu->user);
-    }
-    printConsole("selected index %d", menu->selected);
-}
+
 
 static void build_highlight_rect(MenuNav* menu){
     menu->highlightRect.Color = menu->highlightColor;
@@ -114,6 +102,18 @@ static void build_highlight_rect(MenuNav* menu){
     menu->highlightRect.height = menu->rects[menu->selected].height + 2.0f * menu->highlightPad;
 
     printConsole("selected rect y is %.2f, hightlight rect y is %.2f", menu->rects[menu->selected].y, menu->highlightRect.y);
+}
+
+//moves the highliht to the given button
+static void select_index(MenuNav* menu, int index){
+    menu->selected = index;
+    const MenuHighlight hover = menu->buttons[index].on_highlight;
+    //check if the on highlight exists before calling it
+    if (hover != NULL){
+        hover(index, menu->user);
+    }
+    build_highlight_rect(menu);
+    printConsole("selected index %d", menu->selected);
 }
 
 
@@ -141,13 +141,15 @@ MenuNav* menu_nav_init(const MenuConfig* cfg){
     }
 
     menu->buttons = cfg->buttons;
-    menu->rects = cfg->rects;
+    menu->rects = cfg->rects; 
     menu->user = cfg->user;
-    menu->highlightColor = cfg->highlightColor; //required
-    menu->highlightPad = cfg->highlightPad > 0.0f ? cfg->highlightPad : MENU_DEFAULT_PAD;
-    menu->activeKey = cfg->activeKey != 0 ? cfg->activeKey : MENU_DEFAULT_ACTIVE_KEY;
-    menu->count = cfg->count;
+    menu->highlightColor = cfg->highlightColor; 
+    menu->highlightPad = cfg->highlightPad;
+    menu->activeKey = cfg->activeKey; 
+    menu->count = cfg->count; 
     menu->touch = cfg->touch;
+    menu->disabledColor = cfg->disabledColor;
+    menu->standardColor = cfg->standard_color;
     menu->selected = 0;
     memset(menu->live, MENU_BTN_NORMAL, (size_t)cfg->count); //nothing disabled to start
 
@@ -218,7 +220,6 @@ MenuEvent menu_nav_logic(MenuNav* menu, const FrameInput* in){
         select_index(menu, curBtn);
         event.kind = MENU_EV_MOVED;
         event.button = menu->selected;
-        build_highlight_rect(menu);
     }
 
 
@@ -261,14 +262,27 @@ void menu_nav_select(MenuNav* menu, int index){
     select_index(menu, index);
 }
 
-void menu_nav_set_enabled(MenuNav* menu, int index, bool on){
+u8 menu_nav_get_flags(MenuNav* menu, int index){
+    if (menu == NULL || index < 0 || index >= menu->count){
+        return 0;
+    }
+    return button_flags(menu, index);
+}
+
+void menu_nav_set_flags(MenuNav* menu, int index, u8 flags){
     if (menu == NULL || index < 0 || index >= menu->count){
         return;
     }
+}
+    
+    
+void menu_nav_set_enabled(MenuNav* menu, int index, bool on, bool changeColor){
     if (on){
         menu->live[index] &= (u8)~MENU_BTN_DISABLED;
+        menu->rects->Color = changeColor ? menu->standardColor : menu->rects->Color;
     } else {
         menu->live[index] |= (u8)MENU_BTN_DISABLED;
+        menu->rects->Color = changeColor ? menu->disabledColor : menu->rects->Color;
     }
 }
 
@@ -393,13 +407,4 @@ void menu_nav_set_enabled(MenuNav* menu, int index, bool on){
 
 // void menu_nav_draw(){
 //     DrawRect(&mnstate->highlightBox);
-// }
-
-
-// //can be called at any point, as the rects are owned by the caller
-// void menu_nav_free(){
-//     //free the buttons 
-//     free(mnstate->buttons);
-//     //free the struct
-//     free(mnstate);
-// }
+    // }

@@ -702,6 +702,8 @@ void LevelSelect_End(void){
     //free the popup
     popup_free();
 
+    free(lsstate->menu);
+
     
 
     C2D_TextBufDelete(lsstate->textBuf);

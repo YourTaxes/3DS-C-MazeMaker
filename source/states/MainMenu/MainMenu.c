@@ -179,18 +179,31 @@ void MainMenu_Init(GameContext* ctx){
     }
 
     //initalize the buttons
-    mmstate->menu = menu_nav_init(&(MenuConfig){
-        .buttons = MM_MENU, 
-        .count = MENU_BUTTON_COUNT,
-        .rects = mmstate->rects,
-        .selected = MAZE,
-        .user = mmstate, 
-        .touch = true,
-        .highlightPad = 5.0f,
-        .highlightColor = Colors[CLR_YELLOW],
-    });
-    
+    MenuConfig menu_cfg;
+    menu_cfg.buttons = MM_MENU;
+    menu_cfg.count = MENU_BUTTON_COUNT;
+    menu_cfg.rects = mmstate->rects;
+    menu_cfg.selected = MAZE;
+    menu_cfg.activeKey = KEY_A;
+    menu_cfg.user = mmstate;
+    menu_cfg.touch = true;
+    menu_cfg.highlightPad = 5.0f;
+    menu_cfg.highlightColor = Colors[CLR_YELLOW];
+    menu_cfg.disabledColor = Colors[CLR_BLACK];
+    menu_cfg.standard_color = Colors[CLR_DK_GRAY];
 
+    mmstate->menu = menu_nav_init(&menu_cfg);
+
+    //if the current save is empty, then it should skip coalescing, 
+    //and the main game should be unavalible.
+    if (ctx->rawLvl->empty){
+        menu_nav_select(mmstate->menu, MAKER);
+        printConsole("selected button is %d", menu_nav_selected(mmstate->menu));
+        menu_nav_set_enabled(mmstate->menu, MAZE, false, true);
+        ctx->rebuildLevel = false;
+        return;
+    }
+    
 
     if (ctx->rebuildLevel) {
         printConsole("Coalesce the level here");

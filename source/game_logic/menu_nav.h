@@ -51,8 +51,6 @@ typedef struct MenuNav MenuNav;
 //but I am making it extendable so that it could be used in things like the maker and other things,
 //including other 3ds projects.
 
-//the default action key
-#define MENU_DEFAULT_ACTIVE_KEY KEY_A
 
 //standin for no link at a position, because 0 is taken already as an index
 #define MENU_NONE -1
@@ -148,15 +146,18 @@ typedef struct {
 
 
 //the configurations for this instance of the menu
+//ALL FIELDS REQUIRED
 typedef struct {
-    const MenuDef* buttons; //required, must outlive the menu, so it is static or malloced.
-    int count; //required, no limit, but must be at least 1
-    Rect* rects; //required. 'count' many contiguous rects, owned by caller, used for touch detection and drawing the highlight
-    int selected; //the index of the initial highlighted button. out of range is clamped to 0
+    const MenuDef* buttons; // must outlive the menu, so it is static or malloced.
+    Rect* rects; // 'count' many contiguous rects, owned by caller, used for touch detection and drawing the highlight
     void* user; //handed to every callback, it is intended to be used as the way that the callbacks reference and modify the current state's global struct, but could hold anything.
     u32 highlightColor; //the color of the highlight rect
-    float highlightPad; //the amount of padding the highlight rect has
+    u32 disabledColor;
+    u32 standard_color;
     u32 activeKey; //the key that is used to denote when a button is pressed.
+    float highlightPad; //the amount of padding the highlight rect has
+    int count; // no limit, but must be at least 1
+    int selected; //the index of the initial highlighted button. out of range is clamped to 0
     bool touch; //if false, the touch screen is ignored entirely. this is required if buttons are only on the top screen
 } MenuConfig;
 
@@ -180,9 +181,23 @@ void menu_nav_draw(const MenuNav* menu);
 
 
 //getters and setters, used internally for convienience, but mainly made for the caller's logic to affect the menu
-int menu_nav_selected(const MenuNav* menu); //MENU_NONE if m is NULL
-void menu_nav_select(MenuNav* menu, int index); //moves the highlight to the index, fires on_highlight
-void menu_nav_set_enabled(MenuNav* menu, int index, bool on); //runtime disable, both input paths, used for greying out a button or somehthing
+
+//gets the currently sected index
+//MENU_NONE if m is NULL
+int menu_nav_selected(const MenuNav* menu); 
+
+//sets the currently selected index, moves the higlight there, and fires on_highlight
+void menu_nav_select(MenuNav* menu, int index); 
+
+//get the flags, so that they can be edited and then set back.
+u8 menu_nav_get_flags(MenuNav* menu, int index);
+
+//allows disabling buttons at runtime
+void menu_nav_set_flags(MenuNav* menu, int index, u8 flags); 
+
+//runtime disable, both input paths, used for greying out a button and disabling it
+//the color changing can be disabled to not mess with a state having different settings.
+void menu_nav_set_enabled(MenuNav* menu, int index, bool on, bool changeColor); 
 
 
 //The return value constructors that the click handler uses, one per union member
