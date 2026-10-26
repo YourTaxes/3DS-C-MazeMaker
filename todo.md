@@ -1,5 +1,7 @@
 ### Todo list
 
+## THIS LIST IS OBSOLETE. THE DESIGN STRUCTURE IS MUCH MORE UP TO DATE
+
 ## setup for both screens - DONE
 * create 2 main files in different folders, one with only the top screen, with: - DONE
     * a top display and bottom terminal - DONE
@@ -22,9 +24,7 @@
 
 
 ## Top screen todos
-* Port over the basic movement for the player - make them controlled by the circle pad and d pad
-* make player colision with "colide obj" struct, which should hold all of the information needed for each of the rectangles.
-* make a version of the draw rectangle funciton that takes a "collide obj" as a perameter and draws the collide obj
+* Port over the basic movement for the player - make them controlled by the circle pad and d pad - done
 * make the keys and doors.
 * import the graphics and music, - make sure these load when the game starts.
 * make hard mode
@@ -42,16 +42,11 @@ and when you walk out of the room, you are transported to the saved location you
 
 
 ## Bottom screen todos
-* DOWNLOAD ASPRITE TO CREATE UI
-* make a struct called "button_rect", that stores a rectangle, and is added to a hash set, and every frame this set is looped through, and each one is checked to see if it is being touched.
-* make an enum called "Screen State" which stores the current state of the bottom screen, either "MAIN_MENU", "MAKER", "SELECT_MAP", and "PLAYING"
-* make a map select screen, which only allows you to choose beteween 4 slots, which are stored in your save data
+* make a map select screen, which only allows you to choose beteween 4 slots, which are stored in your save data - done
 * in playing mode, there should be the timer display, the keys display, the map display, and the controls display.
 * make the grid of tiles you can click.
 * make a pallet with 6 buttons with text along the bottom of the maker screen, with 2 arrow buttons and a page number in between. for ease of use, the button_rect objects should be stored in a list of arrays, with each array being 6 long and holding the buttons. this should be hardcoded, and easily be able to be added to. 
 
-## Backend
-* make it so that when you compile a level, it coaleses blocks in it's row, or makes the actual count of wall tiles as small as possible. 
 
 
 Notes -

@@ -2,7 +2,7 @@
 #include "utils/graphics.h"
 #include "utils/debug.h"
 #include "utils/format.h"
-#include "game_logic/menu_nav.h"
+#include "menu_navigation/menu_nav.h"
 #include <stdlib.h>
 #include <stdio.h> //snprintf, for the slot info lines
 

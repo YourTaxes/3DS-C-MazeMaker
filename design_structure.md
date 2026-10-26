@@ -5,6 +5,8 @@
 * source/datatypes/ - the structs the whole game shares, and the code that reads and writes them. game_state.h, level_file.h, save_file.h/.c.
 * source/utils/ - stateless helpers.
 * source/states/<Name>/ - one folder per state: its four functions plus anything only that state uses, eg maze game logic.
+* source/menu_navigation/ - all of the logic for the buttons in the menus.
+* source/game_logic/ - all of the special logic for the act of actually playing the maze game.
 * the Makefile lists every one of these folders in SOURCES and source/ in INCLUDES. 
 * important, cant't make files that have the same name.
 
@@ -57,13 +59,23 @@ This file holds only the main loop. it chooses what state's files to run based o
 ## SHARED FILES
 each one is named for what it holds. the arrows only point one way: debug <- input <- graphics, game_state <- (input, level_file), and save_file <- (level_file, debug). nothing includes something that includes it back. states include these; these never include a state.
 * utils/debug.h/.c - printConsole (stderr to the debugger) and ToBinary. no game knowledge.
+
 * utils/input.h/.c - FrameInput, Input_Read, normalizeCirclePad, printInputs, GetKeyboard. the only place the hid is read.
+
 * utils/format.h/.c - FormatTime (seconds -> mm:ss:mmm, minutes never clamped, negatives treated as 0) and TIME_STR_LEN. converts to whole milliseconds and formats integers only, so no %f ever reaches printf.
+
 * utils/graphics.h/.c - screen size defines, Colors[] / MakeColors, Rect + DrawRect / Rect_Contains / Rect_Tapped, MakeText / DrawTextCentered / DrawTextInRect.
+
 * datatypes/game_state.h - Game_State enum, GameContext, StateFns. header only, this is the contract every state file implements.
+
 * datatypes/level_file.h - tile / level / save file structs and their sizes. header only. inside Raw_Level each best time is kept immediately before its own valid flag, so SaveFile_WriteSlotTime can write the time and the flag in one go. _Static_asserts in save_file.c break the build if that order is disturbed.
-* datatypes/save_file.h/.c - the only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime(slot, hardMode, time) (game, new best time: writes that one time and marks it valid). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
-* when the maker palette needs a generic Button (rect + label + action), it should go in a new utils/ui.h/.c on top of graphics.h rather than growing graphics.h.
+
+* datatypes/save_file.h/.c - The only place the SD card is touched. path is sdmc:/3ds/MazeMaker/save.bin. SaveFile_Ensure (boot check / create), SaveFile_Read / SaveFile_Write (whole file, level select), SaveFile_ReadSlot (boot), SaveFile_WriteSlot (maker save), SaveFile_WriteSlotTime(slot, hardMode, time) (game, new best time: writes that one time and marks it valid). the slot functions seek to just that slot, so the rest of the file is never loaded or touched.
+
+* utils/popup.h/c - Reusable instance of the are you sure popup. used in level select before destructive actions. planned to be used in the same way later in the maker.
+
+* menu_navigation/menu_nav.h/c - the (far too object oriented) system for determining player input in relation to the menus. currently supports touchscreen and keys in tandem, and has callback support for what to do when buttons are interacted with. Planned feature next is to move it to a handler that handles multiple menus on the same screen at the same time. 
+
 
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
 every state file provides the same four functions, with the same signatures, so main can hold them in the StateFns table (game_state.h). main guarantees the order: init, then logic/draw every frame, then end. exactly once each.
@@ -105,19 +117,20 @@ this file will load the currently selected save slot, and allow for switching to
 * MAIN_MENU_MAX_GLYPHS is 256. every character a state parses takes a slot (citro2d only treats '\n' specially, spaces included), and the worst case here is 179, mostly the 32 char level name and the two time lines. if a line is added, recount and round up to the next power of two.
 
 * MainMenu_Init(GameContext* ctx):
-    * calloc s, make the text buf, parse all text, fill the button rects from the layout defines, cur = 0
+    * calloc s, make the text buf, parse all text, fill the button rects from the layout defines, initialize the menu_nav struct.
     * build the four slot info lines from ctx->curSlot and ctx->rawLvl into local char buffers, then MakeText each one. the buffers are locals because C2D_TextParse copies the glyphs into textBuf, so nothing has to outlive Init. this is also why the block refreshes for free: main runs Init again on every entry to the state, so coming back from the save menu shows the new slot.
         * line 1, always: "Slot N", with N as curSlot + 1 so the player sees 1-4, not 0-3.
         * line 2: "Name: Empty" on an empty slot, otherwise "Name: " and the level name. the name is printed with a precision of LEVEL_NAME_MAX_LEN, since levelName is a fixed char[32] that a full length rename leaves unterminated.
         * lines 3 and 4: "Best Standard Time: " and "Best Hard Time: ", each followed by FormatTime of the matching time, or "No time yet" when its valid flag is false.
         * on an empty slot, line 3 is "Empty level, no best times" instead and drawHardTime is false, so line 4 is not drawn at all. (drawing is skipped rather than parsing an empty string, which would trip a MakeText log line.)
+    * if the current slot is empty, then grey out the maze game button, and return here.
     * if ctx->rebuildLevel is true, then rebuild the Built_Level from the Raw_Level and clear the flag.
         * have not determined the logic for this yet, but it should be done here.
 
 * MainMenu_Logic(const FrameInput* in, GameContext* ctx):
     * L goes to the debug state (THIS IS DEBUG AND WILL BE CHANGED LATER)
-    * up/down on the d pad or circle pad move cur, wrapping at both ends.
-    * at most one button acts per frame: first check Rect_Tapped on each button in order and return that button's target; otherwise if A was pressed return MENU_ITEMS[cur].target. a tap wins over A if both happen at once.
+    * R goes somewhere special.
+    * do the call the menu_nav logic here, return what it gave, 
     * otherwise return STATE_NONE.
 
 * MainMenu_Draw(C3D_RenderTarget* top, C3D_RenderTarget* bottom):
@@ -125,7 +138,7 @@ this file will load the currently selected save slot, and allow for switching to
     * bottom screen: the highlight (the selected button's rect grown by HIGHLIGHT_PAD, drawn first so it sits underneath), then each button rect with its label centered in it (DrawTextInRect).
     * (the earlier plan had 3 buttons plus a "press start to exit" message. there are now 4 buttons including Quit; START still exits from anywhere.)
 
-* MainMenu_End(void): delete the text buf, free s, s = NULL.
+* MainMenu_End(void): delete the text buf, free menu_nav, free s, s = NULL.
 
 ## MEMORY LEAK TEST. 
 * temporarily set main menu to go to the game screen always, not just on A press.
@@ -146,10 +159,9 @@ this file will load the currently selected save slot, and allow for switching to
 * action has 3 values LOAD, RENAME, COPY, DELETE
 * are you sure has values NONE, AYS1, AYS2, AYS3
 * this will consist of 4 buttons in the middle of the screen, with text below them showing their names. 
-* STRETCH GOAL - as part of compilation, create a static png of the entire level(all screens), and have that png be shown on the button.
-* in the bottom left corner of the screen, there should be 2 small buttons, 
+* on load, create a static png of the entire level(all screens), and have that png be shown when the button is highlighted.
+* in the bottom left corner of the screen, there should be small buttons, 
 "rename" "copy" and "delete"
-* the 3 buttons for rename copy and delete are replaced by 1 button called cancel when action is not LOAD. 
 * when rename is pressed, the Action is set to rename. this puts the state in rename mode, where interacting with the save slot buttons will instead bring up a keyboard and allow the player to rename the save.
 * when delete is pressed, it sets action to delete. when action is DELETE, the when the player presses the save, they get an are you sure, then another are you sure, then another. (keep track of these with the enum AYS). pressing B or no at any time during the are you sures will result in AYS being set to NONE, and the delete is cancled. if the AYS goes through, (yes pressed while AYS = AYS3) then the file is wiped, and the save's empty bool is set to true.
 * if the player tries to delete a level that is already empty, nothing happens.
@@ -163,19 +175,11 @@ this file will load the currently selected save slot, and allow for switching to
 * when the player presses B in an are you sure section, then the are you sure is set to no and ends then the action is set to load, if they were already in the load action, then they go back to the main menu.
 
 
-* there should still be dpad option for this menu. the buttons should be stored in a matrix, arranged as
-[level1, level2],
-[level3, level4],
-[MainMenu, rename, copy, clear_times, delete],
-and the cursor starts on the level 1 spot, and when left and right are pressed, then the current button moves to the left or right, and loops around if it goes off an edge, and when up and down are pressed, the current button moves up or down and loops around like the main menu, but without the enum, and only keeping track of max hight.
-
-
-
 
 
 
 ## Maze Game - states/Maze/
-* IMPORTANT IDEA FROM KELIN - ONLY CHECK COLISION WITH TILES WITHIN 1 TILE UNIT OF THE PLAYER.
+* IMPORTANT IDEA FROM KELIN - ONLY CHECK COLISION WITH TILES WITHIN 1 TILE UNIT OF THE PLAYER. (or more if the player is bigger than 1 tile)
     * if player is in [1, 1], check colision with [0,0], [1,0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 1]. 
     * keep track of what cordanate grid space the player is in by dividing their cordinates by the length of a tile. 
     * using this strategy, it may not be needed to compile the levels in the way specified before, as all of the blocks could then be drawn regularly, as the 3ds can handle a lot of blocks. 
@@ -204,12 +208,17 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 
 ## Maze Maker - states/Maker/
-* When in the actual maze maker, DO NOT DRAW THE ENTIRE TOP SCREEN EVERY FRAME, to save preformance. instead, in the struct of state vars, keep a boolean for all 9 rooms for if they need to be drawn this frame. in init initalize all of these to true.
-    * in Draw, check each of these individually, and if one is true, clear and 
+* When in the actual maze maker, DO NOT REBUILD THE ENTIRE TOP SCREEN EVERY FRAME, to save preformance.
 
-* Automatically save the raw level when the player leaves the Maker
+* When the player presses Y in the maker, save the slot.s
 
-* press x in the maker, and the the keyboard comes up and the player can enter the name for their level. it is only written to the level in memory, not in storage.
+* press x in the maker, and the the keyboard comes up and the player can enter the name for their level. it is only written to the level in memory, not in storage, so it needs to be saved.
+
+* player presses b, they go to the main menu, presses L, go to level select
+
+* if the player presses ZL/ZR, then they cycle through the pallete.
+
+* if the player tries to leave to the level select or the main menu, but has not saved, then bring up a popup asking if they want to save.
 
 * there needs to be a system to make sure that the player does not place more than 2 of each type of portal.
 
@@ -233,8 +242,42 @@ and the cursor starts on the level 1 spot, and when left and right are pressed, 
 
 * look into the stensil buffer to get the effect of the tree being outlined red.
 
-* i need to make a cover of the egg room theme, and play it here
+* I need to make a cover of the egg room theme, and play it here
 
 
 
 * EXTREMELY IMPORTANT - NEED TO NORMALIZE THE DPAD INPUT
+
+
+
+
+
+
+
+
+## Menu Navigation
+
+* Updates and future functions
+    
+    * A toggle (draggable) in the menu_nav/cfg that indicates if the given menu accepts drag inputs, effectively changes instances of in->kDown & KEY_TOUCH to in->kHeld & KEY_TOUCH.
+
+    
+* BIGGEST UPDATE - MULTI MENU STRUCT SYNC
+    * every menu_nav/menu_cfg needs to have 4 menuDef pointers that are defined as the "enterUp, enterRight, enterDown, enterLeft", which are the buttons that will be set as selected when context moves to that menu.
+
+    * another thing that needs to be added to the menu_nav struct is 4 pointers to the different structs, depending on what side of the menu they are on. they will be "nav_up, nav_right, nav_down, nav_left". they will be set with a helper function after the creation of the menus, because all the menus need to exist before linking.
+
+    * there needs to be 4 new public helper functions "menu_nav_enter_from_side(MenuNav* menu, int side)" that tells a menu that context came to it, and to set it's selected to the enter{side} pointer.
+
+    * for exiting via buttons (pretty simple), there will be 4 new button indexes (exitUp = -2, exitRight = -3, exitDown = -4, exitLeft = -5). when one of these new buttons is selected, then that signifies that the context is being switched to a different menu, and the menu in the corresponding direction pointer will have "enter{opposite_dir}" called on it (because from it's point of view they are the opposite direction in relation). then the current menu will set it's selected to MENU_NONE.
+
+    * in menu_logic, if selected == MENU_NONE, then do not do any logic in relation to the keys, only check for touchscreen input, the methods for doing the touchscreen input will be done later.
+
+    * in menu_draw, if selected == MENU_NONE, return early.
+
+    * menu_nav/cfg most likely needs to have a boolean "last_used", which would act almost like the opposite of least recently used. 
+
+    * There will need to be a new file and struct and helper functions to handle the touchscreen syncing accross menus. it will need a reference to all of the menus, so it can determine which one is currently in context.
+        * it will be the one that the user actually calls, and they pass in an array of menunavcfg structs, and the num of menus.
+
+* 
