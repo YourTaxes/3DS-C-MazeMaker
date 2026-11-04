@@ -90,6 +90,12 @@ static inline void setTile(Raw_Screen* screen, int y, int x, Tile_Type tile){
 //int a = sizeof(Raw_Screen);
 //int b = sizeof(double);
 
+//the arrangement of the 2 best times and their valid bits
+typedef struct {
+    float bestTime;
+    bool timeValid;
+} TimePair;
+
 typedef struct Raw_Level{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
@@ -117,6 +123,8 @@ typedef struct{
     u32 magic;   //always SAVE_MAGIC
     u8 version; //SAVE_VERSION of the build that wrote the file
 } Save_Header;
+
+
 
 //possibly in the future use CTR_PACKED on this, unsure for now
 typedef struct{

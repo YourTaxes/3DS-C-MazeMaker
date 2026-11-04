@@ -4,23 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>   // offsetof
-#include <sys/stat.h> // mkdir
-
-/*
-* a best time and its valid flag, in the order Raw_Level keeps them. writing
-* exactly TIME_PAIR_BYTES sends the float and the bool and stops, so the byte
-* after the flag is left alone. sizeof(TimePair)
-* would be 8 with trailing padding and would clobber it.
-*/
-typedef struct { float time; bool valid; } TimePair;
-#define TIME_PAIR_BYTES (offsetof(TimePair, valid) + sizeof(bool))
-
-//Raw_Level keeps each time next to its own flag on purpose, so one write does both.
-//if someone reorders those fields, this stops the build instead of corrupting saves.
-_Static_assert(offsetof(Raw_Level, standardTimeValid) - offsetof(Raw_Level, bestTimeStandard) == offsetof(TimePair, valid),
-               "bestTimeStandard and standardTimeValid must stay adjacent");
-_Static_assert(offsetof(Raw_Level, hardTimeValid) - offsetof(Raw_Level, bestTimeHard) == offsetof(TimePair, valid),
-               "bestTimeHard and hardTimeValid must stay adjacent");
+#include <sys/stat.h> // mkdir               "bestTimeHard and hardTimeValid must stay adjacent");
 
 /*
 * is `slot` one this build has room for? logs it if not, so the complaint is worded
@@ -162,6 +146,7 @@ bool SaveFile_Write(const Save_File* file)
 
 bool SaveFile_ReadSlot(int slot, Raw_Level* out)
 {
+    if (!slotInRange(slot)) return false;
     long offset = slotOffset(slot);
     if (offset < 0) return false;
     return transferAt(offset, out, sizeof(Raw_Level), false);
@@ -169,6 +154,7 @@ bool SaveFile_ReadSlot(int slot, Raw_Level* out)
 
 bool SaveFile_WriteSlot(int slot, const Raw_Level* lvl)
 {
+    if (!slotInRange(slot)) return false;
     long offset = slotOffset(slot);
     if (offset < 0) return false;
     return transferAt(offset, (void*)lvl, sizeof(Raw_Level), true);
@@ -176,19 +162,22 @@ bool SaveFile_WriteSlot(int slot, const Raw_Level* lvl)
 
 bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time)
 {
+    if (!slotInRange(slot)) return false;
     long offset = slotOffset(slot);
     if (offset < 0) return false;
 
     size_t fieldOff = hardMode ? offsetof(Raw_Level, bestTimeHard)
-                               : offsetof(Raw_Level, bestTimeStandard);
+                                : offsetof(Raw_Level, bestTimeStandard);
 
     //recording a time is what makes it valid, so the flag goes out with it
-    TimePair pair = { .time = time, .valid = true };
+    TimePair pair = { .bestTime = time, .timeValid = true };
+
+
 
     //no %f in the log (see debug.h), so the time is reported in whole milliseconds
     printConsole("slot %d best %s time -> %ld ms", slot, hardMode ? "hard" : "standard",
                  (long)(time * 1000.0));
-    return transferAt(offset + (long)fieldOff, &pair, TIME_PAIR_BYTES, true);
+    return transferAt(offset + (long)fieldOff, &pair, sizeof(TimePair), true);
 }
 
 bool SaveFile_ReadLastSlot(int* out)
