@@ -52,13 +52,40 @@ typedef enum {
     FINISH,
     PORTAL1,
     PORTAL2, 
-    Grandfather
+    Grandfather,
+    TILE_COUNT
 } Tile_Type;
 
+_Static_assert(!(TILES_HORIZ & 1), "Tiles horiz is odd, a colunm will be missing");
+
 typedef struct{
-    //holds Tile_Type values. u8 because it's smaller.
-    u8 tiles[TILES_VERT][TILES_HORIZ];
+    //each tile's data only actually takes up 4 bits, so I am packing it 
+    //so that it is "squished" in the x axis, 
+    //where the even and odd values are in the same u8
+    //the odd values take up the 4 most signicant
+    u8 tiles[TILES_VERT][TILES_HORIZ >> 1];
 } Raw_Screen;
+
+_Static_assert(TILE_COUNT <= 16, "tiles no longer fit in 4 bits, need one more");
+
+static inline Tile_Type getTile(const Raw_Screen* screen, int y, int x){
+    //get the position of the packed tile holder by finding y, and x/2
+    u8 packedTile = screen->tiles[y][x >> 1];
+    //even x values are stored in the least significant 4 bits, odd are stored in the most
+    //put in more simpilified terms -
+    //odd? most significant
+    //even? least significant
+    return (x & 1) ? (packedTile >> 4) : (packedTile & 0x0F);
+}
+
+static inline void setTile(Raw_Screen* screen, int y, int x, Tile_Type tile){
+    //again, same logic as above for the first line
+    u8* packedTile = &screen->tiles[y][x >> 1];
+    //this time the value actually changes
+    //and with the same even/odd logic as before
+    *packedTile = (x & 1) ? ((*packedTile & 0x0F) | ((tile & 0x0F) << 4)) //the packed tile has it's most significant 4 bits 0ed out, and replaced with the tile value
+                            : ((*packedTile & 0xF0) | (tile & 0x0F)); //the packed tile has it's least significant 4 bits zeroed out, and then replaced with the tile
+}
 
 //int a = sizeof(Raw_Screen);
 //int b = sizeof(double);
@@ -67,11 +94,11 @@ typedef struct Raw_Level{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
     //make these values adjacent to make write slot time only one write
-    double bestTimeStandard;
+    float bestTimeStandard;
     bool standardTimeValid;
-    bool empty;
-    double bestTimeHard;
+    float bestTimeHard;
     bool hardTimeValid;
+    bool empty;
     
 } Raw_Level;
 
@@ -84,20 +111,25 @@ typedef struct Raw_Level{
 //layout what this build expects, or does it need migrating?). bump
 //SAVE_VERSION whenever anything below the header changes shape.
 #define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
-#define SAVE_VERSION 3
+#define SAVE_VERSION 4
 
-typedef struct Save_File{
+typedef struct{
     u32 magic;   //always SAVE_MAGIC
-    u32 version; //SAVE_VERSION of the build that wrote the file
+    u8 version; //SAVE_VERSION of the build that wrote the file
+} Save_Header;
+
+//possibly in the future use CTR_PACKED on this, unsure for now
+typedef struct{
+    Save_Header header;
     Raw_Level Levels[LEVEL_SLOT_CNT];
-    u8 lastSlot;
+    u8 lastSlot; //only needs to be 2 bits, for 0, 1, 2, 3
 } Save_File;
 
 //int d = sizeof(Save_File);
 
 typedef struct{
     Rect rect;
-    Tile_Type type;
+    Tile_Type type : 5;
 } Game_Rect;
 
 

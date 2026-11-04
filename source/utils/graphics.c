@@ -210,7 +210,8 @@ bool BakeLevelTexture(LevelPreview *out, C3D_RenderTarget **target,
                     curRect.z = 0.0f;
                     curRect.height = BAKED_LEVEL_TILE_SIZE;
                     curRect.width = BAKED_LEVEL_TILE_SIZE;
-                    switch(cur_level->screens[curScreenY][curScreenX].tiles[curTileY][curTileX]){
+                    //switch(cur_level->screens[curScreenY][curScreenX].tiles[curTileY][curTileX]){
+                    switch(getTile(&cur_level->screens[curScreenY][curScreenX], curTileY, curTileX)){
                         case EMPTY:
                             curRect.Color = Colors[CLR_WHITE];
                             break;

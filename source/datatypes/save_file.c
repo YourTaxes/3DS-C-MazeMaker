@@ -1,6 +1,5 @@
 #include "datatypes/save_file.h"
 #include <3ds.h>
-#include "datatypes/level_file.h"
 #include "utils/debug.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,11 +8,11 @@
 
 /*
 * a best time and its valid flag, in the order Raw_Level keeps them. writing
-* exactly TIME_PAIR_BYTES sends the double and the bool and stops, so the byte
-* after the flag (`empty`, for the standard pair) is left alone. sizeof(TimePair)
-* would be 16 with trailing padding and would clobber it.
+* exactly TIME_PAIR_BYTES sends the float and the bool and stops, so the byte
+* after the flag is left alone. sizeof(TimePair)
+* would be 8 with trailing padding and would clobber it.
 */
-typedef struct { double time; bool valid; } TimePair;
+typedef struct { float time; bool valid; } TimePair;
 #define TIME_PAIR_BYTES (offsetof(TimePair, valid) + sizeof(bool))
 
 //Raw_Level keeps each time next to its own flag on purpose, so one write does both.
@@ -71,6 +70,8 @@ static bool transferAt(long offset, void* buf, size_t size, bool write)
     return ok;
 }
 
+
+
 /*
 * is the file on disk one this build can use? logs the first reason it isn't.
 * checks size first (catches a truncated file), then magic, then version.
@@ -84,7 +85,7 @@ static bool isValid(void)
     }
 
     bool ok = false;
-    u32 header[2]; // magic, version
+    Save_Header header_data; // magic, version
 
     fseek(save_file, 0, SEEK_END);
     long size = ftell(save_file);
@@ -92,14 +93,14 @@ static bool isValid(void)
 
     if (size != (long)sizeof(Save_File)){
         printConsole("save file is %ld bytes, expected %u", size, (unsigned)sizeof(Save_File));
-    } else if (fread(header, sizeof header, 1, save_file) != 1){
+    } else if (fread(&header_data, sizeof(Save_Header), 1, save_file) != 1){
         printConsole("could not read the save file header");
-    } else if (header[0] != SAVE_MAGIC){
-        printConsole("save file magic is 0x%08lX, expected 0x%08lX", (unsigned long)header[0], (unsigned long)SAVE_MAGIC);
-    } else if (header[1] != SAVE_VERSION){
+    } else if (header_data.magic != SAVE_MAGIC){
+        printConsole("save file magic is 0x%08lX, expected 0x%08lX", (unsigned long)header_data.magic, (unsigned long)SAVE_MAGIC);
+    } else if (header_data.version != SAVE_VERSION){
         //only version 1 exists so far. when SAVE_VERSION is bumped, this is where
         //an old file gets migrated instead of thrown away.
-        printConsole("save file is version %lu, this build wants %u", (unsigned long)header[1], SAVE_VERSION);
+        printConsole("save file is version %d, this build wants %u", header_data.version, SAVE_VERSION);
     } else {
         ok = true;
     }
@@ -125,8 +126,8 @@ bool SaveFile_Ensure(void)
         return false;
     }
 
-    fresh->magic = SAVE_MAGIC;
-    fresh->version = SAVE_VERSION;
+    fresh->header.magic = SAVE_MAGIC;
+    fresh->header.version = SAVE_VERSION;
     for (int i = 0; i < LEVEL_SLOT_CNT; i++) fresh->Levels[i].empty = true;
 
     bool ok = SaveFile_Write(fresh);

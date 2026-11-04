@@ -74,7 +74,9 @@ each one is named for what it holds. the arrows only point one way: debug <- inp
 
 * utils/popup.h/c - Reusable instance of the are you sure popup. used in level select before destructive actions. planned to be used in the same way later in the maker.
 
-* menu_navigation/menu_nav.h/c - the (far too object oriented) system for determining player input in relation to the menus. currently supports touchscreen and keys in tandem, and has callback support for what to do when buttons are interacted with. Planned feature next is to move it to a handler that handles multiple menus on the same screen at the same time. 
+* menu_navigation/menu_nav.h/c - the (far too object oriented) system for determining player input in relation to the menus. supports touchscreen and keys in tandem, callbacks for what to do when buttons are interacted with, a draggable mode where the highlight follows a held stylus, and handing context to a neighbouring menu through the MENU_EXIT_* link sentinels. a menu with no neighbours linked behaves exactly as it always did, so one menu on a screen needs none of that.
+
+* menu_navigation/menu_group.h/c - several menus on one screen, with exactly one holding keyboard context and touch routed to whichever one the stylus landed in. it owns the menus it builds, so "every menu has to exist before linking" cannot be gotten wrong. one group at a time. a single menu does not need this.
 
 
 ## FORMAT FOR ALL STATE SPECIFIC FILES 
@@ -245,6 +247,8 @@ this file will load the currently selected save slot, and allow for switching to
 * I need to make a cover of the egg room theme, and play it here
 
 
+* IMPORTANT NEW INFO - I can use the .obj file type, which has the array of vertexes in it somewhere aparently.
+
 
 * EXTREMELY IMPORTANT - NEED TO NORMALIZE THE DPAD INPUT
 
@@ -256,28 +260,131 @@ this file will load the currently selected save slot, and allow for switching to
 
 
 ## Menu Navigation
+the multi menu update is IMPLEMENTED. menu_nav now supports several menus on one screen,
+and menu_group is the thing a state talks to when it has more than one.
 
-* Updates and future functions
-    
-    * A toggle (draggable) in the menu_nav/cfg that indicates if the given menu accepts drag inputs, effectively changes instances of in->kDown & KEY_TOUCH to in->kHeld & KEY_TOUCH.
+* MENU_NONE is now a legal value for `selected`, meaning "this menu does not have context".
+  a menu in that state ignores the keys entirely, still reads the touchscreen, and draws
+  nothing. that one change is what makes everything else possible, and it is why
+  select_index is the only place `selected` is ever written.
 
-    
-* BIGGEST UPDATE - MULTI MENU STRUCT SYNC
-    * every menu_nav/menu_cfg needs to have 4 menuDef pointers that are defined as the "enterUp, enterRight, enterDown, enterLeft", which are the buttons that will be set as selected when context moves to that menu.
+* exiting a menu with the keys: the MENU_EXIT_LEFT / RIGHT / UP / DOWN sentinels go in a
+  MenuDef's link slots, the same place a button index goes. the SENTINEL names the
+  neighbour to hand off to, not the slot it sits in, so `.left = MENU_EXIT_UP` legally
+  means "a left press hands context to the menu above me".
+    * they are derived from MenuDir (`MENU_NONE - 1 - dir`), NOT the -2/-3/-4/-5 order the
+      old plan listed, so sentinel <-> direction is arithmetic instead of another table
+      that has to agree with DIR_KEYS and link[]. pinned with a _Static_assert like the rest.
+    * step() hands a sentinel straight back to the caller rather than following it, because
+      cursor_ok would index buttons[-4]. menu_nav_logic then BREAKS out of the direction
+      loop, because a second pass would feed that sentinel into step() as `from`. that break
+      is the whole crash, and it is the one line to not lose.
 
-    * another thing that needs to be added to the menu_nav struct is 4 pointers to the different structs, depending on what side of the menu they are on. they will be "nav_up, nav_right, nav_down, nav_left". they will be set with a helper function after the creation of the menus, because all the menus need to exist before linking.
+* the handoff releases context BEFORE asking the neighbour, and restores it if the
+  neighbour refuses, so a refused exit moves nothing at all and a degenerate self link is
+  harmless. a refusal happens when there is no neighbour that way, when the neighbour's
+  enter[side] is MENU_NONE (that side is sealed), or when its entry button is disabled and
+  one step onwards fails. one hop only, always, or two menus pointing at each other bounce
+  context forever.
 
-    * there needs to be 4 new public helper functions "menu_nav_enter_from_side(MenuNav* menu, int side)" that tells a menu that context came to it, and to set it's selected to the enter{side} pointer.
+* the menu owns the handoff, not the group, and it reports it as MENU_EV_EXIT with
+  MenuEvent.menu set to whoever holds context now. that is deliberate: menu_nav_link is
+  public, so two menus can be linked with no group at all, and if the group owned the
+  handoff then linking would silently do nothing without one. the group only watches for
+  MENU_EV_EXIT to keep its own index in step.
 
-    * for exiting via buttons (pretty simple), there will be 4 new button indexes (exitUp = -2, exitRight = -3, exitDown = -4, exitLeft = -5). when one of these new buttons is selected, then that signifies that the context is being switched to a different menu, and the menu in the corresponding direction pointer will have "enter{opposite_dir}" called on it (because from it's point of view they are the opposite direction in relation). then the current menu will set it's selected to MENU_NONE.
+* enter[MENU_DIR_COUNT] on the config is button INDEXES, not the MenuDef pointers the old
+  plan called for. a pointer cannot be turned back into an index without arithmetic on the
+  table base, and the index is what pairs a button with rects[i] and what every callback is
+  handed, so a pointer would break the one thing the whole file is built on.
 
-    * in menu_logic, if selected == MENU_NONE, then do not do any logic in relation to the keys, only check for touchscreen input, the methods for doing the touchscreen input will be done later.
+* `draggable` on the config swaps kDown for kHeld in the hit test, so the highlight follows
+  a held stylus. on_click still fires ONLY on the frame the stylus went down, because
+  otherwise a held stylus fires the button once per frame, which in MainMenu shaped code is
+  a state change per frame. on_highlight is already contractually idempotent, so that is
+  the per frame hook for anything tracking a drag.
 
-    * in menu_draw, if selected == MENU_NONE, return early.
+* menu_nav_hit_test is public and is the ONE hit test. menu_nav_logic uses it and so does
+  the group, so the two can never drift apart about which menu owns a tap. if they did, a
+  tap would be lost AND context would move to a menu the user did not hit. Rect_Tapped is
+  not used here because it hardcodes kDown, which draggable needs to override.
 
-    * menu_nav/cfg most likely needs to have a boolean "last_used", which would act almost like the opposite of least recently used. 
+* MenuConfig is now ZERO INITIALIZED by the caller (`MenuConfig cfg = {0};`) instead of
+  "all fields required". it grows over time, and both consumers were filling it field by
+  field from an uninitialized local, so adding `draggable` to it would have read whatever
+  was on the stack. a zeroed config enters on button 0 from every side, which is a fine
+  default, and MENU_NONE is how a side gets sealed.
 
-    * There will need to be a new file and struct and helper functions to handle the touchscreen syncing accross menus. it will need a reference to all of the menus, so it can determine which one is currently in context.
-        * it will be the one that the user actually calls, and they pass in an array of menunavcfg structs, and the num of menus.
+### menu_navigation/menu_group.h/c
+the handler for several menus on one screen, and the thing a state with more than one menu
+actually calls. one group at a time; a second menu_group_init fails and logs rather than
+replacing the first, because the caller is still holding that handle (unlike popup_init).
 
-* 
+* the group OWNS its menus. it takes an array of MenuConfigs and a MenuLink table, builds
+  every menu, wires them, and frees them. that is the point: linking needs every menu to
+  exist first, and if the group does the building then that ordering cannot be gotten wrong.
+  a state must not free a grouped menu itself.
+* MenuLink is the same union trick as MenuDef, for the same reason, with the same assert:
+  the table is written with .left/.right/.up/.down and read as side[MenuDir].
+* one frame: a touch that BEGINS this frame moves context to the menu it landed in, then
+  only the context menu runs its logic, which handles that same touch normally. so there is
+  one highlight, one set of callbacks, and no second touch code path.
+    * routing is gated on kDown and never kHeld, even for draggable menus, so a drag that
+      slides off a draggable menu's edge keeps the gesture on the menu it started on.
+    * a tap has no direction, so there is no enter{side} for it. the tapped menu has no
+      selection, and its own logic lands the cursor on the button the stylus actually hit,
+      which beats any guess enter[] could make.
+    * menus are scanned in array order and the first hit wins, so menus should not overlap,
+      and where they do, array order is the priority order.
+* menu_group_focus is the escape hatch for a state that wants to drive focus itself.
+
+### still to do
+* a test state with three menus (one top screen keyboard only, one plain list, one
+  draggable) to exercise the handoff, the refusals, and the drag firing rule.
+* restoring the previous selection on re entry, as a MENU_ENTER_LAST sentinel plus an
+  int lastSelected updated in select_index. the old plan called this `last_used`; it was
+  dropped because the group tracks context and the menus do not need to. purely additive.
+* note that live[] flags are OR'd on top of the table's, so a runtime flag can only ever
+  ADD a restriction: set_enabled(.., true, ..) cannot re-enable a button the static MenuDef
+  table disabled.
+
+
+
+
+## STRETCH GOAL - STREETPASS
+
+### Explination of funciton
+* My vision for this is that you can setup streetpass for the game, and when you walk by someone else that has streetpass on for the game, then you will exchange levels. these levels will the be accessable through a secondary menu in the level select menu, which allows you to swap save files (only for that session)
+
+* REQUIREMENTS
+
+  * Save file should be perfectly ready to go already to be sent, because limit is 11kb, and save is 9. If the data does not already have the sending player's name, then it will need to be included in the save file.
+
+  * SUPER STRETCH GOAL - the times for the origional creator and you could be saved seperately, possibly in a "Streetpass Level pack" Struct, so that you could get a special thing when you finish the level faster than the creator.
+
+  * to actually handle recieving, the save file probably needs to be edited to include the amount of streetpass level packs you already have.
+
+  * Bool in the save file that denotes if streetpass is on
+  * Have a button glyph on the main menu saying "X: Streetpass", which brings up popup that has multiple pages explaining how streetpass will work, then the last one asks to set it up. 
+    * if they say yes and streetpass is off, then do the setup for a homebrew app to setup streetpass
+    * if they say yes and streetpass is on, do nothing. 
+    * if they say no and streetpass is off, do nothing.
+    * if they say no and streetpass is on, disable it.
+
+  * in level select, have a glyph that says "X: Streetpass Levels", only if the user has streetpass enabled.
+
+  * when the user presses X on the level select screen with streetpass enabled, they are taken to the Streetpass Menu. 
+
+    * There will be a limit on the amount of streetpass tags you can have, which is to be decided. most heavily likely to be one menu page's worth, so probably 6. (not including the main save)
+
+    * the buttons on the bottom screen are going to be selectors for all of the different people you have met, and the top screen will show *something*, unknown as of now. if the mii is included in the streetpass data, it sould be shown. 
+
+    * there should be a indicator "X: Delete Level Set"
+      * if the user presses X, a popup (very similar delete in level select) asks "Would you like to Delete {player name}'s Level Set?".
+        * pressing yes does this, which clears up the slot for another streetpass level.
+
+
+  * Streetpass levels **WILL NOT BE EDITABLE**, but you can play them all you like.
+    * GameContext needs a boolean 'Streetpass Save', which is true when you are playing on a streetpass save.
+
+  

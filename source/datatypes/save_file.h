@@ -1,10 +1,10 @@
 #pragma once
 
-#include <stdbool.h>
+#include "datatypes/level_file.h"
 
 //forward definition of Save_File
-typedef struct Save_File Save_File;
-typedef struct Raw_Level Raw_Level;
+//typedef struct Save_File Save_File;
+//typedef struct Raw_Level Raw_Level;
 
 /*
 * the save file lives on the SD card. this is the only place the SD card is touched.
