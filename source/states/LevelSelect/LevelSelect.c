@@ -543,7 +543,7 @@ void LevelSelect_Init(GameContext* ctx){
     const Rect aysBox = {.x = 50, .y = 45, .width = 220, .height = 130, .Color = Colors[CLR_LT_GRAY]};
     popup_init(aysBox, AYS_WINDOW_COUNT, true, true, 0.0f, CommitAction, CanceledAction);
     
-    MenuConfig menu_nav_cfg;
+    MenuConfig menu_nav_cfg = {0};
     menu_nav_cfg.rects = lsstate->bottomRects;
     menu_nav_cfg.buttons = LS_MENU;
     menu_nav_cfg.count = BOTTOM_RECT_COUNT;
@@ -553,6 +553,8 @@ void LevelSelect_Init(GameContext* ctx){
     menu_nav_cfg.selected = initialSlot;
     menu_nav_cfg.highlightPad = 5.0f;
     menu_nav_cfg.highlightColor = Colors[CLR_YELLOW];
+    menu_nav_cfg.disabledColor = Colors[CLR_BLACK];
+    menu_nav_cfg.standard_color = Colors[CLR_DK_GRAY];
 
     lsstate->menu = menu_nav_init(&menu_nav_cfg);
 
@@ -702,7 +704,7 @@ void LevelSelect_End(void){
     //free the popup
     popup_free();
 
-    free(lsstate->menu);
+    menu_nav_free(lsstate->menu);
 
     
 

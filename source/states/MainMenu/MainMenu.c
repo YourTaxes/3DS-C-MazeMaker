@@ -179,7 +179,7 @@ void MainMenu_Init(GameContext* ctx){
     }
 
     //initalize the buttons
-    MenuConfig menu_cfg;
+    MenuConfig menu_cfg = {0};
     menu_cfg.buttons = MM_MENU;
     menu_cfg.count = MENU_BUTTON_COUNT;
     menu_cfg.rects = mmstate->rects;
@@ -278,7 +278,7 @@ void MainMenu_DrawBottom(C3D_RenderTarget* target){
 
 
 void MainMenu_End(void){
-    free(mmstate->menu);
+    menu_nav_free(mmstate->menu);
     C2D_TextBufDelete(mmstate->textBuf);
     free(mmstate);
     mmstate = NULL;
