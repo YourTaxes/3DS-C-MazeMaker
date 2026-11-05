@@ -388,3 +388,13 @@ replacing the first, because the caller is still holding that handle (unlike pop
     * GameContext needs a boolean 'Streetpass Save', which is true when you are playing on a streetpass save.
 
   
+
+
+
+# TODO FOR CIA VERSION 
+
+## Custom banner
+
+* make this in blender
+* probably the game title on top, on the bottom make sklumbo in the background.
+* also need to make sound for this, I'll come up with something.

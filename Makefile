@@ -47,10 +47,10 @@ ROMFS		:=	romfs
 #the t3x files go into romfs rather than being linked into the executable, so the game
 #loads them at runtime with C2D_SpriteSheetLoad("romfs:/gfx/<name>.t3x")
 GFXBUILD	:=	$(ROMFS)/gfx
-
+ICON		:= MenuIcon.png
 APP_TITLE	:= Maze Maker
 APP_AUTHOR	:= Finnegan McDevitt
-APP_DESCRIPTION	:= Full game engine with player and editor for simple
+APP_DESCRIPTION	:= Full game engine with player and editor for simple Mazes to be made, shared, and played.
 
 #---------------------------------------------------------------------------------
 # DEBUG=1 (or `make debug`) disables compiler optimizations and defines DEBUG.
