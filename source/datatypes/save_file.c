@@ -160,7 +160,7 @@ bool SaveFile_WriteSlot(int slot, const Raw_Level* lvl)
     return transferAt(offset, (void*)lvl, sizeof(Raw_Level), true);
 }
 
-bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time)
+bool SaveFile_WriteSlotTime(int slot, bool hardMode, u32 time)
 {
     if (!slotInRange(slot)) return false;
     long offset = slotOffset(slot);
@@ -169,15 +169,11 @@ bool SaveFile_WriteSlotTime(int slot, bool hardMode, double time)
     size_t fieldOff = hardMode ? offsetof(Raw_Level, bestTimeHard)
                                 : offsetof(Raw_Level, bestTimeStandard);
 
-    //recording a time is what makes it valid, so the flag goes out with it
-    TimePair pair = { .bestTime = time, .timeValid = true };
-
-
 
     //no %f in the log (see debug.h), so the time is reported in whole milliseconds
     printConsole("slot %d best %s time -> %ld ms", slot, hardMode ? "hard" : "standard",
                  (long)(time * 1000.0));
-    return transferAt(offset + (long)fieldOff, &pair, sizeof(TimePair), true);
+    return transferAt(offset + (long)fieldOff, &time, sizeof(time), true);
 }
 
 bool SaveFile_ReadLastSlot(int* out)

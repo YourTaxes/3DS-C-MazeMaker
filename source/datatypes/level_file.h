@@ -90,23 +90,27 @@ static inline void setTile(Raw_Screen* screen, int y, int x, Tile_Type tile){
 //int a = sizeof(Raw_Screen);
 //int b = sizeof(double);
 
-//the arrangement of the 2 best times and their valid bits
-typedef struct {
-    float bestTime;
-    bool timeValid;
-} TimePair;
 
 typedef struct Raw_Level{
     Raw_Screen screens [SCREENS_VERT][SCREENS_HORIZ];
     char levelName[LEVEL_NAME_MAX_LEN];
     //make these values adjacent to make write slot time only one write
-    float bestTimeStandard;
-    bool standardTimeValid;
-    float bestTimeHard;
-    bool hardTimeValid;
+    u32 bestTimeStandard;
+    // bool standardTimeValid;
+    u32 bestTimeHard;
+    // bool hardTimeValid;
     bool empty;
     
 } Raw_Level;
+
+//returns if the level's time is valid
+static inline bool standardTimeValid(const Raw_Level* lvl){
+    return lvl->bestTimeStandard != 0;
+}
+
+static inline bool hardTimeValid(const Raw_Level* lvl){
+    return lvl->bestTimeHard != 0;
+}
 
 //int c = sizeof(Raw_Level);
 
@@ -117,7 +121,7 @@ typedef struct Raw_Level{
 //layout what this build expects, or does it need migrating?). bump
 //SAVE_VERSION whenever anything below the header changes shape.
 #define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
-#define SAVE_VERSION 4
+#define SAVE_VERSION 5
 
 typedef struct{
     u32 magic;   //always SAVE_MAGIC

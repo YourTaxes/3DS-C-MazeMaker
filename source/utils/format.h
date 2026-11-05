@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <3ds/types.h>
 
 //enough for FormatTime's longest sensible output, plus room to spare
 #define TIME_STR_LEN 16
@@ -10,4 +11,4 @@
 * so an hour and a half prints as 90:00:000. negative values are treated as 0.
 * buf should be TIME_STR_LEN bytes.
 */
-void FormatTime(double seconds, char* buf, size_t bufSize);
+void FormatTime(u32 seconds, char* buf, size_t bufSize);

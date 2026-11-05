@@ -233,14 +233,20 @@ static void RebuildTimeLabels(void){
         char line[TIME_LINE_MAX];
         char time[TIME_STR_LEN];
 
-        if (lvl != NULL && lvl->standardTimeValid) FormatTime(lvl->bestTimeStandard, time, sizeof time);
+        if (lvl != NULL && standardTimeValid(lvl)){
+            FormatTime(lvl->bestTimeStandard, time, sizeof time);
+        }
+    
         snprintf(line, sizeof line, "Standard: %s",
-                 (lvl != NULL && lvl->standardTimeValid) ? time : "--");
+                 (lvl != NULL && standardTimeValid(lvl)) ? time : "--");
         MakeText(line, &lsstate->slotStandardLabels[i], lsstate->timeBuf);
 
-        if (lvl != NULL && lvl->hardTimeValid) FormatTime(lvl->bestTimeHard, time, sizeof time);
+        if (lvl != NULL && hardTimeValid(lvl)) {
+            FormatTime(lvl->bestTimeHard, time, sizeof time);
+        }
+
         snprintf(line, sizeof line, "Hard: %s",
-                 (lvl != NULL && lvl->hardTimeValid) ? time : "--");
+                 (lvl != NULL && hardTimeValid(lvl)) ? time : "--");
         MakeText(line, &lsstate->slotHardLabels[i], lsstate->timeBuf);
     }
 }
@@ -363,9 +369,9 @@ static void CommitAction(){
             break;
         case ACTION_CLEAR_TIMES:
             lvl->bestTimeStandard = 0.0;
-            lvl->standardTimeValid = false;
+            //lvl->standardTimeValid = false;
             lvl->bestTimeHard = 0.0;
-            lvl->hardTimeValid = false;
+            //lvl->hardTimeValid = false;
             printConsole("cleared slot %d's best times", lsstate->pendingSlot + 1);
             break;
         case ACTION_DELETE:

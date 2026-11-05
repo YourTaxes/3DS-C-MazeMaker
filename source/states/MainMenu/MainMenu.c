@@ -152,15 +152,19 @@ void MainMenu_Init(GameContext* ctx){
         MakeText(line, &mmstate->levelNameText, mmstate->textBuf);
 
         char time[TIME_STR_LEN];
+        bool sTimValid = standardTimeValid(ctx->rawLvl);
+        bool hTimValid = hardTimeValid(ctx->rawLvl);
 
-        if (ctx->rawLvl->standardTimeValid) FormatTime(ctx->rawLvl->bestTimeStandard, time, sizeof time);
-        snprintf(line, sizeof line, "Best Standard Time: %s",
-                 ctx->rawLvl->standardTimeValid ? time : "No time yet");
+        if (sTimValid) {
+            FormatTime(ctx->rawLvl->bestTimeStandard, time, sizeof time);
+        }
+        snprintf(line, sizeof line, "Best Standard Time: %s", sTimValid ? time : "No time yet");
         MakeText(line, &mmstate->standardTimeText, mmstate->textBuf);
 
-        if (ctx->rawLvl->hardTimeValid) FormatTime(ctx->rawLvl->bestTimeHard, time, sizeof time);
-        snprintf(line, sizeof line, "Best Hard Time: %s",
-                 ctx->rawLvl->hardTimeValid ? time : "No time yet");
+        if (hTimValid) {
+            FormatTime(ctx->rawLvl->bestTimeHard, time, sizeof time);
+        }
+        snprintf(line, sizeof line, "Best Hard Time: %s", hTimValid ? time : "No time yet");
         MakeText(line, &mmstate->hardTimeText, mmstate->textBuf);
 
         mmstate->drawHardTime = true;
