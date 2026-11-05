@@ -4,8 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>   // offsetof
-#include <sys/stat.h> // mkdir               "bestTimeHard and hardTimeValid must stay adjacent");
-
+#include <sys/stat.h> // mkdir
 /*
 * is `slot` one this build has room for? logs it if not, so the complaint is worded
 * once for every function that takes a slot number.
@@ -171,8 +170,7 @@ bool SaveFile_WriteSlotTime(int slot, bool hardMode, u32 time)
 
 
     //no %f in the log (see debug.h), so the time is reported in whole milliseconds
-    printConsole("slot %d best %s time -> %ld ms", slot, hardMode ? "hard" : "standard",
-                 (long)(time * 1000.0));
+    printConsole("slot %d best %s time -> %ld ms", slot, hardMode ? "hard" : "standard", (time));
     return transferAt(offset + (long)fieldOff, &time, sizeof(time), true);
 }
 

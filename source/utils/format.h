@@ -7,8 +7,7 @@
 #define TIME_STR_LEN 16
 
 /*
-* writes `seconds` into buf as mm:ss:mmm. minutes are not clamped to two digits,
-* so an hour and a half prints as 90:00:000. negative values are treated as 0.
+* writes `milliseconds` into buf as mm:ss:mmm. minutes are not clamped to two digits
 * buf should be TIME_STR_LEN bytes.
 */
-void FormatTime(u32 seconds, char* buf, size_t bufSize);
+void FormatTime(u32 milliseconds, char* buf, size_t bufSize);
