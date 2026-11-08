@@ -385,7 +385,8 @@ replacing the first, because the caller is still holding that handle (unlike pop
 
 
   * Streetpass levels **WILL NOT BE EDITABLE**, but you can play them all you like.
-    * GameContext needs a boolean 'Streetpass Save', which is true when you are playing on a streetpass save.
+    * GameContext needs a boolean 'Level Editable', which is false when you are playing on a streetpass save.
+      * when this is false, the maker button on the main menu will be greyed out and inaccessable.
 
   
 
@@ -398,3 +399,33 @@ replacing the first, because the caller is still holding that handle (unlike pop
 * make this in blender
 * probably the game title on top, on the bottom make sklumbo in the background.
 * also need to make sound for this, I'll come up with something.
+
+## Custom E-Manual
+I think I know how to do this. 
+Found a guide for it.
+
+
+
+
+
+# FUTURE IDEAS 
+
+## NFC / AMIIBO
+* in main on startup call "NFC Init" which first calls CFGU_IsNFCSupported(), which checks if the nfc functionality is avalible at all, and writes that bool to game context.
+
+* face button on the main menu takes you to a special menu for amiibos.
+  
+* there will be a new scene that is the amiibo menu, which has 2 buttons, that each take you to a different scene.
+  * the first one is the one that takes you to the amiibo rewards. this is always avalible.
+  * the second one takes you to the scanning scene
+    * this button will be greyed out if the nfc support is false.
+
+
+* the rewards sceene will look similar to the level select scene, but the levels are not copyable or renameable or deletable, and the levels will be saved in romfs, rather than your save file. 
+  * when one of these levels is selected, the maker will be greyed out, and editable_level will be set to false.
+  * on this scene, you will be able to do the button combination (UP + X + SELECT) to get all of the amiibo rewards. this is to prevent the requirement for the actual amiibos. 
+
+* the scanning scene is pretty self explanitory. it is where you scan amiibos to get rewards.
+
+* there will be a specific set of amiibos that will give a reward. they will probably include kirby, and 3 others.
+
