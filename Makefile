@@ -51,14 +51,12 @@ GFXBUILD	:=	$(ROMFS)/gfx
 ICON		:= meta/MenuIcon.png
 APP_TITLE	:= Maze Maker
 APP_AUTHOR	:= Finnegan McDevitt
-APP_DESCRIPTION	:= Maze Maker 3DS
+APP_DESCRIPTION	:= Maze Maker 3DS: Make, Play, and Share Mazes
 
 #==========================
 #makerom stuff for cia file
 #==========================
 APP_RSF		:= meta/MazeMaker.rsf
-#spells out ZK in unsigned bytes
-UNIQUE_ID	:= 0xD5A4B
 
 
 #---------------------------------------------------------------------------------
@@ -238,8 +236,11 @@ cia: all
 	-rsf $(APP_RSF) \
 	-target t \
 	-icon $(OUTPUT).smdh \
+	-major $(MAZEMAKER_VERSION_MAJOR) \
+	-minor $(MAZEMAKER_VERSION_MINOR) \
+	-micro $(MAZEMAKER_VERSION_MICRO) \
 	-DUNIQUE_ID=$(UNIQUE_ID) \
-	-DAPP_TITLE="$(APP_TITLE)"
+	-DAPP_TITLE="$(TITLE)"
 
 $(BUILD):
 	@mkdir -p $@
@@ -257,7 +258,7 @@ endif
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(TARGET).elf $(TARGET).smdh
+	@rm -fr $(BUILD) $(TARGET).3dsx $(TARGET).elf $(TARGET).smdh $(TARGET).cia
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s

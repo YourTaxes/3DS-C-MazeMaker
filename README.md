@@ -10,4 +10,10 @@ Cool Features:
 ### Extra sources
 * Pica toon shader is sourced from the toon shading example by fincs on github.
 
+## Dependancies for building
+* Devkit pro
+* 
+
+
+
 Dedicated to Alexander Costigan, a wonderful man who wanted the best for others.

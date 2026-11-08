@@ -1,6 +1,6 @@
 BasicInfo:
   Title                   : $(APP_TITLE)
-  ProductCode             : CTR-P-CTAP
+  ProductCode             : CTR-P-MZMK
   Logo                    : Nintendo # Nintendo / Licensed / Distributed / iQue / iQueForSystem
 
 RomFs:
