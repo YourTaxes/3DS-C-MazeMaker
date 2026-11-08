@@ -8,6 +8,7 @@ endif
 
 TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
+include $(TOPDIR)/version.env
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -47,10 +48,18 @@ ROMFS		:=	romfs
 #the t3x files go into romfs rather than being linked into the executable, so the game
 #loads them at runtime with C2D_SpriteSheetLoad("romfs:/gfx/<name>.t3x")
 GFXBUILD	:=	$(ROMFS)/gfx
-ICON		:= MenuIcon.png
+ICON		:= meta/MenuIcon.png
 APP_TITLE	:= Maze Maker
 APP_AUTHOR	:= Finnegan McDevitt
-APP_DESCRIPTION	:= Full game engine with player and editor for simple Mazes to be made, shared, and played.
+APP_DESCRIPTION	:= Maze Maker 3DS
+
+#==========================
+#makerom stuff for cia file
+#==========================
+APP_RSF		:= meta/MazeMaker.rsf
+#spells out ZK in unsigned bytes
+UNIQUE_ID	:= 0xD5A4B
+
 
 #---------------------------------------------------------------------------------
 # DEBUG=1 (or `make debug`) disables compiler optimizations and defines DEBUG.
@@ -75,6 +84,13 @@ CFLAGS	:=	-g -Wall $(OPTIMIZE) -mword-relocations \
 			$(ARCH) -std=gnu23
 
 CFLAGS	+=	$(INCLUDE) -D__3DS__
+
+#add the env file's defines 
+CFLAGS	+= -D_VERSION_MAJOR_=$(MAZEMAKER_VERSION_MAJOR) \
+			-D_VERSION_MINOR_=$(MAZEMAKER_VERSION_MINOR) \
+			-D_VERSION_MICRO_=$(MAZEMAKER_VERSION_MICRO) \
+			-D_SAVEFILE_VERSION_=$(SAVEFILE_VERSION) \
+			-D_STREETPASS_FILE_VERSION_=$(STREETPASS_FILE_VERSION)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -182,7 +198,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean debug checkmode
+.PHONY: all clean debug checkmode cia
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) checkmode $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
@@ -204,6 +220,26 @@ checkmode: $(BUILD)
 		rm -f $(BUILD)/*.o $(BUILD)/*.d $(OUTPUT).elf; \
 		echo $(DEBUG) > $(BUILD)/.buildmode; \
 	fi
+
+#
+# makes the project into a cia file
+# does everything in all first 
+#
+
+cia: all
+	@echo "Packaging $(TARGET).cia..."
+#check that the rsf actually exists
+	@if [ ! -f $(APP_RSF) ]; then \
+		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
+		exit 1; \
+	fi
+	makerom -f cia -o $(OUTPUT).cia \
+	-elf $(OUTPUT).elf \
+	-rsf $(APP_RSF) \
+	-target t \
+	-icon $(OUTPUT).smdh \
+	-DUNIQUE_ID=$(UNIQUE_ID) \
+	-DAPP_TITLE="$(APP_TITLE)"
 
 $(BUILD):
 	@mkdir -p $@

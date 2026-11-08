@@ -6,33 +6,67 @@
 # emulation etc.), which detaches it from this terminal, so the log is
 # followed from azahar_log.txt instead. Ctrl-C stops following and quits Azahar.
 #
-# Usage: ./runAzahar.sh [<file.3dsx>] [gdb]
+# Usage: ./runAzahar.sh [<file.3dsx> | home] [gdb]
 #   <file.3dsx>  which .3dsx to run (default: the project's build)
+#   home         boot the system Home Menu instead of a game (the same as
+#                Azahar's File > Boot Home Menu). Needs the system files in
+#                Azahar's NAND; launch an installed .cia from there.
 #   gdb          launch with -g <port> so Azahar starts its GDB stub and
-#                pauses the game at boot until ./runGdb.sh connects.
+#                pauses at boot until ./runGdb.sh connects.
 #                Without it the stub is off.
 #
 # Env overrides: AZAHAR_APP (path to Azahar.app), AZAHAR_CONFIG (qt-config.ini),
-#                AZAHAR_LOG (azahar_log.txt), GDB_PORT (default 24689)
+#                AZAHAR_LOG (azahar_log.txt), AZAHAR_NAND (nand dir),
+#                GDB_PORT (default 24689)
 
 DIR=$(cd "$(dirname "$0")" && pwd)
 BASENAME=3DS-C-MazeMaker
 
 ROM="$DIR/$BASENAME.3dsx"
+ROM_GIVEN=false
+HOME_MENU=false
 GDB=false
+
+usage() {
+	echo "Usage: $0 [<file.3dsx> | home] [gdb]" >&2
+	exit 1
+}
 
 for arg in "$@"; do
 	case "$arg" in
-		*.3dsx) ROM="$arg" ;;
+		*.3dsx) ROM="$arg"; ROM_GIVEN=true ;;
+		home)   HOME_MENU=true ;;
 		gdb)    GDB=true ;;
-		*)
-			echo "Usage: $0 [<file.3dsx>] [gdb]" >&2
-			exit 1
-			;;
+		*)      usage ;;
 	esac
 done
 
-if [ ! -f "$ROM" ]; then
+if [ "$HOME_MENU" = true ] && [ "$ROM_GIVEN" = true ]; then
+	echo "error: give either a .3dsx or home, not both" >&2
+	usage
+fi
+
+if [ "$HOME_MENU" = true ]; then
+	# The Home Menu is a NAND system title (0004003000008x02, one per region).
+	# Its content file's name depends on the installed version, so glob it.
+	AZAHAR_NAND="${AZAHAR_NAND:-$HOME/Library/Application Support/Azahar/nand}"
+	TITLES="$AZAHAR_NAND/00000000000000000000000000000000/title/00040030"
+	ROM=""
+	#        USA      EUR      JPN      CHN      KOR      TWN
+	for tid in 00008f02 00009802 00008202 0000a102 0000a902 0000b102; do
+		for app in "$TITLES/$tid/content/"*.app; do
+			if [ -f "$app" ]; then
+				ROM="$app"
+				break 2
+			fi
+		done
+	done
+	if [ -z "$ROM" ]; then
+		echo "error: Home Menu not found under $TITLES" >&2
+		echo "       (install the system files in Azahar first)" >&2
+		exit 1
+	fi
+elif [ ! -f "$ROM" ]; then
 	echo "error: $ROM not found (run make first)" >&2
 	exit 1
 fi
@@ -81,7 +115,11 @@ AZAHAR_LOG="${AZAHAR_LOG:-$HOME/Library/Application Support/Azahar/log/azahar_lo
 # tailing, otherwise we'd print the previous run's log first.
 old_inode=$(stat -f %i "$AZAHAR_LOG" 2>/dev/null)
 
-echo "Running $ROM"
+if [ "$HOME_MENU" = true ]; then
+	echo "Booting Home Menu ($ROM)"
+else
+	echo "Running $ROM"
+fi
 # the ROM must be the last argument - Azahar takes the final non-flag arg as the game path
 open -a "$AZAHAR_APP" --args $GDB_ARGS "$ROM" || exit 1
 

@@ -56,6 +56,10 @@ int main(int argc, char **argv)
 	// stderr to the attached debugger (GDB / Azahar log) via svcOutputDebugString
 	consoleDebugInit(debugDevice_SVC);
 
+	printConsole("\n\n\n\n\nStarting MazeMaker v%d.%d.%d", _VERSION_MAJOR_, _VERSION_MINOR_, _VERSION_MICRO_);
+	printConsole("Savefile Version is v%d", _SAVEFILE_VERSION_);
+	printConsole("Streetpass File Version is v%d", _STREETPASS_FILE_VERSION_);
+
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();

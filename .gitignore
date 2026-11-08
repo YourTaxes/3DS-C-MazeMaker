@@ -11,5 +11,6 @@ romfs/gfx/
 *.3dsx
 *.elf
 *.smdh
+*.cia
 #linker map listing
 *.lst
