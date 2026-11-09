@@ -48,15 +48,19 @@ ROMFS		:=	romfs
 #the t3x files go into romfs rather than being linked into the executable, so the game
 #loads them at runtime with C2D_SpriteSheetLoad("romfs:/gfx/<name>.t3x")
 GFXBUILD	:=	$(ROMFS)/gfx
-ICON		:= meta/MenuIcon.png
-APP_TITLE	:= Maze Maker
-APP_AUTHOR	:= Finnegan McDevitt
-APP_DESCRIPTION	:= Maze Maker 3DS: Make, Play, and Share Mazes
+MUSICBUILD	:= 	$(ROMFS)/music
+ICON		:= 	meta/MenuIcon.png
+APP_TITLE	:= 	Maze Maker
+APP_AUTHOR	:= 	Finnegan McDevitt
+APP_DESCRIPTION	:= 	Maze Maker 3DS: Make, Play, and Share Mazes
 
 #==========================
 #makerom stuff for cia file
 #==========================
-APP_RSF		:= meta/MazeMaker.rsf
+APP_RSF		:= 	meta/MazeMaker.rsf
+BANNER_IMAGE	:= 	meta/MenuIcon.png #This is a placeholder until I finish the model
+#BANNER_CGFX	:=	meta/banner.cgfx #Will add this, I am stil working on the model itself
+BANNER_AUDIO	:= 	meta/BannerAudio.wav
 
 
 #---------------------------------------------------------------------------------
@@ -224,7 +228,7 @@ checkmode: $(BUILD)
 # does everything in all first 
 #
 
-cia: all
+cia: all banner
 	@echo "Packaging $(TARGET).cia..."
 #check that the rsf actually exists
 	@if [ ! -f $(APP_RSF) ]; then \
@@ -241,6 +245,15 @@ cia: all
 	-micro $(MAZEMAKER_VERSION_MICRO) \
 	-DUNIQUE_ID=$(UNIQUE_ID) \
 	-DAPP_TITLE="$(TITLE)"
+
+bannerAudio: 
+#ffmpeg to prepare wav file.
+
+bannerModel:
+#prepare model
+
+banner: bannerAudio bannerModel
+#create the banner.
 
 $(BUILD):
 	@mkdir -p $@
