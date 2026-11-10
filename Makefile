@@ -53,25 +53,41 @@ ROMFS		:=	romfs
 #the t3x files go into romfs rather than being linked into the executable, so the game
 #loads them at runtime with C2D_SpriteSheetLoad("romfs:/gfx/<name>.t3x")
 GFXBUILD	:=	$(ROMFS)/gfx
+MUSIC		:= 	music
 MUSICBUILD	:= 	$(ROMFS)/music
-ICON		:= 	meta/MenuIcon.png
-APP_TITLE	:= 	Maze Maker
+META_DIR	:=	meta
+ICON		:= 	$(META_DIR)/MenuIcon.png
+APP_TITLE	:= 	Maze Maker 3DS
 APP_AUTHOR	:= 	Finnegan McDevitt
 APP_DESCRIPTION	:= 	Maze Maker 3DS: Make, Play, and Share Mazes
 
 #==========================
 #makerom stuff for cia file
 #==========================
-APP_RSF		:= 	meta/MazeMaker.rsf
-BANNER_IMAGE	:= 	meta/MenuIcon.png #This is a placeholder until I finish the model
-#BANNER_CGFX	:=	meta/banner.cgfx #Will add this, I am stil working on the model itself
-BANNER_AUDIO	:= 	meta/BannerAudio.wav
+APP_RSF		:= 	$(META_DIR)/MazeMaker.rsf
+#This is a placeholder until I finish the model
+BANNER_IMAGE	:= 	$(META_DIR)/PlaceholderBanner.png
+#Will add this, I am stil working on the model itself
+#BANNER_CGFX	:=	$(META_DIR)/banner.cgfx
+BANNER_AUDIO	:= 	$(META_DIR)/BannerAudio.ogg
+#left this here in case it needs to be changed in the future
+STREETPASS_ID	:= 	$(UNIQUE_ID) 
+BANNER_FLAGS	:= 	visible,allow3d,extendedbanner,savedata,recordusage
+
 
 
 #---------------------------------------------------------------------------------
+# determine which args to use for bannertool, depending on if I choose to eventually do flat or 3d 
+#---------------------------------------------------------------------------------
+ifneq ($(strip $(BANNER_CGFX)),)
+BANNER_ARG	:=	-ci "$(TOPDIR)/$(BANNER_CGFX)"
+else
+BANNER_ARG	:=	-i "$(TOPDIR)/$(BANNER_IMAGE)"
+endif
+
+#---------------------------------------------------------------------------------
 # DEBUG=1 (or `make debug`) disables compiler optimizations and defines DEBUG.
-# Both modes build into $(BUILD); switching between them wipes the objects first
-# (see the checkmode target) so nothing is left over from the other mode.
+# both of them build into the $(BUILD) directory, so they restart everything when switching modes
 #---------------------------------------------------------------------------------
 DEBUG		?=	0
 
@@ -186,9 +202,17 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 export _3DSXDEPS	:=	$(if $(NO_SMDH),,$(OUTPUT).smdh)
 
 #Assign the tools 
-BANNERTOOL	?=	bannertool
-FFMPEG		?=	ffmpeg
-PYTHON		?=	python3
+BANNERTOOL		?=	bannertool
+FFMPEG			?=	ffmpeg
+PYTHON			?=	python3
+
+MAKEROM 		?=	makerom
+
+MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
+					-major $(MAZEMAKER_VERSION_MAJOR) -minor $(MAZEMAKER_VERSION_MINOR) -micro $(MAZEMAKER_VERSION_MICRO) \
+					-icon "$(OUTPUT).smdh" -banner "$(BUILD)/banner.bnr" \
+					-DUNIQUE_ID=$(UNIQUE_ID) -DAPP_TITLE="$(TITLE)"
+#later: -logo meta/logo.bcma.lz -content "$(BUILD)/manual.cfa:1:1"
 
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.png)
@@ -211,10 +235,10 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean debug checkmode cia
+.PHONY: all clean debug checkmode cia bannerAudio
 
 #---------------------------------------------------------------------------------
-all: $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
+all: $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(MUSICBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES) 
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
@@ -239,33 +263,56 @@ checkmode: $(BUILD)
 # does everything in all first 
 #
 
-cia: all banner
+cia: all bannerAudio
 	@echo "Packaging $(TARGET).cia..."
 #check that the rsf actually exists
 	@if [ ! -f $(APP_RSF) ]; then \
 		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
 		exit 1; \
 	fi
-	makerom -f cia -o $(OUTPUT).cia \
-	-elf $(OUTPUT).elf \
-	-rsf $(APP_RSF) \
-	-target t \
-	-icon $(OUTPUT).smdh \
-	-major $(MAZEMAKER_VERSION_MAJOR) \
-	-minor $(MAZEMAKER_VERSION_MINOR) \
-	-micro $(MAZEMAKER_VERSION_MICRO) \
-	-DUNIQUE_ID=$(UNIQUE_ID) \
-	-DAPP_TITLE="$(TITLE)" \
-	-DAPP_ROMFS=$(ROMFS)
+	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(TOPDIR)/$(BUILD)/banner.wav" -o "$(BUILD)/banner.bnr"
+	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(BUILD)/icon.icn"
+	echo "Starting makerom packing..."
+	@$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
 
-bannerAudio: 
-#ffmpeg to prepare wav file.
 
-bannerModel:
-#prepare model
 
-banner: bannerAudio bannerModel
-#create the banner.
+
+# 	makerom -f cia -o $(OUTPUT).cia \
+# 	-elf $(OUTPUT).elf \
+# 	-rsf $(APP_RSF) \
+# 	-target t \
+# 	-icon $(OUTPUT).smdh \
+# 	-major $(MAZEMAKER_VERSION_MAJOR) \
+# 	-minor $(MAZEMAKER_VERSION_MINOR) \
+# 	-micro $(MAZEMAKER_VERSION_MICRO) \
+# 	-DUNIQUE_ID=$(UNIQUE_ID) \
+# 	-DAPP_TITLE="$(TITLE)" \
+# 	-DAPP_ROMFS=$(ROMFS)
+
+#prepare the audio file for use, and ensure build exists as well
+bannerAudio: $(BANNER_AUDIO) | $(BUILD)
+#set it's bitrate and sampling rate correctly
+	@$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $(TOPDIR)/$(BUILD)/banner.wav
+#@$(FFMPEG) -y -loglevel error -i $(TOPDIR)/$(BUILD)/banner.ogg -c:a pcm_s16le $(TOPDIR)/$(BUILD)/banner.wav
+
+
+#prepare model from blender file to end file type for banner
+#bannerModel:
+
+#create the banner
+#banner: bannerAudio bannerModel
+
+#Resizes the icon if needed, but it is already 48x48
+# $(APP_ICON): $(TOPDIR)/$(ICON)
+# 	@mkdir -p $(BUILD)
+# 	@$(FFMPEG) -y -i $(TOPDIR)/$(ICON) -vf scale=48:48 -frames:v 1 -update 1 $(APP_ICON)
+
+#create the sdmh file and copy it to the romfs so that launchers and the game itself can read it
+#used for homebrew menu
+# smdh: $(APP_ICON)
+# 	@$(BANNERTOOL) makesdmh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(ICON)" -f $(BANNER_FLAGS) -o $(OUTPUT).sdmh
+# 	@cp "$(OUTPUT).sdmh" "$(ROMFS)"
 
 $(BUILD):
 	@mkdir -p $@
@@ -277,6 +324,7 @@ endif
 
 ifneq ($(MUSICBUILD),$(BUILD))
 $(MUSICBUILD):
+#TODO: IN HERE, FOR ALL FILES IN MUSIC, CONVERT THEM INTO THE CORRECT AUDIO LIBRARY
 	@mkdir -p $@
 endif
 
@@ -291,7 +339,7 @@ $(OUTDIR):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTDIR)
+	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD)
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
