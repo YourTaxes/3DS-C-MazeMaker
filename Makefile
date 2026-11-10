@@ -1,3 +1,7 @@
+#Credit to all the contributers to the 3ds homebrew examples,
+#This makefile is based a large amount on them, and I learned a lot from their examples
+
+
 #---------------------------------------------------------------------------------
 .SUFFIXES:
 #---------------------------------------------------------------------------------
@@ -34,6 +38,7 @@ include $(TOPDIR)/version.env
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
+OUTDIR		:=	output
 SOURCES		:=	source source/datatypes source/utils source/game_logic \
 			source/states \
 			source/states/Debug source/states/LevelSelect \
@@ -115,7 +120,7 @@ LIBDIRS	:= $(CTRULIB)
 ifneq ($(notdir $(BUILD)),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/$(OUTDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
@@ -130,6 +135,7 @@ SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 PICAFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.v.pica)))
 SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
 GFXFILES	:=	$(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.t3s)))
+MUSICFILES	:= 	$(foreach dir,$(MUSIC),$(notdir $(wildcard $(dir)/*.*)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
@@ -179,6 +185,11 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 export _3DSXDEPS	:=	$(if $(NO_SMDH),,$(OUTPUT).smdh)
 
+#Assign the tools 
+BANNERTOOL	?=	bannertool
+FFMPEG		?=	ffmpeg
+PYTHON		?=	python3
+
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.png)
 	ifneq (,$(findstring $(TARGET).png,$(icons)))
@@ -193,7 +204,7 @@ else
 endif
 
 ifeq ($(strip $(NO_SMDH)),)
-	export _3DSXFLAGS += --smdh=$(CURDIR)/$(TARGET).smdh
+	export _3DSXFLAGS += --smdh=$(OUTPUT).smdh
 endif
 
 ifneq ($(ROMFS),)
@@ -203,7 +214,7 @@ endif
 .PHONY: all clean debug checkmode cia
 
 #---------------------------------------------------------------------------------
-all: $(BUILD) checkmode $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
+all: $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
@@ -244,7 +255,8 @@ cia: all banner
 	-minor $(MAZEMAKER_VERSION_MINOR) \
 	-micro $(MAZEMAKER_VERSION_MICRO) \
 	-DUNIQUE_ID=$(UNIQUE_ID) \
-	-DAPP_TITLE="$(TITLE)"
+	-DAPP_TITLE="$(TITLE)" \
+	-DAPP_ROMFS=$(ROMFS)
 
 bannerAudio: 
 #ffmpeg to prepare wav file.
@@ -263,15 +275,23 @@ $(GFXBUILD):
 	@mkdir -p $@
 endif
 
+ifneq ($(MUSICBUILD),$(BUILD))
+$(MUSICBUILD):
+	@mkdir -p $@
+endif
+
 ifneq ($(DEPSDIR),$(BUILD))
 $(DEPSDIR):
 	@mkdir -p $@
 endif
 
+$(OUTDIR):
+	@mkdir -p $@
+
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(TARGET).elf $(TARGET).smdh $(TARGET).cia
+	@rm -fr $(BUILD) $(OUTDIR)
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s

@@ -64,7 +64,10 @@ int main(int argc, char **argv)
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();
 
-	romfsInit();
+	Result romfsResult = romfsInit();
+	if (R_FAILED(romfsResult)){
+		printConsole("romfsInit failed: 0x%08lx (images, music, and text will not be present)", (unsigned long)romfsResult);
+	}
 
 	top_left = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 	top_right = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
