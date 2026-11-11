@@ -178,7 +178,7 @@ AccessControlInfo:
 
 
 SystemControlInfo:
-  SaveDataSize: 0K
+  SaveDataSize: $(SAVEFILE_SIZE)
   RemasterVersion: 0
   StackSize: 0x40000
 

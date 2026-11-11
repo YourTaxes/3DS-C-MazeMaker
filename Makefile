@@ -123,6 +123,7 @@ CFLAGS	+= -D_VERSION_MAJOR_=$(MAZEMAKER_VERSION_MAJOR) \
 			-D_VERSION_MINOR_=$(MAZEMAKER_VERSION_MINOR) \
 			-D_VERSION_MICRO_=$(MAZEMAKER_VERSION_MICRO) \
 			-D_SAVEFILE_VERSION_=$(SAVEFILE_VERSION) \
+			-D_SAVEFILE_MAGIC_=$(SAVEFILE_MAGIC) \
 			-D_STREETPASS_FILE_VERSION_=$(STREETPASS_FILE_VERSION)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
@@ -221,7 +222,8 @@ MAKEROM 		?=	makerom
 MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
 					-major $(MAZEMAKER_VERSION_MAJOR) -minor $(MAZEMAKER_VERSION_MINOR) -micro $(MAZEMAKER_VERSION_MICRO) \
 					-icon "$(SMDH_BUILD)" -banner "$(BUILD)/banner.bnr" \
-					-DUNIQUE_ID=$(UNIQUE_ID) -DAPP_TITLE="$(TITLE)"
+					-DUNIQUE_ID=$(UNIQUE_ID) -DAPP_TITLE="$(TITLE)" \
+					-DSAVEFILE_SIZE=$(SAVEFILE_SIZE)
 #later: -logo meta/logo.bcma.lz -content "$(BUILD)/manual.cfa:1:1"
 
 ifeq ($(strip $(ICON)),)
@@ -245,7 +247,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean debug checkmode cia cci run
+.PHONY: all clean debug checkmode cia cci full
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(MUSICBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES) 
@@ -323,6 +325,7 @@ $(OUTPUT).cci: $(BANNER_BUILD) $(SMDH_BUILD) | $(OUTDIR)
 	@$(MAKEROM) -f cci -o $(OUTPUT).cci -target t -exefslogo $(MAKEROM_ARGS)
 
 
+full: cia cci
 
 
 $(BUILD):

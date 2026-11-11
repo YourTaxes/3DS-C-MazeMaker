@@ -78,12 +78,12 @@ static bool isValid(void)
         printConsole("save file is %ld bytes, expected %u", size, (unsigned)sizeof(Save_File));
     } else if (fread(&header_data, sizeof(Save_Header), 1, save_file) != 1){
         printConsole("could not read the save file header");
-    } else if (header_data.magic != SAVE_MAGIC){
-        printConsole("save file magic is 0x%08lX, expected 0x%08lX", (unsigned long)header_data.magic, (unsigned long)SAVE_MAGIC);
-    } else if (header_data.version != SAVE_VERSION){
+    } else if (header_data.magic != _SAVEFILE_MAGIC_){
+        printConsole("save file magic is 0x%08lX, expected 0x%08lX", (unsigned long)header_data.magic, (unsigned long)_SAVEFILE_MAGIC_);
+    } else if (header_data.version != _SAVEFILE_VERSION_){
         //only version 1 exists so far. when SAVE_VERSION is bumped, this is where
         //an old file gets migrated instead of thrown away.
-        printConsole("save file is version %d, this build wants %u", header_data.version, SAVE_VERSION);
+        printConsole("save file is version %d, this build wants %u", header_data.version, _SAVEFILE_VERSION_);
     } else {
         ok = true;
     }
@@ -109,8 +109,8 @@ bool SaveFile_Ensure(void)
         return false;
     }
 
-    fresh->header.magic = SAVE_MAGIC;
-    fresh->header.version = SAVE_VERSION;
+    fresh->header.magic = _SAVEFILE_MAGIC_;
+    fresh->header.version = _SAVEFILE_VERSION_;
     for (int i = 0; i < LEVEL_SLOT_CNT; i++) fresh->Levels[i].empty = true;
 
     bool ok = SaveFile_Write(fresh);

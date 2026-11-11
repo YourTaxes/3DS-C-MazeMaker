@@ -120,8 +120,8 @@ static inline bool hardTimeValid(const Raw_Level* lvl){
 //check magic first (is this even our file?), then version (is the
 //layout what this build expects, or does it need migrating?). bump
 //SAVE_VERSION whenever anything below the header changes shape.
-#define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
-#define SAVE_VERSION 5
+//#define SAVE_MAGIC   0x4B4D5A4DU //"MZMK" as little endian bytes
+//#define SAVE_VERSION 5
 
 typedef struct{
     u32 magic;   //always SAVE_MAGIC
