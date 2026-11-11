@@ -1,4 +1,8 @@
 #!/bin/sh
+# I made this script so it would be easier to debug the game, because you need to run it from terminal to see the
+# log in real time.
+#
+#
 # Launch Azahar from the terminal and stream its log (including the game's
 # debug prints, logged under Debug.Emulated) here.
 #

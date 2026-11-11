@@ -1,11 +1,12 @@
 #!/bin/sh
+# I made this script so that it would be easier to debug the game using gdb, because it is kinda a pain
 # Start arm-none-eabi-gdb on the game's .elf and connect it to Azahar's GDB
 # stub (start Azahar first with ./runAzahar.sh gdb).
 #
 # Usage: ./runGdb.sh [<file.elf>]
 #   <file.elf>  which .elf's symbols to load (default: the project's build)
 #
-# Env overrides: GDB_PORT (default 24689, matches the Azahar config)
+# Env overrides: GDB_PORT (default 24689)
 
 DIR=$(cd "$(dirname "$0")" && pwd)
 BASENAME=3DS-C-MazeMaker
