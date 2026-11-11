@@ -6,11 +6,18 @@ build/*
 
 #tex3ds output. the sources are the png and t3s pairs in gfx/
 romfs/gfx/
+romfs/
 
 #remove built game files
 *.3dsx
 *.elf
 *.smdh
 *.cia
+*.cci
 #linker map listing
 *.lst
+#directories that live outside the repository, such as my azahar emulator
+outsidedirectores.env
+#Helper scripts I made
+runAzahar.sh
+runGdb.sh

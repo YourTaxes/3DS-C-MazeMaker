@@ -14,6 +14,9 @@ TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 include $(TOPDIR)/version.env
 
+#holds the location of the azahar emulator I use for debugging
+include $(TOPDIR)/outsidedirectores.env
+
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
 # BUILD is the directory where object files & intermediate files will be placed
@@ -74,6 +77,13 @@ BANNER_AUDIO	:= 	$(META_DIR)/BannerAudio.ogg
 STREETPASS_ID	:= 	$(UNIQUE_ID) 
 BANNER_FLAGS	:= 	visible,allow3d,extendedbanner,savedata,recordusage
 
+
+#==========================
+#build directories for banner stuff
+#==========================
+BANNER_AUDIO_BUILD	:= 	$(BUILD)/banner.wav
+BANNER_BUILD	:= 	$(BUILD)/banner.bnr
+SMDH_BUILD		:=	$(BUILD)/icon.icn
 
 
 #---------------------------------------------------------------------------------
@@ -235,7 +245,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean debug checkmode cia bannerAudio
+.PHONY: all clean debug checkmode cia cci run
 
 #---------------------------------------------------------------------------------
 all: $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(MUSICBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES) 
@@ -258,61 +268,57 @@ checkmode: $(BUILD)
 		echo $(DEBUG) > $(BUILD)/.buildmode; \
 	fi
 
+
+#prepare the audio file for use, and ensure build exists as well
+$(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
+	@echo "Formatting banner audio..."
+#set it's bitrate and sampling rate correctly
+	@$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $@
+
+#
+# makes the banner for the cia and cci
+# 
+$(BANNER_BUILD): all $(BANNER_AUDIO_BUILD)
+	@echo "Creating Banner..."
+	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO)" -o $@
+
+
+#
+# makes the smdh for the cia and cci
+# copy it to romfs so that the homebrew launcher can access it
+#
+$(SMDH_BUILD): all 
+	@echo "Creating smdh..."
+	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(SMDH_BUILD)"
+	@cp "$(SMDH_BUILD)" "$(ROMFS)"
+
+
+
 #
 # makes the project into a cia file
 # does everything in all first 
 #
-
-cia: all bannerAudio
+cia: all $(BANNER_BUILD) $(SMDH_BUILD)
 	@echo "Packaging $(TARGET).cia..."
 #check that the rsf actually exists
 	@if [ ! -f $(APP_RSF) ]; then \
 		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
 		exit 1; \
 	fi
-	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(TOPDIR)/$(BUILD)/banner.wav" -o "$(BUILD)/banner.bnr"
-	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(BUILD)/icon.icn"
-	echo "Starting makerom packing..."
 	@$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
 
 
 
-
-# 	makerom -f cia -o $(OUTPUT).cia \
-# 	-elf $(OUTPUT).elf \
-# 	-rsf $(APP_RSF) \
-# 	-target t \
-# 	-icon $(OUTPUT).smdh \
-# 	-major $(MAZEMAKER_VERSION_MAJOR) \
-# 	-minor $(MAZEMAKER_VERSION_MINOR) \
-# 	-micro $(MAZEMAKER_VERSION_MICRO) \
-# 	-DUNIQUE_ID=$(UNIQUE_ID) \
-# 	-DAPP_TITLE="$(TITLE)" \
-# 	-DAPP_ROMFS=$(ROMFS)
-
-#prepare the audio file for use, and ensure build exists as well
-bannerAudio: $(BANNER_AUDIO) | $(BUILD)
-#set it's bitrate and sampling rate correctly
-	@$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $(TOPDIR)/$(BUILD)/banner.wav
-#@$(FFMPEG) -y -loglevel error -i $(TOPDIR)/$(BUILD)/banner.ogg -c:a pcm_s16le $(TOPDIR)/$(BUILD)/banner.wav
+cci: all $(BANNER_BUILD) $(SMDH_BUILD)
+	@echo "Packaging $(TARGET).cci..."
+	@if [ ! -f $(APP_RSF) ]; then \
+		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
+		exit 1; \
+	fi
+	@$(MAKEROM) -f cci -o $(OUTPUT).cci -target t -exefslogo $(MAKEROM_ARGS)
 
 
-#prepare model from blender file to end file type for banner
-#bannerModel:
 
-#create the banner
-#banner: bannerAudio bannerModel
-
-#Resizes the icon if needed, but it is already 48x48
-# $(APP_ICON): $(TOPDIR)/$(ICON)
-# 	@mkdir -p $(BUILD)
-# 	@$(FFMPEG) -y -i $(TOPDIR)/$(ICON) -vf scale=48:48 -frames:v 1 -update 1 $(APP_ICON)
-
-#create the sdmh file and copy it to the romfs so that launchers and the game itself can read it
-#used for homebrew menu
-# smdh: $(APP_ICON)
-# 	@$(BANNERTOOL) makesdmh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(ICON)" -f $(BANNER_FLAGS) -o $(OUTPUT).sdmh
-# 	@cp "$(OUTPUT).sdmh" "$(ROMFS)"
 
 $(BUILD):
 	@mkdir -p $@
