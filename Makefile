@@ -280,7 +280,7 @@ $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
 #  updates when the audio or the image update
 $(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_IMAGE) | $(BUILD)
 	@echo "Creating Banner..."
-	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO)" -o $@
+	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO_BUILD)" -o $@
 
 
 #
