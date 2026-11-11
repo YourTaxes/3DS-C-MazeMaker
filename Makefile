@@ -220,7 +220,7 @@ MAKEROM 		?=	makerom
 
 MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
 					-major $(MAZEMAKER_VERSION_MAJOR) -minor $(MAZEMAKER_VERSION_MINOR) -micro $(MAZEMAKER_VERSION_MICRO) \
-					-icon "$(OUTPUT).smdh" -banner "$(BUILD)/banner.bnr" \
+					-icon "$(SMDH_BUILD)" -banner "$(BUILD)/banner.bnr" \
 					-DUNIQUE_ID=$(UNIQUE_ID) -DAPP_TITLE="$(TITLE)"
 #later: -logo meta/logo.bcma.lz -content "$(BUILD)/manual.cfa:1:1"
 
@@ -277,8 +277,8 @@ $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
 
 #
 # makes the banner for the cia and cci
-# 
-$(BANNER_BUILD): all $(BANNER_AUDIO_BUILD)
+#  updates when the audio or the image update
+$(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_IMAGE) | $(BUILD)
 	@echo "Creating Banner..."
 	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO)" -o $@
 
@@ -286,19 +286,22 @@ $(BANNER_BUILD): all $(BANNER_AUDIO_BUILD)
 #
 # makes the smdh for the cia and cci
 # copy it to romfs so that the homebrew launcher can access it
-#
-$(SMDH_BUILD): all 
+# updates only when the icon or makefile update
+$(SMDH_BUILD): $(ICON) Makefile | $(BUILD)
 	@echo "Creating smdh..."
 	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(SMDH_BUILD)"
-	@cp "$(SMDH_BUILD)" "$(ROMFS)"
+	@cp "$(SMDH_BUILD)" "$(ROMFS)/icon.icn"
 
 
+#wrapper for cia 
+cia: all
+	@$(MAKE) --no-print-directory $(OUTPUT).cia
 
 #
 # makes the project into a cia file
 # does everything in all first 
 #
-cia: all $(BANNER_BUILD) $(SMDH_BUILD)
+$(OUTPUT).cia: $(BANNER_BUILD) $(SMDH_BUILD) | $(OUTDIR)
 	@echo "Packaging $(TARGET).cia..."
 #check that the rsf actually exists
 	@if [ ! -f $(APP_RSF) ]; then \
@@ -308,8 +311,10 @@ cia: all $(BANNER_BUILD) $(SMDH_BUILD)
 	@$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
 
 
+cci: all
+	@$(MAKE) --no-print-directory $(OUTPUT).cci
 
-cci: all $(BANNER_BUILD) $(SMDH_BUILD)
+$(OUTPUT).cci: $(BANNER_BUILD) $(SMDH_BUILD) | $(OUTDIR)
 	@echo "Packaging $(TARGET).cci..."
 	@if [ ! -f $(APP_RSF) ]; then \
 		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
@@ -345,7 +350,7 @@ $(OUTDIR):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD)
+	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD) $(ROMFS)/icon.icn
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
