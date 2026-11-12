@@ -11,6 +11,11 @@ TitleInfo:
   Category                : Application
   UniqueId                : $(UNIQUE_ID)
 
+CardInfo:
+  MediaSize               : 128MB
+  MediaType               : Card1
+  CardDevice              : NorFlash
+
 Option:
   UseOnSD                 : true # true if App is to be installed to SD
   FreeProductCode         : true # Removes limitations on ProductCode

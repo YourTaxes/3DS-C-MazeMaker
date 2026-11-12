@@ -15,7 +15,7 @@ include $(DEVKITARM)/3ds_rules
 include $(TOPDIR)/version.env
 
 #holds the location of the azahar emulator I use for debugging
-include $(TOPDIR)/outsidedirectores.env
+-include $(TOPDIR)/outsidedirectores.env
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -74,7 +74,7 @@ BANNER_IMAGE	:= 	$(META_DIR)/PlaceholderBanner.png
 #BANNER_CGFX	:=	$(META_DIR)/banner.cgfx
 BANNER_AUDIO	:= 	$(META_DIR)/BannerAudio.ogg
 #left this here in case it needs to be changed in the future
-STREETPASS_ID	:= 	$(UNIQUE_ID) 
+STREETPASS_ID	:= 	$(UNIQUE_ID)
 BANNER_FLAGS	:= 	visible,allow3d,extendedbanner,savedata,recordusage
 
 
@@ -90,9 +90,11 @@ SMDH_BUILD		:=	$(BUILD)/icon.icn
 # determine which args to use for bannertool, depending on if I choose to eventually do flat or 3d 
 #---------------------------------------------------------------------------------
 ifneq ($(strip $(BANNER_CGFX)),)
-BANNER_ARG	:=	-ci "$(TOPDIR)/$(BANNER_CGFX)"
+BANNER_SRC		:=	$(BANNER_CGFX)
+BANNER_ARG		:=	-ci "$(TOPDIR)/$(BANNER_CGFX)"
 else
-BANNER_ARG	:=	-i "$(TOPDIR)/$(BANNER_IMAGE)"
+BANNER_SRC		:=	$(BANNER_IMAGE)
+BANNER_ARG		:=	-i "$(TOPDIR)/$(BANNER_IMAGE)"
 endif
 
 #---------------------------------------------------------------------------------
@@ -124,6 +126,7 @@ CFLAGS	+= -D_VERSION_MAJOR_=$(MAZEMAKER_VERSION_MAJOR) \
 			-D_VERSION_MICRO_=$(MAZEMAKER_VERSION_MICRO) \
 			-D_SAVEFILE_VERSION_=$(SAVEFILE_VERSION) \
 			-D_SAVEFILE_MAGIC_=$(SAVEFILE_MAGIC) \
+			-D_SAVEFILE_SIZE_=$(SAVEFILE_SIZE) \
 			-D_STREETPASS_FILE_VERSION_=$(STREETPASS_FILE_VERSION)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
@@ -221,9 +224,9 @@ MAKEROM 		?=	makerom
 
 MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
 					-major $(MAZEMAKER_VERSION_MAJOR) -minor $(MAZEMAKER_VERSION_MINOR) -micro $(MAZEMAKER_VERSION_MICRO) \
-					-icon "$(SMDH_BUILD)" -banner "$(BUILD)/banner.bnr" \
+					-icon "$(SMDH_BUILD)" -banner "$(BANNER_BUILD)" \
 					-DUNIQUE_ID=$(UNIQUE_ID) -DAPP_TITLE="$(TITLE)" \
-					-DSAVEFILE_SIZE=$(SAVEFILE_SIZE)
+					-DSAVEFILE_SIZE=$(SAVEFILE_SIZE)K
 #later: -logo meta/logo.bcma.lz -content "$(BUILD)/manual.cfa:1:1"
 
 ifeq ($(strip $(ICON)),)
@@ -271,6 +274,7 @@ checkmode: $(BUILD)
 	fi
 
 
+
 #prepare the audio file for use, and ensure build exists as well
 $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
 	@echo "Formatting banner audio..."
@@ -280,19 +284,17 @@ $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
 #
 # makes the banner for the cia and cci
 #  updates when the audio or the image update
-$(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_IMAGE) | $(BUILD)
+$(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_SRC) | $(BUILD)
 	@echo "Creating Banner..."
 	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO_BUILD)" -o $@
 
 
 #
 # makes the smdh for the cia and cci
-# copy it to romfs so that the homebrew launcher can access it
 # updates only when the icon or makefile update
 $(SMDH_BUILD): $(ICON) Makefile | $(BUILD)
 	@echo "Creating smdh..."
 	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(SMDH_BUILD)"
-	@cp "$(SMDH_BUILD)" "$(ROMFS)/icon.icn"
 
 
 #wrapper for cia 
@@ -303,7 +305,7 @@ cia: all
 # makes the project into a cia file
 # does everything in all first 
 #
-$(OUTPUT).cia: $(BANNER_BUILD) $(SMDH_BUILD) | $(OUTDIR)
+$(OUTPUT).cia: $(BANNER_BUILD) $(SMDH_BUILD) $(OUTPUT).elf | $(OUTDIR)
 	@echo "Packaging $(TARGET).cia..."
 #check that the rsf actually exists
 	@if [ ! -f $(APP_RSF) ]; then \
@@ -316,7 +318,7 @@ $(OUTPUT).cia: $(BANNER_BUILD) $(SMDH_BUILD) | $(OUTDIR)
 cci: all
 	@$(MAKE) --no-print-directory $(OUTPUT).cci
 
-$(OUTPUT).cci: $(BANNER_BUILD) $(SMDH_BUILD) | $(OUTDIR)
+$(OUTPUT).cci: $(BANNER_BUILD) $(SMDH_BUILD) $(OUTPUT).elf | $(OUTDIR)
 	@echo "Packaging $(TARGET).cci..."
 	@if [ ! -f $(APP_RSF) ]; then \
 		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
@@ -353,7 +355,7 @@ $(OUTDIR):
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD) $(ROMFS)/icon.icn
+	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD)
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s

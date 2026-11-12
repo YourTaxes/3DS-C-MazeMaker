@@ -69,6 +69,8 @@ int main(int argc, char **argv)
 		printConsole("romfsInit failed: 0x%08lx (images, music, and text will not be present)", (unsigned long)romfsResult);
 	}
 
+	SaveFile_Mount();
+
 	top_left = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
 	top_right = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
 	bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
@@ -93,7 +95,7 @@ int main(int argc, char **argv)
 	//the save file lives on the SD card. make sure it exists and is ours, then
 	//boot with the current slot as the loaded level. if either step fails the
 	//game still runs, on the zeroed global rawLvl marked as an empty slot.
-	if (!SaveFile_Ensure() || !SaveFile_ReadSlot(ctx.curSlot, &rawLvl)){
+	if (!SaveFile_ReadSlot(ctx.curSlot, &rawLvl)){
 		printConsole("no usable save file, continuing with an empty level");
 		rawLvl.empty = true;
 	}
@@ -176,6 +178,9 @@ int main(int argc, char **argv)
 
 	//write what the last selected slot was.
 	SaveFile_WriteLastSlot(ctx.curSlot);
+
+	//unmount the archive
+	SaveFile_Unmount();
 
 	//after the last state's end(), so nothing is still holding a borrowed C2D_Image, and
 	//before C2D_Fini, because the sheets are citro2d objects

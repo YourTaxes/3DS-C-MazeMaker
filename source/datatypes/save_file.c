@@ -5,6 +5,17 @@
 #include <stdlib.h>
 #include <stddef.h>   // offsetof
 #include <sys/stat.h> // mkdir
+
+//stores the path for saving the rest of the functions use
+//could be either the sd card or the save archive
+//defaults to 3dsx
+static const char* savePath = SD_SAVE_PATH;
+//the bool that holds if saving to the save archive
+//defaults to 3dsx
+static bool usingArchive = false;
+
+
+
 /*
 * is `slot` one this build has room for? logs it if not, so the complaint is worded
 * once for every function that takes a slot number.
@@ -29,15 +40,31 @@ static long slotOffset(int slot)
 }
 
 /*
+* writes to the save archive only reach the archive once they are commited. 
+* this does nothing on the sd card
+*/
+static void commit(void)
+{
+    if (!usingArchive){
+        return;
+    }
+    Result commitResult = archiveCommitSaveData("save");
+    if (R_FAILED(commitResult)){
+        printConsole("committing the save archive failed 0x%08lX", (unsigned long) commitResult);
+    }
+}
+
+
+/*
 * open the save file, seek to `offset`, and read or write `size` bytes there.
 * "r+b" opens the existing file for update, never truncating the rest of it.
 * returns true only if every byte was transferred.
 */
 static bool transferAt(long offset, void* buf, size_t size, bool write)
 {
-    FILE* save_file = fopen(SAVE_PATH, write ? "r+b" : "rb");
+    FILE* save_file = fopen(savePath, write ? "r+b" : "rb");
     if (save_file == NULL){
-        printConsole("could not open %s for %s", SAVE_PATH, write ? "writing" : "reading");
+        printConsole("could not open %s for %s", savePath, write ? "writing" : "reading");
         return false;
     }
 
@@ -47,9 +74,12 @@ static bool transferAt(long offset, void* buf, size_t size, bool write)
         ok = (current == size);
     }
     fclose(save_file);
+    if (ok && write){
+        commit();
+    }
 
     if (!ok) printConsole("%s %u bytes at offset %ld of %s failed",
-                          write ? "writing" : "reading", (unsigned)size, offset, SAVE_PATH);
+                          write ? "writing" : "reading", (unsigned)size, offset, savePath);
     return ok;
 }
 
@@ -61,9 +91,9 @@ static bool transferAt(long offset, void* buf, size_t size, bool write)
 */
 static bool isValid(void)
 {
-    FILE* save_file = fopen(SAVE_PATH, "rb");
+    FILE* save_file = fopen(savePath, "rb");
     if (save_file == NULL){
-        printConsole("save file %s not found", SAVE_PATH);
+        printConsole("save file %s not found", savePath);
         return false;
     }
 
@@ -95,7 +125,7 @@ static bool isValid(void)
 bool SaveFile_Ensure(void)
 {
     if (isValid()){
-        printConsole("save file found at %s", SAVE_PATH);
+        printConsole("save file found at %s", savePath);
         return true;
     }
 
@@ -127,19 +157,25 @@ bool SaveFile_Write(const Save_File* file)
 {
     //the folders are made here rather than in _Ensure so a save still works if
     //they were deleted while the game was running. EEXIST is the normal case.
-    mkdir("sdmc:/3ds", 0777);
-    mkdir(SAVE_DIR, 0777);
+    if (!usingArchive){
+        mkdir("sdmc:/3ds", 0777);
+        mkdir(savePath, 0777);
+    }
 
-    FILE* save_file = fopen(SAVE_PATH, "wb");
+    FILE* save_file = fopen(savePath, "wb");
     if (save_file == NULL){
-        printConsole("could not create %s", SAVE_PATH);
+        printConsole("could not create %s", savePath);
         return false;
     }
 
     bool ok = fwrite(file, sizeof(Save_File), 1, save_file) == 1;
     fclose(save_file);
 
-    if (!ok) printConsole("writing %s failed", SAVE_PATH);
+    if (ok){
+        commit();
+    }
+
+    if (!ok) printConsole("writing %s failed", savePath);
     return ok;
 }
 
@@ -195,4 +231,53 @@ bool SaveFile_WriteLastSlot(int slot)
 
     u8 stored = (u8)slot;
     return transferAt((long)offsetof(Save_File, lastSlot), &stored, sizeof stored, true);
+}
+
+void SaveFile_Mount(void)
+{
+    if (envIsHomebrew()){
+        printConsole("running as 3dsx, saving to %s", SD_SAVE_PATH);
+        return;
+    }
+
+    //running in cia/cci
+    //mount the save archive
+    FS_Path emptyPath = fsMakePath(PATH_EMPTY, "");
+    //mounts the save archive device
+    Result mountResult = archiveMount(ARCHIVE_SAVEDATA, emptyPath, "save");
+    
+    if (R_FAILED(mountResult)){
+        //test if this is the first launch, where archive exists but isn't formatted
+        printConsole("save archive mount failed 0x%08lX, formatting...", (unsigned long)mountResult);
+        //actually format it
+        //emptyPath is given because the ARCHIVE_SAVEDATA makes it target the archive always
+        //blocks is the size of the whole archive (SaveDataSize in the rsf)
+        //use 10 directory limit (for overhead, probably going to use one for main save, one for streetpass out save, and the 6 streetpass saves)
+        //use 11 directory buckets and file buckets, because it needs to be a prime number above the directory number 
+        mountResult = FSUSER_FormatSaveData(ARCHIVE_SAVEDATA, emptyPath, SAVE_BLOCKS, 10, 10, 11, 11, true);
+        if (R_SUCCEEDED(mountResult)){
+            //retry the mount, should work after format
+            mountResult = archiveMount(ARCHIVE_SAVEDATA, emptyPath, "save");
+        }
+    }
+
+    if (R_FAILED(mountResult)){
+        //the archive could not be loaded for some reason, so fall back on the logic for the 3dsx.
+        printConsole("Could not mount the save archive 0x%08lX, saving to %s instead", (unsigned long) mountResult, SD_SAVE_PATH);
+        return;
+    }
+
+    //finialize settings for archive
+    usingArchive = true;
+    savePath = ARCHIVE_SAVE_PATH;
+    printConsole("Save archive mounted, saving to %s", savePath);
+}
+
+void SaveFile_Unmount(void)
+{
+    if (usingArchive){
+        archiveUnmount("save");
+        usingArchive = false;
+        savePath = SD_SAVE_PATH;
+    }
 }

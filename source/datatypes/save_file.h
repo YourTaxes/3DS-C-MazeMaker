@@ -7,12 +7,35 @@
 //typedef struct Raw_Level Raw_Level;
 
 /*
-* the save file lives on the SD card. this is the only place the SD card is touched.
-* a .3dsx has no save archive of its own, so the homebrew convention of a folder
-* per app under /3ds/ is used. libctru mounts sdmc: on its own before main.
+* The save file lives on the sd card, accessed through sdmc if it is run through the homebrew launcher,
+* More likely, if it is run through the cia or cci, then it will have it's own system savedata archive
+* */
+#define SD_SAVE_DIR  "sdmc:/3ds/MazeMaker"
+#define SD_SAVE_PATH SD_SAVE_DIR "/save.bin"
+#define ARCHIVE_SAVE_PATH "save:/save.bin"
+
+//sizes of the cia/cci save archive in 512 byte blocks, for FSUSER_FormatSaveData.
+//comes from SAVEFILE_SIZE in version.env, and is updated with the makerom
+#define SAVE_BLOCKS ((_SAVEFILE_SIZE_ * 1024) / 512)
+
+//DuplicateData keeps 2 copies, which I am doing because my save is so incredibly small,
+//so it makes half the archive usable. make sure I will not end up using that much
+_Static_assert(sizeof(Save_File) * 2 + 0x2000 <= _SAVEFILE_SIZE_ * 1024, "Save_File no longer fits in the save archive, raise SAVEFILE_SIZE in version.env");
+
+/*
+* pick where the save data lives
+* gets called once on boot, before anything else with savefile
+* cia/cci: mounts the title's save archive as "save",  and formats on the first launch
+* 3dsx: saves and reads from the sd card.
+* saves will not transfer between versions*/
+void SaveFile_Mount(void);
+
+/*
+* Unmounts the save archive if it is in use.
+* gets called on exit
 */
-#define SAVE_DIR  "sdmc:/3ds/MazeMaker"
-#define SAVE_PATH SAVE_DIR "/save.bin"
+void SaveFile_Unmount(void);
+
 
 /*
 * make sure a valid save file exists. creates a fresh one (every slot empty) if the
