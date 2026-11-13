@@ -98,7 +98,7 @@ SMDH_BUILD		:=	$(BUILD)/icon.icn
 SUBMODULE_LIBS	:= 	libs/liBeedle/include/libeedle.h
 
 #the list of submodule compile tools for cia
-SUBMODULE_RELEASE_TOOLS	:= 	compile_tools/pygcfx/main.py \
+SUBMODULE_RELEASE_TOOLS	:= 	compile_tools/pycgfx/main.py \
 							compile_tools/bcmatools/creator.py
 
 #---------------------------------------------------------------------------------
@@ -205,7 +205,7 @@ export T3XFILES :=  $(GFXFILES:.t3s=.t3x)
 else
 #---------------------------------------------------------------------------------
 export ROMFS_T3XFILES	:=	$(patsubst %.t3s, $(GFXBUILD)/%.t3x, $(GFXFILES))
-export ROMFS_MUSIC		:=	$(patsubst %.opus, $(MUSICBUILD)/%.opus, $(MUSICBUILD))
+export ROMFS_MUSIC		:=	$(patsubst %, $(MUSICBUILD)/%.opus, $(basename $(MUSICFILES)))
 export T3XHFILES		:=	$(patsubst %.t3s, $(BUILD)/%.h, $(GFXFILES)) 
 #---------------------------------------------------------------------------------
 endif
@@ -248,7 +248,7 @@ MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
 ROMFS_FILES 	:=	$(ROMFS_T3XFILES) $(ROMFS_MUSIC) $(HIM)
 PACKAGE_DEPS 	:= 	$(ROMFS_FILES) $(OUTPUT).elf $(APP_RSF) $(BANNER_BUILD) $(SMDH_BUILD) 
 
-SUBMODULE_CHECK_FUNC	=	test -f $(file) || (echo "ERROR: Need to pull submodule $(file)"; exit 1)
+SUBMODULE_CHECK_FUNC	=	test -f $(file) || (echo "ERROR: Need to pull submodule $(file)"; exit 1);
 
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.png)
@@ -274,7 +274,7 @@ endif
 .PHONY: all clean debug checkmode submodule_libs_check submodule_release_tools cia cci full
 
 #---------------------------------------------------------------------------------
-all: submodule_libs_check $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(MUSICBUILD) $(DEPSDIR) $(ROMFS_T3XFILES) $(T3XHFILES)
+all: submodule_libs_check $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(MUSICBUILD) $(DEPSDIR) $(T3XHFILES) $(ROMFS_FILES)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
@@ -294,58 +294,74 @@ checkmode: $(BUILD)
 		echo $(DEBUG) > $(BUILD)/.buildmode; \
 	fi
 
+#============================================
+#RomFS preparing rules
+#============================================
+#Make all of the music files into opus files, so they could be used in the future
+$(MUSICBUILD)/%.opus: $(MUSIC)/%.wav | $(MUSICBUILD)
+	@echo $(notdir $<)
+	@$(FFMPEG) -y -loglevel error -i $< -ar 48000 -ac 2 -c:a libopus $@
+
+#=============================================
+#Banner Creation Rules
+#=============================================
 
 #prepare the audio file for use, and ensure build exists as well
 $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
-	echo "Formatting banner audio..."
+	@echo "Formatting banner audio..."
 #set it's bitrate and sampling rate correctly
 	$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $@
 
 #prepare the model from the blender export
-$(BANNER_MODEL_BUILD): submodule_compile_tools_check $(BANNER_MODEL) | $(BUILD)
-	echo "Converting banner model"
+#TODO: ADD $(BANNER_MODEL) AS A DEPENDANCY
+$(BANNER_MODEL_BUILD): | $(BUILD)
+	@echo "Converting banner model"
+#TODO: REMOVE THIS ONCE THE CONVERSION IS ADDED
+	@touch $@
 #TODO: ADD THE CONVERSION HERE
 
-#
 # makes the banner for the cia and cci
 #  updates when the audio or the image update
 $(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_MODEL_BUILD) $(BANNER_SRC) | $(BUILD)
-	echo "Creating Banner..."
+	@echo "Creating Banner..."
 	$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO_BUILD)" -o $@
 
+#===========================================
 
-#
 # makes the smdh for the cia and cci
 # updates only when the icon or makefile update
 $(SMDH_BUILD): $(ICON) Makefile | $(BUILD)
-	echo "Creating smdh..."
+	@echo "Creating smdh..."
 	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(SMDH_BUILD)"
 
+#===========================================
+#Rules to actually create packaged files
+#===========================================
 
 #wrapper for cia 
-cia: all
-	$(MAKE) --no-print-directory $(OUTPUT).cia
+cia: all submodule_compile_tools_check
+	@$(MAKE) --no-print-directory $(OUTPUT).cia
 
-#
 # makes the project into a cia file
 # does everything in all first 
-#
 $(OUTPUT).cia: $(PACKAGE_DEPS) | $(OUTDIR)
-	echo "Packaging $(TARGET).cia..."
-	$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
+	@echo "Packaging $(TARGET).cia..."
+	@$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
 
 
-cci: all
-	$(MAKE) --no-print-directory $(OUTPUT).cci
+cci: all submodule_compile_tools_check
+	@$(MAKE) --no-print-directory $(OUTPUT).cci
 
 $(OUTPUT).cci: $(PACKAGE_DEPS) | $(OUTDIR)
-	echo "Packaging $(TARGET).cci..."
-	$(MAKEROM) -f cci -o $(OUTPUT).cci -target t -exefslogo $(MAKEROM_ARGS)
+	@echo "Packaging $(TARGET).cci..."
+	@$(MAKEROM) -f cci -o $(OUTPUT).cci -target t -exefslogo $(MAKEROM_ARGS)
 
 
 full: cia cci
 
-
+#==========================
+#Create the directories to put things into
+#==========================
 $(BUILD):
 	@mkdir -p $@
 
@@ -374,12 +390,12 @@ clean:
 	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD)
 
 submodule_libs_check:
-	@echo "Submodule libs are $(SUBMODULE_LIBS)"
-	@$(foreach file, $(SUBMODULE_LIBS), $(SUBMODULE_CHECK_FUNC))
+#@echo "Submodule libs are $(SUBMODULE_LIBS)"
+	@$(foreach file, $(SUBMODULE_LIBS), echo $(file); $(SUBMODULE_CHECK_FUNC))
 
 submodule_compile_tools_check:
-	@echo "Submodule compile tools are $(SUBMODULE_RELEASE_TOOLS)"
-	@$(foreach file, $(SUBMODULE_RELEASE_TOOLS), $(SUBMODULE_CHECK_FUNC))
+#@echo "Submodule compile tools are $(SUBMODULE_RELEASE_TOOLS)"
+	@$(foreach file, $(SUBMODULE_RELEASE_TOOLS), echo $(file); $(SUBMODULE_CHECK_FUNC))
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
