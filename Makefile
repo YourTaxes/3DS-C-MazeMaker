@@ -310,7 +310,7 @@ $(MUSICBUILD)/%.opus: $(MUSIC)/%.wav | $(MUSICBUILD)
 $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
 	@echo "Formatting banner audio..."
 #set it's bitrate and sampling rate correctly
-	$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $@
+	@$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $@
 
 #prepare the model from the blender export
 #TODO: ADD $(BANNER_MODEL) AS A DEPENDANCY
@@ -324,7 +324,7 @@ $(BANNER_MODEL_BUILD): | $(BUILD)
 #  updates when the audio or the image update
 $(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_MODEL_BUILD) $(BANNER_SRC) | $(BUILD)
 	@echo "Creating Banner..."
-	$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO_BUILD)" -o $@
+	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO_BUILD)" -o $@
 
 #===========================================
 
@@ -332,7 +332,7 @@ $(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_MODEL_BUILD) $(BANNER_SRC) | $(B
 # updates only when the icon or makefile update
 $(SMDH_BUILD): $(ICON) Makefile | $(BUILD)
 	@echo "Creating smdh..."
-	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(SMDH_BUILD)"
+	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(TOPDIR)/$(ICON)" -f $(BANNER_FLAGS) -o "$(SMDH_BUILD)"
 
 #===========================================
 #Rules to actually create packaged files
@@ -372,7 +372,6 @@ endif
 
 ifneq ($(MUSICBUILD),$(BUILD))
 $(MUSICBUILD):
-#TODO: IN HERE, FOR ALL FILES IN MUSIC, CONVERT THEM INTO THE CORRECT AUDIO LIBRARY
 	@mkdir -p $@
 endif
 
@@ -391,11 +390,11 @@ clean:
 
 submodule_libs_check:
 #@echo "Submodule libs are $(SUBMODULE_LIBS)"
-	@$(foreach file, $(SUBMODULE_LIBS), echo $(file); $(SUBMODULE_CHECK_FUNC))
+	@$(foreach file, $(SUBMODULE_LIBS), echo "Submodule exists - $(file)"; $(SUBMODULE_CHECK_FUNC))
 
 submodule_compile_tools_check:
 #@echo "Submodule compile tools are $(SUBMODULE_RELEASE_TOOLS)"
-	@$(foreach file, $(SUBMODULE_RELEASE_TOOLS), echo $(file); $(SUBMODULE_CHECK_FUNC))
+	@$(foreach file, $(SUBMODULE_RELEASE_TOOLS), echo "Submodule exists - $(file)"; $(SUBMODULE_CHECK_FUNC))
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s
