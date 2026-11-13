@@ -77,6 +77,10 @@ BANNER_AUDIO	:= 	$(META_DIR)/BannerAudio.ogg
 STREETPASS_ID	:= 	$(UNIQUE_ID)
 BANNER_FLAGS	:= 	visible,allow3d,extendedbanner,savedata,recordusage
 
+#==========================
+#???
+#==========================
+HIM				:= $(ROMFS)/his_lines.egg
 
 #==========================
 #build directories for banner stuff
@@ -190,7 +194,8 @@ export T3XFILES :=  $(GFXFILES:.t3s=.t3x)
 else
 #---------------------------------------------------------------------------------
 export ROMFS_T3XFILES	:=	$(patsubst %.t3s, $(GFXBUILD)/%.t3x, $(GFXFILES))
-export T3XHFILES		:=	$(patsubst %.t3s, $(BUILD)/%.h, $(GFXFILES))
+export ROMFS_MUSIC		:=	$(patsubst %.opus, $(MUSICBUILD)/%.opus, $(MUSICBUILD))
+export T3XHFILES		:=	$(patsubst %.t3s, $(BUILD)/%.h, $(GFXFILES)) 
 #---------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------
@@ -226,8 +231,11 @@ MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
 					-major $(MAZEMAKER_VERSION_MAJOR) -minor $(MAZEMAKER_VERSION_MINOR) -micro $(MAZEMAKER_VERSION_MICRO) \
 					-icon "$(SMDH_BUILD)" -banner "$(BANNER_BUILD)" \
 					-DUNIQUE_ID=$(UNIQUE_ID) -DAPP_TITLE="$(TITLE)" \
-					-DSAVEFILE_SIZE=$(SAVEFILE_SIZE)K
+					-DSAVEFILE_SIZE=$(SAVEFILE_SIZE)K -DROOTPATH=$(ROMFS)
 #later: -logo meta/logo.bcma.lz -content "$(BUILD)/manual.cfa:1:1"
+
+ROMFS_FILES 	:=	$(ROMFS_T3XFILES) $(ROMFS_MUSIC) $(HIM)
+PACKAGE_DEPS 	:= 	$(ROMFS_FILES) $(OUTPUT).elf $(APP_RSF) $(BANNER_BUILD) $(SMDH_BUILD) 
 
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.png)
@@ -305,25 +313,16 @@ cia: all
 # makes the project into a cia file
 # does everything in all first 
 #
-$(OUTPUT).cia: $(BANNER_BUILD) $(SMDH_BUILD) $(OUTPUT).elf | $(OUTDIR)
+$(OUTPUT).cia: $(PACKAGE_DEPS) | $(OUTDIR)
 	@echo "Packaging $(TARGET).cia..."
-#check that the rsf actually exists
-	@if [ ! -f $(APP_RSF) ]; then \
-		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
-		exit 1; \
-	fi
 	@$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
 
 
 cci: all
 	@$(MAKE) --no-print-directory $(OUTPUT).cci
 
-$(OUTPUT).cci: $(BANNER_BUILD) $(SMDH_BUILD) $(OUTPUT).elf | $(OUTDIR)
+$(OUTPUT).cci: $(PACKAGE_DEPS) | $(OUTDIR)
 	@echo "Packaging $(TARGET).cci..."
-	@if [ ! -f $(APP_RSF) ]; then \
-		echo "Error: $(APP_RSF) not found in the project directory. Please create an RSF file first."; \
-		exit 1; \
-	fi
 	@$(MAKEROM) -f cci -o $(OUTPUT).cci -target t -exefslogo $(MAKEROM_ARGS)
 
 
