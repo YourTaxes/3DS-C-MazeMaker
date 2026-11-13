@@ -1,0 +1,9 @@
+[submodule "compile_tools/bcmatools"]
+	path = compile_tools/bcmatools
+	url = https://github.com/LiquidFenrir/bcmatools
+[submodule "compile_tools/pycgfx"]
+    path = compile_tools/pycgfx
+    url = https://github.com/skyfloogle/pycgfx.git
+[submodule "libs/liBeedle"]
+    path = libs/liBeedle
+    url = https://codeberg.org/Sorunome/libeedle.git
