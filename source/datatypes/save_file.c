@@ -158,8 +158,8 @@ bool SaveFile_Write(const Save_File* file)
     //the folders are made here rather than in _Ensure so a save still works if
     //they were deleted while the game was running. EEXIST is the normal case.
     if (!usingArchive){
-        mkdir("sdmc:/3ds", 0777);
-        mkdir(savePath, 0777);
+        mkdir("sdmc:/3ds", S_IRWXU | S_IRWXG | S_IRWXO);
+        mkdir(SD_SAVE_DIR, S_IRWXU | S_IRWXG | S_IRWXO);
     }
 
     FILE* save_file = fopen(savePath, "wb");
