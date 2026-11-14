@@ -8,6 +8,9 @@ build/*
 romfs/gfx/
 romfs/
 
+#python venv
+.venv/
+
 #remove built game files
 *.3dsx
 *.elf
@@ -16,8 +19,7 @@ romfs/
 *.cci
 #linker map listing
 *.lst
-#directories that live outside the repository, such as my azahar emulator
+#directories that live outside the repository
 outsidedirectores.env
 #Helper scripts I made
-runAzahar.sh
-runGdb.sh
+*.sh

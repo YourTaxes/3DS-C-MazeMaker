@@ -71,7 +71,7 @@ APP_RSF		:= 	$(META_DIR)/MazeMaker.rsf
 #This is a placeholder until I finish the model
 BANNER_IMAGE	:= 	$(META_DIR)/PlaceholderBanner.png
 #Will add this, I am stil working on the model itself
-BANNER_MODEL	:=	$(META_DIR)/banner.glTF
+BANNER_MODEL	:=	$(META_DIR)/Banner.glb
 BANNER_AUDIO	:= 	$(META_DIR)/BannerAudio.ogg
 #left this here in case it needs to be changed in the future
 STREETPASS_ID	:= 	$(UNIQUE_ID)
@@ -104,9 +104,9 @@ SUBMODULE_RELEASE_TOOLS	:= 	compile_tools/pycgfx/main.py \
 #---------------------------------------------------------------------------------
 # determine which args to use for bannertool, depending on if I choose to eventually do flat or 3d 
 #---------------------------------------------------------------------------------
-ifneq ($(strip $(BANNER_CGFX)),)
-BANNER_SRC		:=	$(BANNER_CGFX)
-BANNER_ARG		:=	-ci "$(TOPDIR)/$(BANNER_CGFX)"
+ifneq ($(wildcard $(BANNER_MODEL)),)
+BANNER_SRC		:=	$(BANNER_MODEL_BUILD)
+BANNER_ARG		:=	-ci "$(BANNER_MODEL_BUILD)"
 else
 BANNER_SRC		:=	$(BANNER_IMAGE)
 BANNER_ARG		:=	-i "$(TOPDIR)/$(BANNER_IMAGE)"
@@ -180,7 +180,7 @@ SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 PICAFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.v.pica)))
 SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
 GFXFILES	:=	$(foreach dir,$(GRAPHICS),$(notdir $(wildcard $(dir)/*.t3s)))
-MUSICFILES	:= 	$(foreach dir,$(MUSIC),$(notdir $(wildcard $(dir)/*.*)))
+MUSICFILES	:= 	$(foreach dir,$(MUSIC),$(notdir $(wildcard $(dir)/*.wav)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
@@ -231,10 +231,18 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
 export _3DSXDEPS	:=	$(if $(NO_SMDH),,$(OUTPUT).smdh)
 
+#defines for the python envirenment
+#HOST_PYTHON only creates the venv, everything else uses the venv's python
+HOST_PYTHON			?=	python3
+VENV				:=	.venv
+PYTHON				:=	$(VENV)/bin/python3
+VENV_STAMP			:=	$(VENV)/.installed
+TOOL_REQUIREMENTS	:=	compile_tools/requirements.txt
+
 #Assign the tools 
 BANNERTOOL		?=	bannertool
 FFMPEG			?=	ffmpeg
-PYTHON			?=	python3
+PYCGFX			?=	compile_tools/pycgfx/main.py
 
 MAKEROM 		?=	makerom
 
@@ -248,7 +256,7 @@ MAKEROM_ARGS	:= 	-elf $(OUTPUT).elf -rsf $(APP_RSF) \
 ROMFS_FILES 	:=	$(ROMFS_T3XFILES) $(ROMFS_MUSIC) $(HIM)
 PACKAGE_DEPS 	:= 	$(ROMFS_FILES) $(OUTPUT).elf $(APP_RSF) $(BANNER_BUILD) $(SMDH_BUILD) 
 
-SUBMODULE_CHECK_FUNC	=	test -f $(file) || (echo "ERROR: Need to pull submodule $(file)"; exit 1);
+SUBMODULE_CHECK_FUNC	=	test -f $(file) || (echo "ERROR: Need to pull submodule $(file). Run: git submodule update --init --recursive"; exit 1);
 
 ifeq ($(strip $(ICON)),)
 	icons := $(wildcard *.png)
@@ -271,7 +279,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean debug checkmode submodule_libs_check submodule_release_tools cia cci full
+.PHONY: all clean debug checkmode submodule_libs_check submodule_release_tools_check cia cci full distclean
 
 #---------------------------------------------------------------------------------
 all: submodule_libs_check $(BUILD) $(OUTDIR) checkmode $(GFXBUILD) $(MUSICBUILD) $(DEPSDIR) $(T3XHFILES) $(ROMFS_FILES)
@@ -302,6 +310,20 @@ $(MUSICBUILD)/%.opus: $(MUSIC)/%.wav | $(MUSICBUILD)
 	@echo $(notdir $<)
 	@$(FFMPEG) -y -loglevel error -i $< -ar 48000 -ac 2 -c:a libopus $@
 
+#===========================================
+#Venv Setup
+#===========================================
+#Install the venv and all of the dependancies
+$(VENV_STAMP): $(TOOL_REQUIREMENTS)
+	@echo "Setting up the Python venv for release_tools tools"
+	$(HOST_PYTHON) -m venv $(VENV)
+	$(PYTHON) -m pip install --upgrade pip
+	$(PYTHON) -m pip install -r $(TOOL_REQUIREMENTS)
+#Remove devkit pro compiler flags for this line so that the library installs correctly.
+
+	env -u CC -u CXX -u AS -u AR -u LD -u NM -u RANLIB -u STRIP -u OBJCOPY $(PYTHON) -m pip install ./compile_tools/bcmatools/nlzss3_src
+	@touch $@
+
 #=============================================
 #Banner Creation Rules
 #=============================================
@@ -313,16 +335,14 @@ $(BANNER_AUDIO_BUILD): $(BANNER_AUDIO) | $(BUILD)
 	@$(FFMPEG) -y -loglevel error -i $(BANNER_AUDIO) -ac 2 -ar 44100 -t 3 -c:a pcm_s16le $@
 
 #prepare the model from the blender export
-#TODO: ADD $(BANNER_MODEL) AS A DEPENDANCY
-$(BANNER_MODEL_BUILD): | $(BUILD)
+$(BANNER_MODEL_BUILD): $(BANNER_MODEL) $(PYCGFX) | $(BUILD) $(VENV_STAMP)
 	@echo "Converting banner model"
-#TODO: REMOVE THIS ONCE THE CONVERSION IS ADDED
-	@touch $@
-#TODO: ADD THE CONVERSION HERE
+	@$(PYTHON) $(PYCGFX) $(BANNER_MODEL) $@
+
 
 # makes the banner for the cia and cci
 #  updates when the audio or the image update
-$(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_MODEL_BUILD) $(BANNER_SRC) | $(BUILD)
+$(BANNER_BUILD): $(BANNER_AUDIO_BUILD) $(BANNER_SRC) | $(BUILD)
 	@echo "Creating Banner..."
 	@$(BANNERTOOL) makebanner $(BANNER_ARG) -a "$(BANNER_AUDIO_BUILD)" -o $@
 
@@ -339,7 +359,7 @@ $(SMDH_BUILD): $(ICON) Makefile | $(BUILD)
 #===========================================
 
 #wrapper for cia 
-cia: all submodule_compile_tools_check
+cia: all submodule_release_tools_check
 	@$(MAKE) --no-print-directory $(OUTPUT).cia
 
 # makes the project into a cia file
@@ -349,7 +369,7 @@ $(OUTPUT).cia: $(PACKAGE_DEPS) | $(OUTDIR)
 	@$(MAKEROM) -f cia -o "$(OUTPUT).cia" -target t -exefslogo $(MAKEROM_ARGS)
 
 
-cci: all submodule_compile_tools_check
+cci: all submodule_release_tools_check
 	@$(MAKE) --no-print-directory $(OUTPUT).cci
 
 $(OUTPUT).cci: $(PACKAGE_DEPS) | $(OUTDIR)
@@ -388,13 +408,17 @@ clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(OUTDIR) $(MUSICBUILD)
 
+#this cleans and also destroys the venv
+distclean: clean
+	rm -fr $(VENV)
+
 submodule_libs_check:
 #@echo "Submodule libs are $(SUBMODULE_LIBS)"
-	@$(foreach file, $(SUBMODULE_LIBS), echo "Submodule exists - $(file)"; $(SUBMODULE_CHECK_FUNC))
+	@$(foreach file, $(SUBMODULE_LIBS), $(SUBMODULE_CHECK_FUNC) echo "Submodule exists - $(file)";)
 
-submodule_compile_tools_check:
+submodule_release_tools_check:
 #@echo "Submodule compile tools are $(SUBMODULE_RELEASE_TOOLS)"
-	@$(foreach file, $(SUBMODULE_RELEASE_TOOLS), echo "Submodule exists - $(file)"; $(SUBMODULE_CHECK_FUNC))
+	@$(foreach file, $(SUBMODULE_RELEASE_TOOLS), $(SUBMODULE_CHECK_FUNC) echo "Submodule exists - $(file)";)
 
 #---------------------------------------------------------------------------------
 $(GFXBUILD)/%.t3x	$(BUILD)/%.h	:	%.t3s

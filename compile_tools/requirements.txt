@@ -1,0 +1,5 @@
+#pycgfx (banner model)
+gltflib
+pillow
+#bcmatools (e-manual)
+lxml
