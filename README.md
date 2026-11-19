@@ -1,4 +1,4 @@
-# 3DS-C-pong-remake
+# 3DS-C-MazeMaker
 This is a remake of the mazemaker game engine I made for my high school programming class, 
 which I revisited recently and found was completely broken (Update: I fixed it), so I am remaking it for the 3ds.
 because why not.

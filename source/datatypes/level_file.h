@@ -140,7 +140,7 @@ typedef struct{
 
 typedef struct{
     Rect rect;
-    Tile_Type type : 5;
+    Tile_Type type;
 } Game_Rect;
 
 
@@ -165,12 +165,12 @@ typedef struct {
     //u8 startScreen[2]; //coordinate position of the screen with the start 
     //u8 startTile[2];
     UniqueTilePos blue_portal1;
-    UniqueTilePos blue_portal2; //NEEDS TO BE MALLOCED, AND NEEDS TO BE FREED WHEN OVERWRITTEN
+    UniqueTilePos orange_portal1;
+    UniqueTilePos* blue_portal2; //NEEDS TO BE MALLOCED, AND NEEDS TO BE FREED WHEN OVERWRITTEN
     //is a pointer to the list of portals other than the first one, 
     //only applicable if the player placed more than 2 blue portals.
     //list length should be stored in blue_portal_count
-    UniqueTilePos orange_portal1;
-    UniqueTilePos orange_portal2; //NEEDS TO BE MALLOCED AT CREATION, AND NEEDS TO BE FREED WHEN OVERWRITTEN
+    UniqueTilePos* orange_portal2; //NEEDS TO BE MALLOCED AT CREATION, AND NEEDS TO BE FREED WHEN OVERWRITTEN
     //is a pointer to the list of portals other than the first one, 
     //only applicable if the player placed more than 2 blue portals.
     //list length should be stored in blue_portal_count

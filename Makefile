@@ -149,13 +149,15 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lcitro2d -lcitro3d -lctru -lm
+LIBS	:= -lcitro2d -lcitro3d -lctru -lm -lliBeedle
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(CTRULIB)
+LIBDIRS	:= $(CTRULIB) $(PORTLIBS)
+INSTALLED_LIBS    :=    $(PORTLIBS)/lib/libliBeedle.a $(PORTLIBS)/include/libeedle.h
+
 
 
 #---------------------------------------------------------------------------------
@@ -415,6 +417,7 @@ distclean: clean
 submodule_libs_check:
 #@echo "Submodule libs are $(SUBMODULE_LIBS)"
 	@$(foreach file, $(SUBMODULE_LIBS), $(SUBMODULE_CHECK_FUNC) echo "Submodule exists - $(file)";)
+	@$(foreach file, $(INSTALLED_LIBS), test -f $(file) || (echo "ERROR: $(file) missing. Run: make -C libs/liBeedle && make -C libs/liBeedle install"; exit 1);)
 
 submodule_release_tools_check:
 #@echo "Submodule compile tools are $(SUBMODULE_RELEASE_TOOLS)"
