@@ -317,7 +317,7 @@ $(MUSICBUILD)/%.opus: $(MUSIC)/%.wav | $(MUSICBUILD)
 #===========================================
 #Install the venv and all of the dependancies
 $(VENV_STAMP): $(TOOL_REQUIREMENTS)
-	@echo "Setting up the Python venv for release_tools tools"
+	@echo "Setting up the Python venv for release tools"
 	$(HOST_PYTHON) -m venv $(VENV)
 	$(PYTHON) -m pip install --upgrade pip
 	$(PYTHON) -m pip install -r $(TOOL_REQUIREMENTS)
