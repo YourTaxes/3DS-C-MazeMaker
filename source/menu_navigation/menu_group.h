@@ -25,6 +25,13 @@
 typedef struct MenuGroup MenuGroup;
 
 
+//these defines are used as button indexes in the linking of button groups
+#define MENU_OUT_UP -2
+#define MENU_OUT_DOWN -3
+#define MENU_OUT_RIGHT -4
+#define MENU_OUT_LEFT -5
+
+
 //which menu sits on each side of one menu, as indexes into the group's own menu array.
 //MENU_NONE for an edge with nothing beyond it.
 //same union trick as MenuDef, for the same reason: the table is written with the names

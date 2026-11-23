@@ -11,6 +11,7 @@
 #include "states/Debug/Debug_state.h"
 #include "states/LevelSelect/LevelSelect.h"
 #include "states/forgotten/forgotten.h"
+#include "states/MenuNavTest/MenuNavTest.h"
 
 
 //global variables
@@ -40,6 +41,7 @@ static const StateFns STATES[STATE_COUNT] = {
 	[STATE_MAIN_MENU] = { MainMenu_Init, MainMenu_Logic, MainMenu_DrawTop, MainMenu_DrawBottom, MainMenu_End },
 	[STATE_DEBUG]     = { Debug_Init,    Debug_logic,    Debug_DrawTop,    Debug_DrawBottom,    Debug_end    },
 	[STATE_SAVE_SELECT]	= { LevelSelect_Init, LevelSelect_Logic, LevelSelect_DrawTop, LevelSelect_DrawBottom, LevelSelect_End	},
+	[STATE_MENUNAVTEST] = { MenuNavTest_Init, MenuNavTest_Logic, MenuNavTest_DrawTop, MenuNavTest_DrawBottom, MenuNavTest_End	},
 	[STATE_you_recieved_the_egg] = { forgotten_Init, forgotten_Logic, forgotten_DrawTop, forgotten_DrawBottom, forgotten_End	}
 };
 

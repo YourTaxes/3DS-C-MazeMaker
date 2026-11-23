@@ -2,10 +2,6 @@
 
 #include "datatypes/game_state.h"
 
-typedef struct MenuButton MenuButton;
-
-void* buttonPressed(MenuButton* self);
-
 void MainMenu_Init(GameContext* ctx);
 
 /*

@@ -229,6 +229,12 @@ Game_State MainMenu_Logic(const FrameInput* in, GameContext* ctx){
         return STATE_you_recieved_the_egg; //will be changed later, so that this happens randomly when the player goes out of bounds.
     }
 
+    if (in->kDown & KEY_ZL)
+    {
+        printConsole("ZL pressed, going to menu nav test state");
+        return STATE_MENUNAVTEST; //wow yet again another one that will be removed later
+    }
+
     //check the menu nav for if the user pressed any buttons
     //and react accordingly.
     MenuEvent menu_event = menu_nav_logic(mmstate->menu, in);

@@ -39,6 +39,7 @@ SOURCES		:=	source source/datatypes source/utils source/game_logic \
 			source/states/MainMenu source/states/Maker \
 			source/states/Maze \
 			source/states/forgotten \
+			source/states/MenuNavTest \
 			source/menu_navigation
 DATA		:=	data
 INCLUDES	:=	source

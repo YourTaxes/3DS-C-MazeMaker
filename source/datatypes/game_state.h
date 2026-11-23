@@ -19,6 +19,7 @@ typedef enum{
     //STATE_the_man_smiles,
     //STATE_there_is_no_longer_a_man_behind_the_tree,
     STATE_DEBUG,
+    STATE_MENUNAVTEST,
     
     //non switching status identifiers
     STATE_COUNT, //number of real states above
